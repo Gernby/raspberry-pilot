@@ -1,4 +1,4 @@
-from cereal import car, log
+from cereal import log
 from common.realtime import DT_CTRL
 from selfdrive.swaglog import cloudlog
 from selfdrive.controls.lib.alerts import ALERTS
@@ -7,10 +7,9 @@ import copy
 
 AlertSize = log.ControlsState.AlertSize
 AlertStatus = log.ControlsState.AlertStatus
-VisualAlert = car.CarControl.HUDControl.VisualAlert
-AudibleAlert = car.CarControl.HUDControl.AudibleAlert
 
-class AlertManager():
+
+class AlertManager(object):
 
   def __init__(self):
     self.activealerts = []
@@ -50,8 +49,8 @@ class AlertManager():
     self.alert_text_2 = ""
     self.alert_status = AlertStatus.normal
     self.alert_size = AlertSize.none
-    self.visual_alert = VisualAlert.none
-    self.audible_alert = AudibleAlert.none
+    self.visual_alert = "none"
+    self.audible_alert = "none"
     self.alert_rate = 0.
 
     if current_alert:

@@ -17,5 +17,8 @@ def interp(x, xp, fp):
   return [get_interp(v) for v in x] if hasattr(
     x, '__iter__') else get_interp(x)
 
-def mean(x):
-  return sum(x) / len(x)
+def gernterp(x, xp, fp):
+  if fp[1] > fp[0]:
+    return max(fp[0], min(fp[1], (x - xp[0]) * (fp[1] - fp[0]) / (xp[1] - xp[0]) + fp[0]))
+  else:
+    return max(fp[1], min(fp[0], (x - xp[0]) * (fp[1] - fp[0]) / (xp[1] - xp[0]) + fp[0]))

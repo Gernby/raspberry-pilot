@@ -16,11 +16,13 @@ WARN_FLAGS = -Werror=implicit-function-declaration \
 CFLAGS = -std=gnu11 -g -fPIC -I../ -I../../ -O2 $(WARN_FLAGS)
 CXXFLAGS = -std=c++11 -g -fPIC -I../ -I../../ -O2 $(WARN_FLAGS)
 
-ZMQ_LIBS = -l:libczmq.a -l:libzmq.a -lgnustl_shared
+#ZMQ_LIBS = -l:libczmq.a -l:libzmq.a -lgnustl_shared
+ZMQ_FLAGS = -I$(PHONELIBS)/zmq/aarch64/include
+ZMQ_LIBS = -lzmq
 
 JSON_FLAGS = -I$(PHONELIBS)/json/src
 
-EXTRA_LIBS = -lusb-1.0
+EXTRA_LIBS = -lusb
 
 # ifeq ($(OS),GNU/Linux)
 # # for Drive PX2
@@ -28,9 +30,10 @@ EXTRA_LIBS = -lusb-1.0
 # CEREAL_LIBS = -lcapnp -lkj -lcapnp_c
 # EXTRA_LIBS = -lusb-1.0 -lpthread
 # endif
+
 ifeq ($(ARCH),aarch64)
-CFLAGS += -mcpu=cortex-a57
-CXXFLAGS += -mcpu=cortex-a57
+CFLAGS += -mcpu=cortex-a72
+CXXFLAGS += -mcpu=cortex-a72
 endif
 
 
@@ -38,10 +41,11 @@ ifeq ($(ARCH),x86_64)
 ZMQ_FLAGS = -I$(PHONELIBS)/zmq/aarch64/include
 ZMQ_LIBS = -L$(BASEDIR)/external/zmq/lib/ \
            -l:libczmq.a -l:libzmq.a
+endif
 EXTRA_LIBS = -lusb-1.0 -lpthread
 CXXFLAGS += -I/usr/include/libusb-1.0
 CFLAGS += -I/usr/include/libusb-1.0
-endif
+#endif
 
 .PHONY: all
 all: boardd
@@ -68,7 +72,6 @@ boardd: $(OBJS)
 boardd.o: boardd.cc
 	@echo "[ CXX ] $@"
 	$(CXX) $(CXXFLAGS) -MMD \
-           -I$(PHONELIBS)/android_system_core/include \
            $(CEREAL_CFLAGS) \
            $(CEREAL_CXXFLAGS) \
            $(ZMQ_FLAGS) \

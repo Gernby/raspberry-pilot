@@ -69,27 +69,27 @@ from selfdrive.loggerd.config import ROOT
 
 # comment out anything you don't want to run
 managed_processes = {
-  "thermald": "selfdrive.thermald",
-  "uploader": "selfdrive.loggerd.uploader",
-  "deleter": "selfdrive.loggerd.deleter",
+  #"thermald": "selfdrive.thermald",
+  #"uploader": "selfdrive.loggerd.uploader",
+  #"deleter": "selfdrive.loggerd.deleter",
   "controlsd": "selfdrive.controls.controlsd",
-  "plannerd": "selfdrive.controls.plannerd",
-  "radard": "selfdrive.controls.radard",
-  "ubloxd": ("selfdrive/locationd", ["./ubloxd"]),
-  "loggerd": ("selfdrive/loggerd", ["./loggerd"]),
-  "logmessaged": "selfdrive.logmessaged",
-  "tombstoned": "selfdrive.tombstoned",
-  "logcatd": ("selfdrive/logcatd", ["./logcatd"]),
-  "proclogd": ("selfdrive/proclogd", ["./proclogd"]),
+  #"plannerd": "selfdrive.controls.plannerd",
+  #"radard": "selfdrive.controls.radard",
+  #"ubloxd": ("selfdrive/locationd", ["./ubloxd"]),
+  #"loggerd": ("selfdrive/loggerd", ["./loggerd"]),
+  #"logmessaged": "selfdrive.logmessaged",
+  #"tombstoned": "selfdrive.tombstoned",
+  #"logcatd": ("selfdrive/logcatd", ["./logcatd"]),
+  #"proclogd": ("selfdrive/proclogd", ["./proclogd"]),
   "boardd": ("selfdrive/boardd", ["./boardd"]),   # not used directly
-  "pandad": "selfdrive.pandad",
-  "ui": ("selfdrive/ui", ["./start.py"]),
-  "calibrationd": "selfdrive.locationd.calibrationd",
-  "paramsd": ("selfdrive/locationd", ["./paramsd"]),
-  "visiond": ("selfdrive/visiond", ["./visiond"]),
-  "sensord": ("selfdrive/sensord", ["./start_sensord.py"]),
-  "gpsd": ("selfdrive/sensord", ["./start_gpsd.py"]),
-  "updated": "selfdrive.updated",
+  #"pandad": "selfdrive.pandad",
+  #"ui": ("selfdrive/ui", ["./start.py"]),
+  #"calibrationd": "selfdrive.locationd.calibrationd",
+  #"paramsd": ("selfdrive/locationd", ["./paramsd"]),
+  #"visiond": ("selfdrive/visiond", ["./visiond"]),
+  #"sensord": ("selfdrive/sensord", ["./start_sensord.py"]),
+  #"gpsd": ("selfdrive/sensord", ["./start_gpsd.py"]),
+  #"updated": "selfdrive.updated",
 }
 daemon_processes = {
   "athenad": "selfdrive.athena.athenad",
@@ -101,37 +101,37 @@ def get_running():
   return running
 
 # due to qualcomm kernel bugs SIGKILLing visiond sometimes causes page table corruption
-unkillable_processes = ['visiond']
+unkillable_processes = [] #'visiond']
 
 # processes to end with SIGINT instead of SIGTERM
 interrupt_processes = []
 
 # processes to end with SIGKILL instead of SIGTERM
-kill_processes = ['sensord', 'paramsd']
+kill_processes = []  #'sensord', 'paramsd']
 
 persistent_processes = [
-  'thermald',
-  'logmessaged',
-  'logcatd',
-  'tombstoned',
-  'uploader',
-  'ui',
-  'updated',
+  #'thermald',
+  #'logmessaged',
+  #'logcatd',
+  #'tombstoned',
+  #'uploader',
+  #'ui',
+  #'updated',
 ]
 
 car_started_processes = [
   'controlsd',
-  'plannerd',
-  'loggerd',
-  'sensord',
-  'radard',
-  'calibrationd',
-  'paramsd',
-  'visiond',
-  'proclogd',
-  'ubloxd',
-  'gpsd',
-  'deleter',
+  #'plannerd',
+  #'loggerd',
+  #'sensord',
+  #'radard',
+  #'calibrationd',
+  #'paramsd',
+  #'visiond',
+  #'proclogd',
+  #'ubloxd',
+  #'gpsd',
+  #'deleter',
 ]
 
 def register_managed_process(name, desc, car_started=False):
@@ -531,11 +531,11 @@ def main():
   if params.get("Passive") is None:
     raise Exception("Passive must be set to continue")
 
-  with Spinner() as spinner:
-      spinner.update("0") # Show progress bar
-      manager_update()
-      manager_init()
-      manager_prepare(spinner)
+  #with Spinner() as spinner:
+      #spinner.update("0") # Show progress bar
+      #manager_update()
+      #manager_init()
+  manager_prepare(None)
 
   if os.getenv("PREPAREONLY") is not None:
     return

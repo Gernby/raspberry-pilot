@@ -22,13 +22,17 @@ _VLEAD_C = [1.0, 0.0]
 _VLEAD_K = [[0.1988689], [0.28555364]]
 
 
-class Track():
+class Track(object):
   def __init__(self):
     self.ekf = None
-    self.cnt = 0
-    self.aLeadTau = _LEAD_ACCEL_TAU
+    self.initted = False
 
   def update(self, d_rel, y_rel, v_rel, v_ego_t_aligned, measured):
+    if self.initted:
+      # pylint: disable=access-member-before-definition
+      self.vLeadPrev = self.vLead
+      self.vRelPrev = self.vRel
+
     # relative values, copy
     self.dRel = d_rel   # LONG_DIST
     self.yRel = y_rel   # -LAT_DIST
@@ -38,12 +42,17 @@ class Track():
     # computed velocity and accelerations
     self.vLead = self.vRel + v_ego_t_aligned
 
-    if self.cnt == 0:
+    if not self.initted:
+      self.initted = True
+      self.aLeadTau = _LEAD_ACCEL_TAU
+      self.cnt = 1
+      self.vision_cnt = 0
+      self.vision = False
       self.kf = KF1D([[self.vLead], [0.0]], _VLEAD_A, _VLEAD_C, _VLEAD_K)
     else:
       self.kf.update(self.vLead)
 
-    self.cnt += 1
+      self.cnt += 1
 
     self.vLeadK = float(self.kf.x[SPEED][0])
     self.aLeadK = float(self.kf.x[ACCEL][0])
@@ -58,16 +67,12 @@ class Track():
     # Weigh y higher since radar is inaccurate in this dimension
     return [self.dRel, self.yRel*2, self.vRel]
 
-  def reset_a_lead(self, aLeadK, aLeadTau):
-    self.kf = KF1D([[self.vLead], [aLeadK]], _VLEAD_A, _VLEAD_C, _VLEAD_K)
-    self.aLeadK = aLeadK
-    self.aLeadTau = aLeadTau
 
 def mean(l):
   return sum(l) / len(l)
 
 
-class Cluster():
+class Cluster(object):
   def __init__(self):
     self.tracks = set()
 
@@ -110,21 +115,15 @@ class Cluster():
 
   @property
   def aLeadK(self):
-    if all(t.cnt <= 1 for t in self.tracks):
-      return 0.
-    else:
-      return mean([t.aLeadK for t in self.tracks if t.cnt > 1])
+    return mean([t.aLeadK for t in self.tracks])
 
   @property
   def aLeadTau(self):
-    if all(t.cnt <= 1 for t in self.tracks):
-      return _LEAD_ACCEL_TAU
-    else:
-      return mean([t.aLeadTau for t in self.tracks if t.cnt > 1])
+    return mean([t.aLeadTau for t in self.tracks])
 
   @property
   def measured(self):
-    return any(t.measured for t in self.tracks)
+    return any([t.measured for t in self.tracks])
 
   def get_RadarState(self, model_prob=0.0):
     return {

@@ -9,7 +9,9 @@ CEREAL_LIBS = $(PHONELIBS)/capnp-cpp/mac/lib/libcapnp.a \
               $(PHONELIBS)/capnp-c/mac/lib/libcapnp_c.a
 
 else ifeq ($(UNAME_M),x86_64)
+else
 CEREAL_CFLAGS = -I$(PHONELIBS)/capnp-c/include
+
 CEREAL_CXXFLAGS = -I$(PHONELIBS)/capnp-cpp/include
 ifeq ($(CEREAL_LIBS),)
   CEREAL_LIBS = -L$(PHONELIBS)/capnp-cpp/x64/lib/ \
@@ -17,7 +19,7 @@ ifeq ($(CEREAL_LIBS),)
                 -l:libcapnp.a -l:libkj.a -l:libcapnp_c.a
 endif
 
-else
+#else
 
 #CEREAL_CXXFLAGS = -I$(PHONELIBS)/capnp-cpp/include
 ifeq ($(CEREAL_LIBS),)

@@ -19,8 +19,8 @@ CXXFLAGS = -std=c++11 -g -fPIC -O2 $(WARN_FLAGS)
 LDFLAGS =
 
 ifeq ($(ARCH),aarch64)
-CFLAGS += -mcpu=cortex-a57
-CXXFLAGS += -mcpu=cortex-a57
+CFLAGS += -mcpu=cortex-a72
+CXXFLAGS += -mcpu=cortex-a72
 endif
 
 ifeq ($(UNAME_S),Darwin)
@@ -33,7 +33,7 @@ else ifeq ($(UNAME_M),x86_64)
 else ifeq ($(UNAME_M),aarch64)
 	ZMQ_LIBS = -l:libzmq.a -lgnustl_shared
 endif
-
+ZMQ_LIBS = -lzmq
 OBJDIR = obj
 
 OPENDBC_PATH := $(shell python3 -c 'import opendbc; print(opendbc.DBC_PATH)')

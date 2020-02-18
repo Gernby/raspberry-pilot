@@ -14,7 +14,7 @@ AlertStatus = log.ControlsState.AlertStatus
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
-class Alert():
+class Alert(object):
   def __init__(self,
                alert_type,
                alert_text_1,
@@ -124,7 +124,7 @@ ALERTS = [
 
   Alert(
       "preDriverUnresponsive",
-      "TOUCH STEERING WHEEL: No Face Detected",
+      "TOUCH STEERING WHEEL: No Driver Monitoring",
       "",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.steerRequired, AudibleAlert.none, .0, .1, .1, alert_rate=0.75),
@@ -218,7 +218,7 @@ ALERTS = [
       "TAKE CONTROL",
       "Steer Unavailable Below ",
       AlertStatus.userPrompt, AlertSize.mid,
-      Priority.MID, VisualAlert.steerRequired, AudibleAlert.none, 0., 0.4, .3),
+      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarning1, 0., 0., .1),
 
   Alert(
       "debugAlert",
@@ -299,11 +299,11 @@ ALERTS = [
       Priority.LOW, VisualAlert.none, AudibleAlert.chimeError, .4, 2., 3.),
 
   Alert(
-      "soundsUnavailableNoEntry",
+      "manualSteeringRequired",
       "openpilot Unavailable",
-      "Speaker not found",
+      "LKAS Disabled",
       AlertStatus.normal, AlertSize.mid,
-      Priority.LOW, VisualAlert.none, AudibleAlert.chimeError, .4, 2., 3.),
+      Priority.LOW, VisualAlert.steerRequired, AudibleAlert.chimeError, .4, 2., 3.),
 
   Alert(
       "tooDistractedNoEntry",
@@ -318,84 +318,84 @@ ALERTS = [
       "TAKE CONTROL IMMEDIATELY",
       "System Overheated",
       AlertStatus.critical, AlertSize.full,
-      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarningRepeat, .1, 2., 2.),
+      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarning2, .1, 2., 2.),
 
   Alert(
       "wrongGear",
       "TAKE CONTROL IMMEDIATELY",
       "Gear not D",
       AlertStatus.critical, AlertSize.full,
-      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarningRepeat, .1, 2., 2.),
+      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarning2, .1, 2., 2.),
 
   Alert(
       "calibrationInvalid",
       "TAKE CONTROL IMMEDIATELY",
       "Calibration Invalid: Reposition EON and Recalibrate",
       AlertStatus.critical, AlertSize.full,
-      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarningRepeat, .1, 2., 2.),
+      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarning2, .1, 2., 2.),
 
   Alert(
       "calibrationIncomplete",
       "TAKE CONTROL IMMEDIATELY",
       "Calibration in Progress",
       AlertStatus.critical, AlertSize.full,
-      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarningRepeat, .1, 2., 2.),
+      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarning2, .1, 2., 2.),
 
   Alert(
       "doorOpen",
       "TAKE CONTROL IMMEDIATELY",
       "Door Open",
       AlertStatus.critical, AlertSize.full,
-      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarningRepeat, .1, 2., 2.),
+      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarning2, .1, 2., 2.),
 
   Alert(
       "seatbeltNotLatched",
       "TAKE CONTROL IMMEDIATELY",
       "Seatbelt Unlatched",
       AlertStatus.critical, AlertSize.full,
-      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarningRepeat, .1, 2., 2.),
+      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarning2, .1, 2., 2.),
 
   Alert(
       "espDisabled",
       "TAKE CONTROL IMMEDIATELY",
       "ESP Off",
       AlertStatus.critical, AlertSize.full,
-      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarningRepeat, .1, 2., 2.),
+      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarning2, .1, 2., 2.),
 
   Alert(
       "lowBattery",
       "TAKE CONTROL IMMEDIATELY",
       "Low Battery",
       AlertStatus.critical, AlertSize.full,
-      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarningRepeat, .1, 2., 2.),
+      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarning2, .1, 2., 2.),
 
   Alert(
       "commIssue",
       "TAKE CONTROL IMMEDIATELY",
       "Communication Issue between Processes",
       AlertStatus.critical, AlertSize.full,
-      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarningRepeat, .1, 2., 2.),
+      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarning2, .1, 2., 2.),
 
   Alert(
       "radarCanError",
       "TAKE CONTROL IMMEDIATELY",
       "Radar Error: Restart the Car",
       AlertStatus.critical, AlertSize.full,
-      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarningRepeat, .1, 2., 2.),
+      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarning2, .1, 2., 2.),
 
   Alert(
       "radarFault",
       "TAKE CONTROL IMMEDIATELY",
       "Radar Error: Restart the Car",
       AlertStatus.critical, AlertSize.full,
-      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarningRepeat, .1, 2., 2.),
+      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarning2, .1, 2., 2.),
 
   Alert(
       "posenetInvalid",
       "TAKE CONTROL IMMEDIATELY",
       "Vision Failure: Check Camera View",
       AlertStatus.critical, AlertSize.full,
-      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarningRepeat, .1, 2., 2.),
+      Priority.MID, VisualAlert.steerRequired, AudibleAlert.chimeWarning2, .1, 2., 2.),
 
   # Cancellation alerts causing immediate disabling
   Alert(
@@ -633,15 +633,8 @@ ALERTS = [
 
   Alert(
       "commIssueNoEntry",
-      "openpilot Unavailable",
+      "openpilot unavailable",
       "Communication Issue between Processes",
-      AlertStatus.normal, AlertSize.mid,
-      Priority.LOW, VisualAlert.none, AudibleAlert.chimeDisengage, .4, 2., 3.),
-
-  Alert(
-      "internetConnectivityNeededNoEntry",
-      "openpilot Unavailable",
-      "Internet Connectivity Needed",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.chimeDisengage, .4, 2., 3.),
 
@@ -682,29 +675,8 @@ ALERTS = [
       Priority.LOW_LOWEST, VisualAlert.none, AudibleAlert.none, 0., 0., .2),
 
   Alert(
-      "invalidGiraffeToyotaPermanent",
-      "Unsupported Giraffe Configuration",
-      "Visit comma.ai/tg",
-      AlertStatus.normal, AlertSize.mid,
-      Priority.LOW_LOWEST, VisualAlert.none, AudibleAlert.none, 0., 0., .2),
-
-  Alert(
-      "internetConnectivityNeededPermanent",
-      "Internet Connectivity Needed",
-      "Check for Updates to Be Able to Engage",
-      AlertStatus.normal, AlertSize.mid,
-      Priority.LOW_LOWEST, VisualAlert.none, AudibleAlert.none, 0., 0., .2),
-
-  Alert(
       "sensorDataInvalidPermanent",
       "No Data from EON Sensors",
-      "Reboot your EON",
-      AlertStatus.normal, AlertSize.mid,
-      Priority.LOW_LOWEST, VisualAlert.none, AudibleAlert.none, 0., 0., .2),
-
-  Alert(
-      "soundsUnavailablePermanent",
-      "Speaker not found",
       "Reboot your EON",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOW_LOWEST, VisualAlert.none, AudibleAlert.none, 0., 0., .2),

@@ -83,7 +83,7 @@ class CarInterface(object):
     self.stock_cam_frame_prev = 0
 
     self.cp = get_can_parser(CP)
-    self.cp_cam = get_cam_can_parser(CP.isPandaBlack)
+    self.cp_cam = None  #get_cam_can_parser(CP.isPandaBlack)
 
     # *** init the major players ***
     self.CS = CarState(CP)

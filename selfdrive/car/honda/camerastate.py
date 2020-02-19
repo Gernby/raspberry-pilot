@@ -1,7 +1,7 @@
 from common.numpy_fast import interp
 #from common.kalman.simple_kalman import KF1D
 #from opendbc.can.can_define import CANDefine
-from opendbc.can.parser import CANParser
+from selfdrive.can.parser import CANParser
 from selfdrive.config import Conversions as CV
 from selfdrive.car.honda.values import CAR, DBC, STEER_THRESHOLD, SPEED_FACTOR, HONDA_BOSCH
 from selfdrive.kegman_conf import kegman_conf

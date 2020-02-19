@@ -17,7 +17,7 @@ from cereal import log
 from cffi import FFI
 from setproctitle import setproctitle
 
-isPython37 = False
+isPython37 = True
 if isPython37:
   from selfdrive.car.honda.camerastate import get_can_parser
   cp_cam = get_can_parser(isPandaBlack=False)

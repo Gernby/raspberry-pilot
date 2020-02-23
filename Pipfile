@@ -49,6 +49,7 @@ joblib = "*"
 keras = "*"
 keras-applications = "==1.0.8"
 keras-preprocessing = "==1.1.0"
+pandacan = "*"
 
 [requires]
 python_version = "3.7.3"

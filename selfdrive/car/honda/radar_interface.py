@@ -1,9 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import time
 from cereal import car
 from selfdrive.can.parser import CANParser
 from common.realtime import sec_since_boot
+from selfdrive.car.interfaces import RadarInterfaceBase
 
 def _create_nidec_can_parser():
   dbc_f = 'acura_ilx_2016_nidec.dbc'
@@ -18,7 +19,7 @@ def _create_nidec_can_parser():
   return CANParser(os.path.splitext(dbc_f)[0], signals, checks, 1)
 
 
-class RadarInterface(object):
+class RadarInterface(RadarInterfaceBase):
   def __init__(self, CP):
     # radar
     self.pts = {}

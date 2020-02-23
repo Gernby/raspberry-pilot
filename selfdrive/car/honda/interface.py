@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import time
 import numpy as np
@@ -12,6 +12,7 @@ from selfdrive.controls.lib.drive_helpers import create_event, EventTypes as ET,
 from selfdrive.car.honda.carstate import CarState, get_can_parser, get_cam_can_parser
 from selfdrive.car.honda.values import CruiseButtons, CAR, HONDA_BOSCH, AUDIO_HUD, VISUAL_HUD, CAMERA_MSGS
 from selfdrive.car import STD_CARGO_KG, CivicParams, scale_rot_inertia, scale_tire_stiffness
+from selfdrive.car.interfaces import CarInterfaceBase
 #from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V_FOLLOWING
 
 A_ACC_MAX = 0 #max(_A_CRUISE_MAX_V_FOLLOWING)
@@ -71,7 +72,7 @@ def get_compute_gb_acura():
   return _compute_gb_acura
 
 
-class CarInterface(object):
+class CarInterface(CarInterfaceBase):
   def __init__(self, CP, CarController):
     self.CP = CP
 
@@ -83,7 +84,7 @@ class CarInterface(object):
     self.stock_cam_frame_prev = 0
 
     self.cp = get_can_parser(CP)
-    self.cp_cam = None  #get_cam_can_parser(CP.isPandaBlack)
+    self.cp_cam = get_cam_can_parser(CP.isPandaBlack)
 
     # *** init the major players ***
     self.CS = CarState(CP)
@@ -420,16 +421,19 @@ class CarInterface(object):
     self.canTime = max(int(time.time() * 100) * 10, self.canTime + 10)
     #if self.frame % 100 == 0: print(self.canTime)
 
-    self.cp.update_strings(self.canTime, can_strings)
+    self.cp.update_strings(can_strings)
+    self.cp.update(0, False)
     if not self.cp_cam is None: 
-      self.cp_cam.update_strings(self.canTime, can_strings)
+      self.cp_cam.update_strings(can_strings)
+      #self.cp_cam.update(0, False)
 
     self.CS.update(self.cp, self.cp_cam)
-    
+    #print(self.cp_cam.vl)
     # create message
     ret = car.CarState.new_message()
     ret.lateralControlState.init('pidState')
-    can_strings = log.Event.from_bytes(can_strings[0])
+    #print(len(can_strings), can_strings)
+    #can_strings = log.Event.from_bytes(can_strings[0])
     ret.canTime = self.canTime
     ret.canValid = self.cp.can_valid
     if not lac_log is None:
@@ -545,7 +549,8 @@ class CarInterface(object):
       ret.camFarRight.dashed = self.CS.cam_far_right_2['DASHED_LINE']
       ret.camFarRight.solid = self.CS.cam_far_right_2['SOLID_LINE']
       ret.camFarRight.frame = self.CS.cam_far_right_1['FRAME_ID'] + self.CS.cam_far_right_2['FRAME_ID']
-
+      #print(self.cp_cam.vl["CUR_LANE_LEFT_1"]['FRAME_ID'], )
+    
     #if ret.camLeft.parm2 < -100:
     #  ret.camLeft.parm2 += 2048
     #ret.camLeft.parm2 -= 512

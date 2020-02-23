@@ -306,6 +306,7 @@ struct HealthData {
   canFwdErrs @8 :UInt32;
   gmlanSendErrs @9 :UInt32;
   hwType @10: HwType;
+  usbPowerMode @11 :UInt32;
 
   enum HwType {
     unknown @0;

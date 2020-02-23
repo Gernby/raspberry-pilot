@@ -68,10 +68,10 @@ def fingerprint(logcan, sendcan, is_panda_black):
   if car_params is not None:
     # use already stored VIN: a new VIN query cannot be done, since panda isn't in ELM327 mode
     car_params = car.CarParams.from_bytes(car_params)
-    #vin = VIN_UNKNOWN if car_params.carVin == "" else car_params.carVin
+    vin = ""   #VIN_UNKNOWN if car_params.carVin == "" else car_params.carVin
   else:
-    vin = VIN_UNKNOWN
-
+    vin = ""  #  VIN_UNKNOWN
+  
   cloudlog.warning("VIN %s", vin)
   Params().put("CarVin", vin)
 
@@ -109,7 +109,7 @@ def fingerprint(logcan, sendcan, is_panda_black):
           car_fingerprint = candidate_cars[b][0]
 
     # bail if no cars left or we've been waiting for more than 2s
-    failed = all(len(cc) == 0 for cc in candidate_cars.itervalues()) or frame > 200
+    failed = all(len(cc) == 0 for cc in candidate_cars.values()) or frame > 200
     succeeded = car_fingerprint is not None
     done = failed or succeeded
 

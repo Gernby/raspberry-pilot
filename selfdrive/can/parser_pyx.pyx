@@ -10,12 +10,11 @@ import numbers
 cdef int CAN_INVALID_CNT = 5
 
 cdef class CANParser:
-  def __init__(self, dbc_name, signals, checks=None, bus=0, sendcan=False, tcp_addr=b"", timeout=-1):
+  def __init__(self, dbc_name, signals, checks=None, bus=1, sendcan=False, tcp_addr=b"", timeout=-1):
     self.test_mode_enabled = False
     can_dir = os.path.dirname(os.path.abspath(__file__))
     libdbc_fn = os.path.join(can_dir, "libdbc.so")
     libdbc_fn = str(libdbc_fn).encode('utf8')
-
     cdef void *libdbc = dlopen(libdbc_fn, RTLD_LAZY)
     self.can_init_with_vectors = <can_init_with_vectors_func>dlsym(libdbc, 'can_init_with_vectors')
     self.dbc_lookup = <dbc_lookup_func>dlsym(libdbc, 'dbc_lookup')
@@ -67,6 +66,7 @@ cdef class CANParser:
       spo.name = sig_name
       spo.default_value = sig_default
       signal_options_v.push_back(spo)
+      #print(spo.name, spo.address)
 
     message_options = dict((address, 0) for _, address, _ in signals)
     message_options.update(dict(checks))
@@ -80,6 +80,7 @@ cdef class CANParser:
 
     self.can = self.can_init_with_vectors(bus, dbc_name, message_options_v, signal_options_v, sendcan, tcp_addr, timeout)
     self.update_vl()
+    #print(dbc_name, signals, checks, bus, tcp_addr, timeout)
 
   cdef unordered_set[uint32_t] update_vl(self):
     cdef string sig_name
@@ -99,7 +100,7 @@ cdef class CANParser:
       # Cast char * directly to unicde
       name = <unicode>self.address_to_msg_name[cv.address].c_str()
       cv_name = <unicode>cv.name
-
+      #print(cv_name, cv.value)
       self.vl[cv.address][cv_name] = cv.value
       self.ts[cv.address][cv_name] = cv.ts
 

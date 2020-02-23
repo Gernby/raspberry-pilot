@@ -1,5 +1,6 @@
 from common.numpy_fast import interp
 #from common.kalman.simple_kalman import KF1D
+from collections import defaultdict
 from selfdrive.can.can_define import CANDefine
 from selfdrive.can.parser import CANParser
 from selfdrive.config import Conversions as CV
@@ -248,21 +249,18 @@ def get_can_signals(CP):
 def get_can_parser(CP):
   signals, checks = get_can_signals(CP)
   bus_pt = 1 if CP.isPandaBlack and CP.carFingerprint in HONDA_BOSCH else 0
+
   return CANParser(DBC[CP.carFingerprint]['pt'], signals, checks, bus_pt)
 
 
 def get_cam_can_parser(isPandaBlack):
   signals, checks = get_cam_can_signals()
-
-  # all hondas except CRV, RDX and 2019 Odyssey@China use 0xe4 for steering
-  #checks = [(0xe4, 100)]
-  #if CP.carFingerprint in [CAR.CRV, CAR.ACURA_RDX, CAR.ODYSSEY_CHN]:
-  #  checks = [(0x194, 100)]
-
+  checks = []
   bus_cam = 1 if not isPandaBlack else 2
+
   return CANParser("bosch_camera", signals, checks, bus_cam)
 
-class CarState(object):
+class CarState():
   def __init__(self, CP):
     self.kegman = kegman_conf()
     self.trMode = int(self.kegman.conf['lastTrMode'])     # default to last distance interval on startup
@@ -519,7 +517,7 @@ if __name__ == '__main__':
   import zmq
   context = zmq.Context()
 
-  class CarParams(object):
+  class CarParams():
     def __init__(self):
       self.carFingerprint = "HONDA CIVIC 2016 TOURING"
       self.enableGasInterceptor = 0

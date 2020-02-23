@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import capnp
 from cereal import car, log
 from common.numpy_fast import clip

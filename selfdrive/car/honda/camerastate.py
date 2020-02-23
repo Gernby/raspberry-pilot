@@ -85,14 +85,14 @@ def get_can_parser(isPandaBlack):
   ]
 
   bus_cam = 1 if not isPandaBlack else 2
-  return CANParser(b"bosch_camera", signals, checks, bus_cam)
+  return CANParser("bosch_camera", signals, checks, bus_cam)
 
-class CameraState(object):
+class CameraState():
   def __init__(self, isPandaBlack):
     self.cp_cam = get_can_parser(isPandaBlack)
 
   def update(self, can_time, can_strings):
-    self.cp_cam.update_strings(can_time, can_strings)
+    self.cp_cam.update_strings(can_strings)
     self.cam_left_1 = self.cp_cam.vl["CUR_LANE_LEFT_1"]
     self.cam_left_2 = self.cp_cam.vl["CUR_LANE_LEFT_2"]
     self.cam_right_1 = self.cp_cam.vl["CUR_LANE_RIGHT_1"]
@@ -101,3 +101,4 @@ class CameraState(object):
     self.cam_far_left_2 = self.cp_cam.vl["ADJ_LANE_LEFT_2"]
     self.cam_far_right_1 = self.cp_cam.vl["ADJ_LANE_RIGHT_1"]
     self.cam_far_right_2 = self.cp_cam.vl["ADJ_LANE_RIGHT_2"]
+    #print(self.cp_cam.vl)

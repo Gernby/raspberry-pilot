@@ -28,12 +28,12 @@ EXTRA_LIBS = -lusb
 # # for Drive PX2
 # ZMQ_LIBS = -lczmq -lzmq
 # CEREAL_LIBS = -lcapnp -lkj -lcapnp_c
-# EXTRA_LIBS = -lusb-1.0 -lpthread
+# EXTRA_LIBS = -lusb -lpthread
 # endif
 
 ifeq ($(ARCH),aarch64)
-CFLAGS += -mcpu=cortex-a72
-CXXFLAGS += -mcpu=cortex-a72
+CFLAGS += -mcpu=cortex-a57
+CXXFLAGS += -mcpu=cortex-a57
 endif
 
 

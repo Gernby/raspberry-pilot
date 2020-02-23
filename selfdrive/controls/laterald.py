@@ -17,16 +17,6 @@ from cereal import log
 from cffi import FFI
 from setproctitle import setproctitle
 
-isPython37 = True
-if isPython37:
-  from selfdrive.car.honda.camerastate import get_can_parser
-  cp_cam = get_can_parser(isPandaBlack=False)
-  #from selfdrive.can.can_define import CANDefine
-  #from selfdrive.can.parser import CANParser
-else:
-  cp_cam = None
-  can_sock = None
-
 from common.params import Params
 params = Params()
 user_id = str(params.get("DongleId"))
@@ -100,7 +90,6 @@ set_realtime_priority(1)
 poller = zmq.Poller()
 
 carState = sub_sock(service_list['carState'].port, conflate=False, poller=poller)
-if isPython37: can_sock = sub_sock(service_list['can'].port, conflate=False, poller=poller)
 gernPath = pub_sock(service_list['pathPlan'].port)
 gernModelInputs = pub_sock(service_list['model'].port)
 gernModelOutputs = sub_sock(8605, poller=poller)
@@ -135,24 +124,22 @@ column_count = 0
 while 1:
   for socket, event in poller.poll():
 
-    if socket is can_sock:
-      can_strs = can_sock.recv()
-      cp_cam.update_strings(cs.canTime, can_strs)
-      camLeft1 = cp_cam.vl["CUR_LANE_LEFT_1"]
-      camFarRight2 = cp_cam.vl["ADJ_LANE_RIGHT_2"]
-      if camLeft1['FRAME_ID'] != stock_cam_frame_prev and camLeft1['FRAME_ID'] == camFarRight2['FRAME_ID']:
-        camLeft2 = cp_cam.vl["CUR_LANE_LEFT_2"]
-        camRight1 = cp_cam.vl["CUR_LANE_RIGHT_1"]
-        camRight2 = cp_cam.vl["CUR_LANE_RIGHT_2"]
-        camFarLeft1 = cp_cam.vl["ADJ_LANE_LEFT_1"]
-        camFarLeft2 = cp_cam.vl["ADJ_LANE_LEFT_2"]
-        camFarRight1 = cp_cam.vl["ADJ_LANE_RIGHT_1"]
+    if socket is carState:
+      back_log += 1
+      _cs = log.Event.from_bytes(socket.recv())
+      cs = _cs.carState
+      frame_count += 1
+
+      unscaled_input_array = [[cs.vEgo, cs.steeringAngle, cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN, cs.longAccel,              0 ,    0           , cs.steeringRate, cs.steeringTorque, cs.torqueRequest,
+                      cs.camLeft.parm1, cs.camLeft.parm2, cs.camLeft.parm3, cs.camLeft.parm4, cs.camLeft.parm5, cs.camLeft.parm6, cs.camLeft.parm7, cs.camLeft.parm8, cs.camLeft.parm9, cs.camLeft.parm10, 0, 0 , #cs.camLeft.dashed, cs.camLeft.solid,
+                      cs.camFarLeft.parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4, cs.camFarLeft.parm5, cs.camFarLeft.parm6, cs.camFarLeft.parm7, cs.camFarLeft.parm8, cs.camFarLeft.parm9, cs.camFarLeft.parm10, 0, 0 , #cs.camFarLeft.dashed, cs.camFarLeft.solid,
+                      cs.camRight.parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4, cs.camRight.parm5, cs.camRight.parm6, cs.camRight.parm7, cs.camRight.parm8, cs.camRight.parm9, cs.camRight.parm10, 0, 0 , #cs.camRight.dashed, cs.camRight.solid,
+                      cs.camFarRight.parm1, cs.camFarRight.parm2, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm6, cs.camFarRight.parm7, cs.camFarRight.parm8, cs.camFarRight.parm9, cs.camFarRight.parm10, 0, 0]] #cs.camFarRight.dashed, cs.camFarRight.solid]]
+
+      scaled_data = input_scaler.transform(unscaled_input_array)
+      scaled_vehicle_array.append(scaled_data[:,:11])
+      if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
         back_log = 0
-        unscaled_input_array = [[0,0,0,0,0,0,0,0,0,0,0, camLeft1['PARM_1'], camLeft1['PARM_2'], camLeft1['PARM_3'], camLeft1['PARM_4'], camLeft1['PARM_5'], camLeft2['PARM_6'], camLeft2['PARM_7'], camLeft2['PARM_8'], camLeft2['PARM_9'], camLeft2['PARM_10'], 0, 0 , #camLeft['DASHED'], camLeft['SOLID'],
-                      camFarLeft1['PARM_1'], camFarLeft1['PARM_2'], camFarLeft1['PARM_3'], camFarLeft1['PARM_4'], camFarLeft1['PARM_5'], camFarLeft2['PARM_6'], camFarLeft2['PARM_7'], camFarLeft2['PARM_8'], camFarLeft2['PARM_9'], camFarLeft2['PARM_10'], 0, 0 , #camFarLeft['DASHED'], camFarLeft['SOLID'],
-                      camRight1['PARM_1'], camRight1['PARM_2'], camRight1['PARM_3'], camRight1['PARM_4'], camRight1['PARM_5'], camRight2['PARM_6'], camRight2['PARM_7'], camRight2['PARM_8'], camRight2['PARM_9'], camRight2['PARM_10'], 0, 0 , #camRight['DASHED'], camRight['SOLID'],
-                      camFarRight1['PARM_1'], camFarRight1['PARM_2'], camFarRight1['PARM_3'], camFarRight1['PARM_4'], camFarRight1['PARM_5'], camFarRight2['PARM_6'], camFarRight2['PARM_7'], camFarRight2['PARM_8'], camFarRight2['PARM_9'], camFarRight2['PARM_10'], 0, 0]]
-        scaled_data = input_scaler.transform(unscaled_input_array)
         scaled_camera_array.append(scaled_data[:,11:])
         if len(scaled_camera_array) > history_rows + advanceSteer:
           if advanceSteer > 0:
@@ -162,111 +149,43 @@ while 1:
           scaled_camera_array.pop(0)
           scaled_vehicle_array.pop(0)
 
-          stock_cam_frame_prev = camLeft1['FRAME_ID']
+          stock_cam_frame_prev = cs.camLeft.frame
 
           if recv_frames > 0: sent_frames += 1
 
-          l_prob = camLeft1['PARM_4']/127
-          r_prob = camRight1['PARM_4']/127
+          l_prob = cs.camLeft.parm4/127
+          r_prob = cs.camRight.parm4/127
 
-          if camLeft2['SOLID'] and camRight2['DASHED']:
+          if cs.camLeft.solid and cs.camRight.dashed:
             l_prob *= -1
-          elif camRight2['SOLID'] and camLeft2['DASHED']:
+          elif cs.camRight.solid and cs.camLeft.dashed:
             r_prob *= -1
 
           l_probs[cs.canTime] = l_prob
           r_probs[cs.canTime] = r_prob
-          l_offset[cs.canTime] = camLeft1['PARM_2']
-          r_offset[cs.canTime] = camRight1['PARM_2']
+          l_offset[cs.canTime] = cs.camLeft.parm2
+          r_offset[cs.canTime] = cs.camRight.parm2
 
+          scaled_array[-1,:11] = scaled_array[-2,:11]
+          scaled_array[-1,3:4] = 0.0  # steer rate eps
+          scaled_array[-1,8:9] = 0.0  # steer rate
+          
           input_array = list(np.array(scaled_array).reshape(history_rows * len(scaled_array[0][0])).astype('float'))
           input_array.append(cs.canTime)
           if recv_frames > 5 or sent_frames % 5 == 0:
             gernModelInputs.send_json(list(input_array))
-          frame_count += 1
           carStateDataString2 += (carStateFormatString2 % (cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
-                                  cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
-                                  cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, cs.camLeft.frame, cs.camFarRight.frame, \
-                                  cs.vEgo, cs.wheelSpeeds.fl, cs.wheelSpeeds.fr, cs.wheelSpeeds.rl, cs.wheelSpeeds.rr, cs.leftBlinker, cs.rightBlinker, cs.lkMode, cs.cruiseState.enabled, \
-                                  camLeft1['FRAME_ID'], camLeft1['PARM_1'], camLeft1['PARM_2'], camLeft1['PARM_3'], camLeft1['PARM_4'], camLeft1['PARM_5'], camLeft2['PARM_6'], camLeft2['PARM_7'], camLeft2['PARM_8'], camLeft2['PARM_9'], camLeft2['PARM_10'], camLeft2['DASHED'], camLeft2['SOLID'], \
-                                  camRight1['FRAME_ID'], camRight1['PARM_1'], camRight1['PARM_2'], camRight1['PARM_3'], camRight1['PARM_4'], camRight1['PARM_5'], camRight2['PARM_6'], camRight2['PARM_7'], camRight2['PARM_8'], camRight2['PARM_9'], camRight2['PARM_10'], camRight2['DASHED'], camRight2['SOLID'], \
-                                  camFarLeft1['FRAME_ID'], camFarLeft1['PARM_1'], camFarLeft1['PARM_2'], camFarLeft1['PARM_3'], camFarLeft1['PARM_4'], camFarLeft1['PARM_5'], camFarLeft2['PARM_6'], camFarLeft2['PARM_7'], camFarLeft2['PARM_8'], camFarLeft2['PARM_9'], camFarLeft2['PARM_10'], camFarLeft2['DASHED'], camFarLeft2['SOLID'], \
-                                  camFarRight1['FRAME_ID'], camFarRight1['PARM_1'], camFarRight1['PARM_2'], camFarRight1['PARM_3'], camFarRight1['PARM_4'], camFarRight1['PARM_5'], camFarRight2['PARM_6'], camFarRight2['PARM_7'], camFarRight2['PARM_8'], camFarRight2['PARM_9'], camFarRight2['PARM_10'], camFarRight2['DASHED'], camFarRight2['SOLID'], cs.canTime))
-
-    if socket is carState:
-      back_log += 1
-      _cs = log.Event.from_bytes(socket.recv())
-      cs = _cs.carState
-      frame_count += 1
-
-      if isPython37:
-        unscaled_input_array = [[cs.vEgo, cs.steeringAngle, cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN, cs.longAccel,              0 ,    0           , cs.steeringRate, cs.steeringTorque, cs.torqueRequest,
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ]] #camFarRight['DASHED'], camFarRight['SOLID']]]
-
-        scaled_data = input_scaler.transform(unscaled_input_array)
-        scaled_vehicle_array.append(scaled_data[:,:11])
-        back_log += 1
-        carStateDataString1 += (carStateFormatString1 % (cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
-                                cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
-                                cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, camLeft1['FRAME_ID'], camFarRight2['FRAME_ID'], cs.canTime))
-
-      else:
-        unscaled_input_array = [[cs.vEgo, cs.steeringAngle, cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN, cs.longAccel,              0 ,    0           , cs.steeringRate, cs.steeringTorque, cs.torqueRequest,
-                        cs.camLeft.parm1, cs.camLeft.parm2, cs.camLeft.parm3, cs.camLeft.parm4, cs.camLeft.parm5, cs.camLeft.parm6, cs.camLeft.parm7, cs.camLeft.parm8, cs.camLeft.parm9, cs.camLeft.parm10, 0, 0 , #cs.camLeft.dashed, cs.camLeft.solid,
-                        cs.camFarLeft.parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4, cs.camFarLeft.parm5, cs.camFarLeft.parm6, cs.camFarLeft.parm7, cs.camFarLeft.parm8, cs.camFarLeft.parm9, cs.camFarLeft.parm10, 0, 0 , #cs.camFarLeft.dashed, cs.camFarLeft.solid,
-                        cs.camRight.parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4, cs.camRight.parm5, cs.camRight.parm6, cs.camRight.parm7, cs.camRight.parm8, cs.camRight.parm9, cs.camRight.parm10, 0, 0 , #cs.camRight.dashed, cs.camRight.solid,
-                        cs.camFarRight.parm1, cs.camFarRight.parm2, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm6, cs.camFarRight.parm7, cs.camFarRight.parm8, cs.camFarRight.parm9, cs.camFarRight.parm10, 0, 0]] #cs.camFarRight.dashed, cs.camFarRight.solid]]
-
-        scaled_data = input_scaler.transform(unscaled_input_array)
-        scaled_vehicle_array.append(scaled_data[:,:11])
-        if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
-          back_log = 0
-          scaled_camera_array.append(scaled_data[:,11:])
-          if len(scaled_camera_array) > history_rows + advanceSteer:
-            if advanceSteer > 0:
-              scaled_array = np.concatenate((scaled_vehicle_array[-history_rows-advanceSteer:-advanceSteer], scaled_camera_array[-history_rows:]), axis = 2)
-            else:
-              scaled_array = np.concatenate((scaled_vehicle_array[-history_rows:], scaled_camera_array[-history_rows:]), axis = 2)
-            scaled_camera_array.pop(0)
-            scaled_vehicle_array.pop(0)
-
-            stock_cam_frame_prev = cs.camLeft.frame
-
-            if recv_frames > 0: sent_frames += 1
-
-            l_prob = cs.camLeft.parm4/127
-            r_prob = cs.camRight.parm4/127
-
-            if cs.camLeft.solid and cs.camRight.dashed:
-              l_prob *= -1
-            elif cs.camRight.solid and cs.camLeft.dashed:
-              r_prob *= -1
-
-            l_probs[cs.canTime] = l_prob
-            r_probs[cs.canTime] = r_prob
-            l_offset[cs.canTime] = cs.camLeft.parm2
-            r_offset[cs.canTime] = cs.camRight.parm2
-
-            scaled_array[-1,:11] = scaled_array[-2,:11]
-            scaled_array[-1,3:4] = 0.0  # steer rate eps
-            scaled_array[-1,8:9] = 0.0  # steer rate
-            
-            input_array = list(np.array(scaled_array).reshape(history_rows * len(scaled_array[0][0])).astype('float'))
-            input_array.append(cs.canTime)
-            if recv_frames > 5 or sent_frames % 5 == 0:
-              gernModelInputs.send_json(list(input_array))
-            carStateDataString2 += (carStateFormatString2 % (cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
-                                                              cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
-                                                              cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, cs.camLeft.frame, cs.camFarRight.frame, \
-                                                              cs.vEgo, cs.wheelSpeeds.fl, cs.wheelSpeeds.fr, cs.wheelSpeeds.rl, cs.wheelSpeeds.rr, cs.leftBlinker, cs.rightBlinker, cs.lkMode, cs.cruiseState.enabled, \
-                                                              cs.camLeft.frame, cs.camLeft.parm1, cs.camLeft.parm2, cs.camLeft.parm3, cs.camLeft.parm4, cs.camLeft.parm5, cs.camLeft.parm6, cs.camLeft.parm7, cs.camLeft.parm8, cs.camLeft.parm9, cs.camLeft.parm10, cs.camLeft.solid, cs.camLeft.dashed, \
-                                                              cs.camRight.frame, cs.camRight.parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4, cs.camRight.parm5, cs.camRight.parm6, cs.camRight.parm7, cs.camRight.parm8, cs.camRight.parm9, cs.camRight.parm10, cs.camRight.solid, cs.camRight.dashed, \
-                                                              cs.camFarLeft.frame, cs.camFarLeft.parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4, cs.camFarLeft.parm5, cs.camFarLeft.parm6, cs.camFarLeft.parm7, cs.camFarLeft.parm8, cs.camFarLeft.parm9, cs.camFarLeft.parm10, cs.camFarLeft.solid, cs.camFarLeft.dashed, \
-                                                              cs.camFarRight.frame, cs.camFarRight.parm1, cs.camFarRight.parm2, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm6, cs.camFarRight.parm7, cs.camFarRight.parm8, cs.camFarRight.parm9, cs.camFarRight.parm10, cs.camFarRight.solid, cs.camFarRight.dashed, cs.canTime))
-        elif cs.vEgo > 0:
-          carStateDataString1 += (carStateFormatString1 % (cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
                                                             cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
-                                                            cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, cs.camLeft.frame, cs.camFarRight.frame, cs.canTime))
+                                                            cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, cs.camLeft.frame, cs.camFarRight.frame, \
+                                                            cs.vEgo, cs.wheelSpeeds.fl, cs.wheelSpeeds.fr, cs.wheelSpeeds.rl, cs.wheelSpeeds.rr, cs.leftBlinker, cs.rightBlinker, cs.lkMode, cs.cruiseState.enabled, \
+                                                            cs.camLeft.frame, cs.camLeft.parm1, cs.camLeft.parm2, cs.camLeft.parm3, cs.camLeft.parm4, cs.camLeft.parm5, cs.camLeft.parm6, cs.camLeft.parm7, cs.camLeft.parm8, cs.camLeft.parm9, cs.camLeft.parm10, cs.camLeft.solid, cs.camLeft.dashed, \
+                                                            cs.camRight.frame, cs.camRight.parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4, cs.camRight.parm5, cs.camRight.parm6, cs.camRight.parm7, cs.camRight.parm8, cs.camRight.parm9, cs.camRight.parm10, cs.camRight.solid, cs.camRight.dashed, \
+                                                            cs.camFarLeft.frame, cs.camFarLeft.parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4, cs.camFarLeft.parm5, cs.camFarLeft.parm6, cs.camFarLeft.parm7, cs.camFarLeft.parm8, cs.camFarLeft.parm9, cs.camFarLeft.parm10, cs.camFarLeft.solid, cs.camFarLeft.dashed, \
+                                                            cs.camFarRight.frame, cs.camFarRight.parm1, cs.camFarRight.parm2, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm6, cs.camFarRight.parm7, cs.camFarRight.parm8, cs.camFarRight.parm9, cs.camFarRight.parm10, cs.camFarRight.solid, cs.camFarRight.dashed, cs.canTime))
+      elif cs.vEgo > 0:
+        carStateDataString1 += (carStateFormatString1 % (cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
+                                                          cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
+                                                          cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, cs.camLeft.frame, cs.camFarRight.frame, cs.canTime))
     
     if socket is gernModelOutputs:
       recv_frames += 1

@@ -10,9 +10,9 @@ export PASSIVE="0"
 pkill -f boardd
 nice -8 ~/raspilot/selfdrive/boardd/boardd &
 pkill -f controlsd
-nice -6 python ~/raspilot/selfdrive/controls/controlsd.py & # > ~/raspilot/controlsd.log &
+nice -4 python ~/raspilot/selfdrive/controls/controlsd.py & # > ~/raspilot/controlsd.log &
 pkill -f dashboard
 #nice -10 python ~/raspilot/dashboard.py 1 &
 #sleep 15
 pkill -f laterald
-nice -4 python ~/raspilot/selfdrive/controls/laterald.py &
+nice -10 python ~/raspilot/selfdrive/controls/laterald.py &

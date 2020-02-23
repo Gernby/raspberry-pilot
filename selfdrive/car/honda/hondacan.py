@@ -15,7 +15,7 @@ def can_cksum(mm):
 
 
 def fix(msg, addr):
-  msg2 = msg[0:-1] + chr(ord(msg[-1]) | can_cksum(struct.pack("I", addr)+msg))
+  msg2 = msg[0:-1] + chr(ord(msg[-1]) | can_cksum(struct.pack("I", addr)+msg)).to_bytes(1, 'little')
   return msg2
 
 

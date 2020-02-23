@@ -38,8 +38,8 @@ if arch == "aarch64":
     "/usr/local/lib",
   ]
 
-  cflags = ["-DQCOM", "-mcpu=cortex-a72"]
-  cxxflags = ["-DQCOM", "-mcpu=cortex-a72"]
+  cflags = ["-DQCOM", "-mcpu=cortex-a57"]
+  cxxflags = ["-DQCOM", "-mcpu=cortex-a57"]
 
   rpath = ["/system/vendor/lib64",
            "external/tensorflow/lib",

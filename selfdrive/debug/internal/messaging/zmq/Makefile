@@ -18,8 +18,8 @@ CXXFLAGS = -std=c++11 -g -fPIC -O2 $(WARN_FLAGS) -Wall
 ZMQ_LIBS = -l:libczmq.a -l:libzmq.a
 
 ifeq ($(ARCH),aarch64)
-CFLAGS += -mcpu=cortex-a72
-CXXFLAGS += -mcpu=cortex-a72
+CFLAGS += -mcpu=cortex-a57
+CXXFLAGS += -mcpu=cortex-a57
 ZMQ_LIBS += -lgnustl_shared
 endif
 

@@ -78,7 +78,7 @@ HUDData = namedtuple("HUDData",
                       "lanes", "beep", "chime", "fcw", "acc_alert", "steer_required", "dist_lines", "dashed_lanes"])
 
 
-class CarController(object):
+class CarController():
   def __init__(self, dbc_name):
     self.braking = False
     self.brake_steady = 0.
@@ -218,5 +218,4 @@ class CarController(object):
           # send exactly zero if apply_gas is zero. Interceptor will send the max between read value and apply_gas.
           # This prevents unexpected pedal range rescaling
           can_sends.append(create_gas_command(self.packer, apply_gas, idx))
-
     return can_sends

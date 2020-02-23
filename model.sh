@@ -1,2 +1,3 @@
+export PYTHONPATH="$PWD"
 pkill -f transcoderd
-PYTHONPATH=~/raspilot python models/Bosch_GRU_Transcoder.py
+nice -6 python models/Bosch_GRU_Transcoder.py

@@ -86,7 +86,7 @@ class LatControlPID(object):
       self.angle_ff_gain = 1.0
 
   def live_tune(self, CP):
-    if self.frame % 3600 == 0:
+    if False and self.frame % 3600 == 0:
       self.params.put("LateralParams", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
     if self.frame % 300 == 0:
       try:
@@ -187,22 +187,22 @@ class LatControlPID(object):
       output_steer = self.pid.update(self.damp_angle_steers_des, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override,
                                     add_error=float(self.path_error_comp), feedforward=steer_feedforward, speed=v_ego, deadzone=deadzone)
 
-      pid_log.active = True
-      pid_log.p = float(self.pid.p)
-      pid_log.i = float(self.pid.i)
-      pid_log.f = float(self.pid.f)
-      pid_log.output = float(output_steer)
-      pid_log.p2 = float(self.pid.p2)   #float(self.path_error_comp) * float(self.pid._k_p[1][0])
-      pid_log.saturated = bool(self.pid.saturated)
-      pid_log.angleFFRatio = self.angle_ff_ratio
-      pid_log.steerAngle = float(self.damp_angle_steers)
-      pid_log.steerAngleDes = float(self.damp_angle_steers_des)
+    pid_log.active = True
+    pid_log.p = float(self.pid.p)
+    pid_log.i = float(self.pid.i)
+    pid_log.f = float(self.pid.f)
+    pid_log.output = float(output_steer)
+    pid_log.p2 = float(self.pid.p2)   #float(self.path_error_comp) * float(self.pid._k_p[1][0])
+    pid_log.saturated = bool(self.pid.saturated)
+    pid_log.angleFFRatio = self.angle_ff_ratio
+    pid_log.steerAngle = float(self.damp_angle_steers)
+    pid_log.steerAngleDes = float(self.damp_angle_steers_des)
 
-      if abs(self.projected_lane_error - self.path_error_comp) < abs(self.projected_lane_error) and pid_log.p * pid_log.p2 < 0:
-        output_steer -= pid_log.p
-        pid_log.p *= max(0, min(1, 1 - abs(2 * pid_log.p2)))
-        output_steer += pid_log.p
-        pid_log.output = float(output_steer)
+    if abs(self.projected_lane_error - self.path_error_comp) < abs(self.projected_lane_error) and pid_log.p * pid_log.p2 < 0:
+      output_steer -= pid_log.p
+      pid_log.p *= max(0, min(1, 1 - abs(2 * pid_log.p2)))
+      output_steer += pid_log.p
+      pid_log.output = float(output_steer)
 
     #self.prev_angle_steers = angle_steers
     #self.prev_override = steer_override

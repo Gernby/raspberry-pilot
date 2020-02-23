@@ -223,7 +223,8 @@ class CANParser {
     }
 
     dbc = dbc_lookup(dbc_name);
-    assert(dbc); 
+    assert(dbc);
+   
     for (const auto& op : options) {
       MessageState state = {
         .address = op.address,
@@ -281,6 +282,7 @@ class CANParser {
 
   void UpdateCans(uint64_t sec, const capnp::List<cereal::CanData>::Reader& cans) {
       int msg_count = cans.size();
+      int msg_count2 = 0;
       uint64_t p;
 
       DEBUG("got %d messages\n", msg_count);
@@ -289,12 +291,13 @@ class CANParser {
       for (int i = 0; i < msg_count; i++) {
         auto cmsg = cans[i];
         if (cmsg.getSrc() != bus) {
-          // DEBUG("skip %d: wrong bus\n", cmsg.getAddress());
+          //printf("skip %d: wrong bus\n", cmsg.getAddress());
           continue;
         }
+        msg_count2++;
         auto state_it = message_states.find(cmsg.getAddress());
         if (state_it == message_states.end()) {
-          // DEBUG("skip %d: not specified\n", cmsg.getAddress());
+          //printf("skip %d: not specified\n", cmsg.getAddress());
           continue;
         }
 
@@ -315,6 +318,8 @@ class CANParser {
 
         state_it->second.parse(sec, cmsg.getBusTime(), p);
       }
+      //if (bus > -1) printf("got %d messages on bus %d\n", msg_count2, bus);
+
   }
 
   void UpdateValid(uint64_t sec) {
@@ -325,6 +330,7 @@ class CANParser {
         if (state.seen > 0) {
           DEBUG("%X TIMEOUT\n", state.address);
         }
+        //printf("  invalid on bus %d %d", bus, state.address);
         can_valid = false;
       }
     }
@@ -338,9 +344,7 @@ class CANParser {
     // extract the messages
     capnp::FlatArrayMessageReader cmsg(amsg);
     cereal::Event::Reader event = cmsg.getRoot<cereal::Event>();
-
     last_sec = event.getLogMonoTime();
-
     auto cans = event.getCan();
     UpdateCans(last_sec, cans);
 
@@ -350,15 +354,14 @@ class CANParser {
   int update(uint64_t sec, bool wait) {
     int err;
     int result = 0;
-
     // recv from can
     zmq_msg_t msg;
     zmq_msg_init(&msg);
 
     // multiple recv is fine
-    bool first = wait;
-    while (subscriber != NULL) {
-      if (first) {
+    bool first = true;
+    while (first || drain) {
+      if (first and wait) {
         err = zmq_msg_recv(&msg, subscriber, 0);
         first = false;
 
@@ -369,7 +372,10 @@ class CANParser {
       } else {
         err = zmq_msg_recv(&msg, subscriber, ZMQ_DONTWAIT);
       }
-      if (err < 0) break;
+      if (err < 0) {
+        drain = false;
+        break;
+      }
 
       // format for board, make copy due to alignment issues, will be freed on out of scope
       auto amsg = kj::heapArray<capnp::word>((zmq_msg_size(&msg) / sizeof(capnp::word)) + 1);
@@ -383,6 +389,7 @@ class CANParser {
       UpdateCans(sec, cans);
     }
 
+    //printf("  updating for bus %d", bus);
     last_sec = sec;
     UpdateValid(sec);
     zmq_msg_close(&msg);
@@ -409,12 +416,14 @@ class CANParser {
 
     return ret;
   }
-
+  
   bool can_valid = false;
   uint64_t last_sec = 0;
 
  private:
   const int bus;
+  bool drain = true;
+
   // zmq vars
   void *context = NULL;
   void *subscriber = NULL;

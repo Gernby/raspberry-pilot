@@ -4,9 +4,9 @@ if False:
   model_name = 'GRU_Split_Lane_Steer_Angle_0_Lag_1_Smooth_64_Batch_65_5_15_5_Hist_100_Future_0_0_0_Drop_Final'
 else:
   os.environ["CUDA_VISIBLE_DEVICES"]="-1"
-  model_name = 'GRU_Split_Lane_Steer_Angle_0_Lag_1_Smooth_64_Batch_65_5_15_5_Hist_200_Future_0_0_0_Drop_Final_CPU'
+  model_name = 'GRU_Split_Lane_Steer_Accel_0_Lag_1_Smooth_32_Batch_57_7_15_5_Hist_100_Future_0_0_0_Drop_Final_CPU'
 history_rows = 5
-inputs = 59
+inputs = 51
 
 import zmq
 import time
@@ -64,7 +64,7 @@ def dashboard_thread(rate=100):
 
   model = load_model(os.path.expanduser('./models/' + model_name + '.hdf5'))
   model_input = np.zeros((history_rows, inputs))
-  model.predict_on_batch([[model_input[:,:8]], [model_input[:,8:11]], [model_input[:,-48:-24]], [model_input[:,-24:]]])
+  model.predict_on_batch([[model_input[:,:8]], [model_input[:,8:11]], [model_input[:,-40:-20]], [model_input[:,-20:]]])
   frame = 0
 
   drain_sock(gernModelInputs, True)
@@ -80,7 +80,7 @@ def dashboard_thread(rate=100):
       model_input = np.array(input_list[:-1]).reshape(history_rows, inputs)
       #print(model_input.shape)
 
-      all_inputs = [[model_input[:,:-48-3]], [model_input[:,-48-3:-48]], [model_input[:,-48:-24]], [model_input[:,-24:]]]
+      all_inputs = [[model_input[:,:-40-3]], [model_input[:,-40-3:-40]], [model_input[:,-40:-20]], [model_input[:,-20:]]]
       #print(model_output[0])
 
       model_output = list(model.predict_on_batch(all_inputs)[0].astype('float'))

@@ -198,11 +198,11 @@ class LatControlPID(object):
     pid_log.steerAngle = float(self.damp_angle_steers)
     pid_log.steerAngleDes = float(self.damp_angle_steers_des)
 
-    if abs(self.projected_lane_error - self.path_error_comp) < abs(self.projected_lane_error) and pid_log.p * pid_log.p2 < 0:
-      output_steer -= pid_log.p
-      pid_log.p *= max(0, min(1, 1 - abs(2 * pid_log.p2)))
-      output_steer += pid_log.p
-      pid_log.output = float(output_steer)
+    #if abs(self.projected_lane_error - self.path_error_comp) < abs(self.projected_lane_error) and pid_log.p * pid_log.p2 < 0:
+    #  output_steer -= pid_log.p
+    #  pid_log.p *= max(0, min(1, 1 - abs(2 * pid_log.p2)))
+    #  output_steer += pid_log.p
+    #  pid_log.output = float(output_steer)
 
     #self.prev_angle_steers = angle_steers
     #self.prev_override = steer_override

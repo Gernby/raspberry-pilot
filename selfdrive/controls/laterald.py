@@ -79,8 +79,8 @@ carStateDataString2 = ""
 insertString = ""
 canInsertString = ""
 
-Inputs = 59
-Outputs = 5
+Inputs = 51
+Outputs = 7
 
 scaler_type = 'MinMax_tanh'
 history_rows = 5
@@ -98,8 +98,12 @@ recv_frames = 1
 sent_frames = 1
 frame_count = 1
 
-input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_A.scaler' % (scaler_type, Inputs)))
-output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_A.scaler' % (scaler_type, Outputs)))
+try:
+  input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_A.scaler' % (scaler_type, Inputs)))
+  output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_A.scaler' % (scaler_type, Outputs)))
+except:
+  input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_C.scaler' % (scaler_type, Inputs)))
+  output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_C.scaler' % (scaler_type, Outputs)))
 
 scaler_padding = None 
 scaled_camera_array = []
@@ -131,21 +135,18 @@ while 1:
       frame_count += 1
 
       unscaled_input_array = [[cs.vEgo, cs.steeringAngle, cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN, cs.longAccel,              0 ,    0           , cs.steeringRate, cs.steeringTorque, cs.torqueRequest,
-                      cs.camLeft.parm1, cs.camLeft.parm2, cs.camLeft.parm3, cs.camLeft.parm4, cs.camLeft.parm5, cs.camLeft.parm6, cs.camLeft.parm7, cs.camLeft.parm8, cs.camLeft.parm9, cs.camLeft.parm10, 0, 0 , #cs.camLeft.dashed, cs.camLeft.solid,
-                      cs.camFarLeft.parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4, cs.camFarLeft.parm5, cs.camFarLeft.parm6, cs.camFarLeft.parm7, cs.camFarLeft.parm8, cs.camFarLeft.parm9, cs.camFarLeft.parm10, 0, 0 , #cs.camFarLeft.dashed, cs.camFarLeft.solid,
-                      cs.camRight.parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4, cs.camRight.parm5, cs.camRight.parm6, cs.camRight.parm7, cs.camRight.parm8, cs.camRight.parm9, cs.camRight.parm10, 0, 0 , #cs.camRight.dashed, cs.camRight.solid,
-                      cs.camFarRight.parm1, cs.camFarRight.parm2, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm6, cs.camFarRight.parm7, cs.camFarRight.parm8, cs.camFarRight.parm9, cs.camFarRight.parm10, 0, 0]] #cs.camFarRight.dashed, cs.camFarRight.solid]]
+                      cs.camLeft.parm1, cs.camLeft.parm2, cs.camLeft.parm3, cs.camLeft.parm4, cs.camLeft.parm5, cs.camLeft.parm6, cs.camLeft.parm7, cs.camLeft.parm8, cs.camLeft.parm9, cs.camLeft.parm10, 
+                      cs.camFarLeft.parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4, cs.camFarLeft.parm5, cs.camFarLeft.parm6, cs.camFarLeft.parm7, cs.camFarLeft.parm8, cs.camFarLeft.parm9, cs.camFarLeft.parm10, 
+                      cs.camRight.parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4, cs.camRight.parm5, cs.camRight.parm6, cs.camRight.parm7, cs.camRight.parm8, cs.camRight.parm9, cs.camRight.parm10, 
+                      cs.camFarRight.parm1, cs.camFarRight.parm2, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm6, cs.camFarRight.parm7, cs.camFarRight.parm8, cs.camFarRight.parm9, cs.camFarRight.parm10]] 
 
       scaled_data = input_scaler.transform(unscaled_input_array)
       scaled_vehicle_array.append(scaled_data[:,:11])
       if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
         back_log = 0
         scaled_camera_array.append(scaled_data[:,11:])
-        if len(scaled_camera_array) > history_rows + advanceSteer:
-          if advanceSteer > 0:
-            scaled_array = np.concatenate((scaled_vehicle_array[-history_rows-advanceSteer:-advanceSteer], scaled_camera_array[-history_rows:]), axis = 2)
-          else:
-            scaled_array = np.concatenate((scaled_vehicle_array[-history_rows:], scaled_camera_array[-history_rows:]), axis = 2)
+        if len(scaled_camera_array) > history_rows:
+          scaled_array = np.concatenate((scaled_vehicle_array[-history_rows:], scaled_camera_array[-history_rows:]), axis = 2)
           scaled_camera_array.pop(0)
           scaled_vehicle_array.pop(0)
 
@@ -165,10 +166,6 @@ while 1:
           r_probs[cs.canTime] = r_prob
           l_offset[cs.canTime] = cs.camLeft.parm2
           r_offset[cs.canTime] = cs.camRight.parm2
-
-          scaled_array[-1,:11] = scaled_array[-2,:11]
-          scaled_array[-1,3:4] = 0.0  # steer rate eps
-          scaled_array[-1,8:9] = 0.0  # steer rate
           
           input_array = list(np.array(scaled_array).reshape(history_rows * len(scaled_array[0][0])).astype('float'))
           input_array.append(cs.canTime)
@@ -212,12 +209,12 @@ while 1:
       l_prob = l_probs.pop(output_list[-1])
       r_prob = r_probs.pop(output_list[-1])
 
-      if l_prob < 0 and r_prob > 0 and descaled_output[0][-1:, 1:2] > -descaled_output[0][-1:, 2:3] * 1.2:
-        l_prob *= 0.1
-        print("      Diverging Left", l_prob)
-      elif r_prob < 0 and l_prob > 0 and descaled_output[0][-1:, 1:2] * 1.2 < -descaled_output[0][-1:,2:3]:
-        r_prob *= 0.1
-        print("      Diverging Right", r_prob)
+      if l_prob < 0 and r_prob > 0 and descaled_output[0][-1:, 3:4] > -descaled_output[0][-1:, 4:5] * 1.2:
+        l_prob *= 0.2
+        #print("      Diverging Left", l_prob)
+      elif r_prob < 0 and l_prob > 0 and descaled_output[0][-1:, 3:4] * 1.2 < -descaled_output[0][-1:,4:5]:
+        r_prob *= 0.2
+        #print("      Diverging Right", r_prob)
       elif abs(l_prob) > 0 and abs(r_prob) > 0:
         if lane_width > 0:
           lane_width += 0.01 * (min(700, max(570, l_offset[output_list[-1]] -  r_offset[output_list[-1]]) - lane_width))
@@ -232,22 +229,19 @@ while 1:
       lr_prob = (l_prob_smooth + r_prob_smooth) - l_prob_smooth * r_prob_smooth
       a_prob = 1 
 
-      left_probs[:,0] =    l_prob * np.clip(model_output[:,3], 0, 1) + (1 - l_prob) * left_probs[:,0]
-      right_probs[:,0] =   r_prob * np.clip(model_output[:,4], 0, 1) + (1 - r_prob) * right_probs[:,0]
-      left_center[:,0:]  =  l_prob *   (descaled_output[0][:,1:2] - half_width) + (1 - l_prob) * left_center[:, 0:]  
-      right_center[:,0:]  = r_prob *   (descaled_output[0][:,2:3] + half_width) + (1 - r_prob) * right_center[:, 0:] 
+      left_probs[:,0] =    l_prob * np.clip(model_output[:,5], 0, 1) + (1 - l_prob) * left_probs[:,0]
+      right_probs[:,0] =   r_prob * np.clip(model_output[:,6], 0, 1) + (1 - r_prob) * right_probs[:,0]
+      left_center[:,0:]  =  l_prob *   (descaled_output[0][:,3:4] - half_width) + (1 - l_prob) * left_center[:, 0:]  
+      right_center[:,0:]  = r_prob *   (descaled_output[0][:,4:5] + half_width) + (1 - r_prob) * right_center[:, 0:] 
       left_center = l_prob_smooth * left_center + (1 - l_prob_smooth) * calc_center
       right_center = r_prob_smooth * right_center + (1 - r_prob_smooth) * calc_center 
       
-      angle = descaled_output[0][:,0:1]
+      angle = (descaled_output[0][:,0:1] - descaled_output[0][1,0:1]) * (1 + advanceSteer) + descaled_output[0][1,0:1]
+      #angle = np.add(descaled_output[0][1:,0], np.multiply(np.diff(descaled_output[0][:,0]), advanceSteer))
       calc_center = (l_prob_smooth * left_center + r_prob_smooth * right_center) / (l_prob_smooth + r_prob_smooth + 0.05) 
-      if calc_center[len(calc_center)//2,0] < calc_center[1+len(calc_center)//2,0] == calc_center[-2,0] > calc_center[-1,0]:
-        for i in range(8, len(calc_center)):
-          if abs(calc_center[i]) < abs(calc_center[i-1]): 
-            calc_center[i] = calc_center[i-1]
 
-      path_send.pathPlan.mpcAngles = [float(x) for x in angle[:,0]]
-      path_send.pathPlan.angleSteers = float(angle[5,0])
+      path_send.pathPlan.mpcAngles = [float(x) for x in angle[:]]
+      path_send.pathPlan.angleSteers = float(angle[5])
       path_send.pathPlan.laneWidth = float(lane_width)
       path_send.pathPlan.lPoly = [float(x) for x in (left_center[:,0] + half_width)]
       path_send.pathPlan.rPoly = [float(x) for x in (right_center[:,0] - half_width)]
@@ -284,11 +278,11 @@ while 1:
       pathDataString = ''
       frame_count = 0
 
-    if sent_frames % 100 == 0 and back_log == 2:
-      #try:
-      kegman = kegman_conf()  #.read_config()
-      advanceSteer = int(100 * float(kegman.conf['advanceSteer']))
-      print("advanceSteer = ", advanceSteer)
-      #except:
-      #  pass
+    if recv_frames % 100 == 0 and back_log == 2:
+      try:
+        kegman = kegman_conf()  
+        advanceSteer = max(0, float(kegman.conf['advanceSteer']))
+        #print("advanceSteer = ", advanceSteer)
+      except:
+        pass
 

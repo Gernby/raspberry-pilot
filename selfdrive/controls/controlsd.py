@@ -52,12 +52,13 @@ def data_sample(CI, CC, can_sock, carstate, lac_log):
   events = list(CS.events)
 
   # carState
-  cs_send = messaging.new_message()
-  cs_send.init('carState')
-  cs_send.valid = CS.canValid
-  cs_send.carState = CS
-  cs_send.carState.events = events
-  carstate.send(cs_send.to_bytes())
+  if False:
+    cs_send = messaging.new_message()
+    cs_send.init('carState')
+    cs_send.valid = CS.canValid
+    cs_send.carState = CS
+    cs_send.carState.events = events
+    carstate.send(cs_send.to_bytes())
 
   return CS, events
 
@@ -200,7 +201,7 @@ def data_send(sm, CS, CI, CP, state, events, actuators, carstate, carcontrol, ca
   events_bytes = None
 
   # carState
-  if False:
+  if True:
     cs_send = messaging.new_message()
     cs_send.init('carState')
     cs_send.valid = CS.canValid

@@ -47,6 +47,8 @@ param = ["Kp", "Ki", "reactMPC", "dampMPC", "dampTime", "polyFactor", "polyReact
 
 j = 0
 while True:
+  kegman.conf[param[j]] = str(round(float(kegman.conf[param[j]]),4))
+
   print("")
   print(print_letters(param[j][0:9]))
   print("")

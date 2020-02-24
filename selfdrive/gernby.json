@@ -1,10 +1,10 @@
 {
   "dampMPC": "0.14",
   "dampTime": "0.1",
-  "advanceSteer": "0.05",
+  "advanceSteer": "0.0",
   "polyDamp": "0.14",
   "polyFactor": "0.01",
   "polyReact": "0.0",
   "reactMPC": "0.23",
-  "tuneRev": "0.2.4"
+  "tuneRev": "0.2.5"
 }

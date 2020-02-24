@@ -224,8 +224,8 @@ while 1:
 
       l_prob = abs(l_prob)
       r_prob = abs(r_prob)
-      l_prob_smooth = max(0.05, l_prob_smooth - 0.1, min(l_prob_smooth + 0.1, l_prob))
-      r_prob_smooth = max(0.05, r_prob_smooth - 0.1, min(r_prob_smooth + 0.1, r_prob))
+      l_prob_smooth = l_prob  #max(0.05, l_prob_smooth - 0.1, min(l_prob_smooth + 0.1, l_prob))
+      r_prob_smooth = r_prob  #max(0.05, r_prob_smooth - 0.1, min(r_prob_smooth + 0.1, r_prob))
       lr_prob = (l_prob_smooth + r_prob_smooth) - l_prob_smooth * r_prob_smooth
       a_prob = 1 
 
@@ -236,7 +236,7 @@ while 1:
       left_center = l_prob_smooth * left_center + (1 - l_prob_smooth) * calc_center
       right_center = r_prob_smooth * right_center + (1 - r_prob_smooth) * calc_center 
       
-      angle = (descaled_output[0][:,0:1] - descaled_output[0][1,0:1]) * (1 + advanceSteer) + descaled_output[0][1,0:1]
+      angle = (descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer) + descaled_output[0][0,0:1]
       #angle = np.add(descaled_output[0][1:,0], np.multiply(np.diff(descaled_output[0][:,0]), advanceSteer))
       calc_center = (l_prob_smooth * left_center + r_prob_smooth * right_center) / (l_prob_smooth + r_prob_smooth + 0.05) 
 

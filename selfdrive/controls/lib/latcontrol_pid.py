@@ -125,7 +125,7 @@ class LatControlPID(object):
       self.last_plan_time = path_plan.canTime
       self.avg_plan_age += 0.01 * (path_age - self.avg_plan_age)
 
-      self.c_prob = max(self.c_prob - 0.0333, min(self.c_prob + 0.0333, path_plan.cProb))
+      self.c_prob = path_plan.cProb  #max(self.c_prob - 0.0333, min(self.c_prob + 0.0333, path_plan.cProb))
       self.projected_lane_error = self.c_prob * self.poly_factor * v_ego * (sum(path_plan.cPoly) + self.polyReact * 15 * (path_plan.cPoly[-1] - path_plan.cPoly[-2]))
       if abs(self.pid.p2) < 1 and abs(self.projected_lane_error) < abs(self.prev_projected_lane_error) and (self.projected_lane_error > 0) == (self.prev_projected_lane_error > 0):
         self.projected_lane_error *= abs(self.pid.p2)

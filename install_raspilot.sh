@@ -91,7 +91,7 @@ crontab -l
 sudo cp ~/raspilot/phonelibs/usercfg.txt /boot/firmware/usercfg.txt
 sudo cp ~/raspilot/phonelibs/influxdb.conf /etc/influxdb/influxdb.conf
 
-sudo apt --fix-broken-install
+sudo apt --fix-broken install
 sudo apt clean -y
 sudo bash phonelibs/install_capnp.sh
 

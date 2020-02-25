@@ -265,7 +265,7 @@ class CarState():
     self.kegman = kegman_conf()
     self.trMode = int(self.kegman.conf['lastTrMode'])     # default to last distance interval on startup
     #self.trMode = 1
-    self.lkMode = True
+    self.lkMode = False
     self.read_distance_lines_prev = 4
     self.CP = CP
     self.can_define = CANDefine(DBC[CP.carFingerprint]['pt'])
@@ -421,11 +421,11 @@ class CarState():
     self.lateral_accel = cp.vl["KINEMATICS"]["LAT_ACCEL"]
 
     steer_counter = cp.vl["STEER_STATUS"]['COUNTER']
-    if not (steer_counter == (self.prev_steering_counter + 1) % 4):
+    if False and not (steer_counter == (self.prev_steering_counter + 1) % 4):
       if steer_counter == self.prev_steering_counter:
         self.steer_data_reused += 1
         self.steer_rate_motor = 0.0
-        #print("data reused: %d  skipped %d  good %d   %d vs %d" % (self.steer_data_reused, self.steer_data_skipped, self.steer_good_count, steer_counter, (self.prev_steering_counter + 1) % 4))
+        if self.steer_data_reused % 5 == 0: print("data reused: %d  skipped %d  good %d   %d vs %d" % (self.steer_data_reused, self.steer_data_skipped, self.steer_good_count, steer_counter, (self.prev_steering_counter + 1) % 4))
       else:
         self.steer_data_skipped += 1
     else:

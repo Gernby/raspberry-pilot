@@ -80,7 +80,7 @@ insertString = ""
 canInsertString = ""
 
 Inputs = 51
-Outputs = 7
+Outputs = 5
 
 scaler_type = 'MinMax_tanh'
 history_rows = 5
@@ -209,10 +209,10 @@ while 1:
       l_prob = l_probs.pop(output_list[-1])
       r_prob = r_probs.pop(output_list[-1])
 
-      if l_prob < 0 and r_prob > 0 and descaled_output[0][-1:, 3:4] > -descaled_output[0][-1:, 4:5] * 1.2:
+      if l_prob < 0 and r_prob > 0 and descaled_output[0][-1:, 1:2] > -descaled_output[0][-1:, 2:3] * 1.2:
         l_prob *= 0.2
         #print("      Diverging Left", l_prob)
-      elif r_prob < 0 and l_prob > 0 and descaled_output[0][-1:, 3:4] * 1.2 < -descaled_output[0][-1:,4:5]:
+      elif r_prob < 0 and l_prob > 0 and descaled_output[0][-1:, 1:2] * 1.2 < -descaled_output[0][-1:,2:3]:
         r_prob *= 0.2
         #print("      Diverging Right", r_prob)
       elif abs(l_prob) > 0 and abs(r_prob) > 0:
@@ -229,10 +229,10 @@ while 1:
       lr_prob = (l_prob_smooth + r_prob_smooth) - l_prob_smooth * r_prob_smooth
       a_prob = 1 
 
-      left_probs[:,0] =    l_prob * np.clip(model_output[:,5], 0, 1) + (1 - l_prob) * left_probs[:,0]
-      right_probs[:,0] =   r_prob * np.clip(model_output[:,6], 0, 1) + (1 - r_prob) * right_probs[:,0]
-      left_center[:,0:]  =  l_prob *   (descaled_output[0][:,3:4] - half_width) + (1 - l_prob) * left_center[:, 0:]  
-      right_center[:,0:]  = r_prob *   (descaled_output[0][:,4:5] + half_width) + (1 - r_prob) * right_center[:, 0:] 
+      left_probs[:,0] =    l_prob * np.clip(model_output[:,3], 0, 1) + (1 - l_prob) * left_probs[:,0]
+      right_probs[:,0] =   r_prob * np.clip(model_output[:,4], 0, 1) + (1 - r_prob) * right_probs[:,0]
+      left_center[:,0:]  =  l_prob *   (descaled_output[0][:,1:2] - half_width) + (1 - l_prob) * left_center[:, 0:]  
+      right_center[:,0:]  = r_prob *   (descaled_output[0][:,2:3] + half_width) + (1 - r_prob) * right_center[:, 0:] 
       left_center = l_prob_smooth * left_center + (1 - l_prob_smooth) * calc_center
       right_center = r_prob_smooth * right_center + (1 - r_prob_smooth) * calc_center 
       
@@ -243,8 +243,6 @@ while 1:
       path_send.pathPlan.mpcAngles = [float(x) for x in angle[:]]
       path_send.pathPlan.angleSteers = float(angle[5])
       path_send.pathPlan.laneWidth = float(lane_width)
-      path_send.pathPlan.lPoly = [float(x) for x in (left_center[:,0] + half_width)]
-      path_send.pathPlan.rPoly = [float(x) for x in (right_center[:,0] - half_width)]
       path_send.pathPlan.cPoly = [float(x) for x in (calc_center[:,0])]
       path_send.pathPlan.lProb = float(l_prob)
       path_send.pathPlan.rProb = float(r_prob)
@@ -252,9 +250,9 @@ while 1:
       path_send.pathPlan.canTime = output_list[-1]
       gernPath.send(path_send.to_bytes())
       if cs.vEgo >= 0:
-        pathDataString += pathFormatString1 % tuple([float(x) for x in path_send.pathPlan.lPoly])
-        pathDataString += pathFormatString2 % tuple([float(x) for x in path_send.pathPlan.rPoly])
-        pathDataString += pathFormatString3 % tuple([float(x) for x in path_send.pathPlan.cPoly])
+        pathDataString += pathFormatString1 % tuple([float(x) for x in (left_center[:,0] + half_width)])
+        pathDataString += pathFormatString2 % tuple([float(x) for x in (right_center[:,0] - half_width)])
+        pathDataString += pathFormatString3 % tuple([float(x) for x in calc_center[:,0]])
         pathDataString += pathFormatString4 % (path_send.pathPlan.mpcAngles[3], path_send.pathPlan.mpcAngles[4], path_send.pathPlan.mpcAngles[5], path_send.pathPlan.mpcAngles[6], 
                           path_send.pathPlan.mpcAngles[10], path_send.pathPlan.lProb, path_send.pathPlan.rProb, path_send.pathPlan.cProb, path_send.pathPlan.laneWidth, 
                           path_send.pathPlan.angleSteers, path_send.pathPlan.rateSteers, path_send.pathPlan.canTime - path_send.pathPlan.canTime, cs.canTime)

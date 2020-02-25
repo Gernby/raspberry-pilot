@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 import os
 if False:
-  model_name = 'GRU_Split_Lane_Steer_Angle_0_Lag_1_Smooth_64_Batch_65_5_15_5_Hist_100_Future_0_0_0_Drop_Final'
+  model_name = 'gpu-model'
 else:
   os.environ["CUDA_VISIBLE_DEVICES"]="-1"
-  model_name = 'GRU_Split_Lane_Steer_Accel_0_Lag_1_Smooth_32_Batch_57_7_15_5_Hist_100_Future_0_0_0_Drop_Final_CPU'
+  model_name = 'cpu-model'
 history_rows = 5
 inputs = 51
 
@@ -48,50 +48,38 @@ def drain_sock(sock, wait_for_one=False):
       break
   return ret
 
-def dashboard_thread(rate=100):
+setproctitle('transcoderd')
+set_realtime_priority(1)
+ipaddress = "tcp://127.0.0.1"
 
-  setproctitle('transcoderd')
-  set_realtime_priority(1)
-  ipaddress = "tcp://127.0.0.1"
+context = zmq.Context.instance()
+gernModelInputs = context.socket(zmq.SUB)
+gernModelInputs.connect("tcp://127.0.0.1:%d" % service_list['model'].port)
+gernModelInputs.setsockopt(zmq.SUBSCRIBE, b"")
 
-  context = zmq.Context.instance()
-  gernModelInputs = context.socket(zmq.SUB)
-  gernModelInputs.connect("tcp://127.0.0.1:%d" % service_list['model'].port)
-  gernModelInputs.setsockopt(zmq.SUBSCRIBE, b"")
+gernModelOutputs = context.socket(zmq.PUB)
+gernModelOutputs.bind("tcp://*:8605")
 
-  gernModelOutputs = context.socket(zmq.PUB)
-  gernModelOutputs.bind("tcp://*:8605")
+model = load_model(os.path.expanduser('./models/' + model_name + '.hdf5'))
+model_input = np.zeros((history_rows, inputs))
+model.predict_on_batch([[model_input[:,:8]], [model_input[:,8:11]], [model_input[:,-40:-20]], [model_input[:,-20:]]])
+frame = 0
 
-  model = load_model(os.path.expanduser('./models/' + model_name + '.hdf5'))
-  model_input = np.zeros((history_rows, inputs))
-  model.predict_on_batch([[model_input[:,:8]], [model_input[:,8:11]], [model_input[:,-40:-20]], [model_input[:,-20:]]])
-  frame = 0
+drain_sock(gernModelInputs, True)
 
-  drain_sock(gernModelInputs, True)
+while 1:
+  model_input_array = gernModelInputs.recv()
 
-  while 1:
-    model_input_array = [gernModelInputs.recv()]
+  input_list = json.loads(model_input_array)
+  model_input = np.array(input_list[:-1]).reshape(history_rows, inputs)
+  #print(model_input.shape)
 
-    if len(model_input_array) > 1:
-      print("                         lagging lateral by %d" % len(model_input_array))
+  all_inputs = [[model_input[:,:-40-3]], [model_input[:,-40-3:-40]], [model_input[:,-40:-20]], [model_input[:,-20:]]]
+  #print(model_output[0])
 
-    for dat in model_input_array[-1:]:
-      input_list = json.loads(dat)
-      model_input = np.array(input_list[:-1]).reshape(history_rows, inputs)
-      #print(model_input.shape)
-
-      all_inputs = [[model_input[:,:-40-3]], [model_input[:,-40-3:-40]], [model_input[:,-40:-20]], [model_input[:,-20:]]]
-      #print(model_output[0])
-
-      model_output = list(model.predict_on_batch(all_inputs)[0].astype('float'))
-      model_output.append(input_list[-1])
-      gernModelOutputs.send_json(model_output)
-      if frame % 30 == 0:
-        print(frame, time.time())
-      frame += 1
-
-def main(rate=200):
-  dashboard_thread(rate)
-
-if __name__ == "__main__":
-  main()
+  model_output = list(model.predict_on_batch(all_inputs)[0].astype('float'))
+  model_output.append(input_list[-1])
+  gernModelOutputs.send_json(model_output)
+  if frame % 30 == 0:
+    print(frame, time.time())
+  frame += 1

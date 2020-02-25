@@ -1,10 +1,11 @@
 {
   "dampMPC": "0.14",
   "dampTime": "0.1",
-  "advanceSteer": "0.0",
+  "advanceSteer": "0.25",
   "polyDamp": "0.14",
   "polyFactor": "0.01",
   "polyReact": "0.0",
   "reactMPC": "0.23",
-  "tuneRev": "0.2.5"
+  "tuneRev": "0.1.0",
+  "lkasMode": "0"
 }

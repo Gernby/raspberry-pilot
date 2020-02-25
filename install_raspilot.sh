@@ -24,6 +24,10 @@
 # sudo apt install network-manager
 # nmcli d wifi list
 # nmcli d wifi connect <WiFiSSID> password <WiFiPassword>
+# 
+# monitor CPU temperature
+# cat /sys/class/thermal/thermal_zone0/temp
+# 42355 = 42.355 C
 
 # update software from repository
 sudo apt update

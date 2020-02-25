@@ -46,6 +46,7 @@ def wait_for_can(logcan):
 def data_sample(CI, CC, can_sock, carstate, lac_log):
   """Receive data from sockets and create events for battery, temperature and disk space"""
 
+  # TODO: Update carstate twice per cycle to prevent dropping frames, but only update controls once
   can_strs = [can_sock.recv()]
   CS = CI.update(CC, can_strs, lac_log)
 
@@ -149,7 +150,7 @@ def state_transition(frame, CS, CP, state, events, soft_disable_timer, v_cruise_
   return state, soft_disable_timer, v_cruise_kph, v_cruise_kph_last
 
 
-def state_control(frame, path_plan, CS, CP, state, events, AM, LaC, lac_log):
+def state_control(frame, lkasMode, path_plan, CS, CP, state, events, AM, LaC, lac_log):
   """Given the state, this function returns an actuators packet"""
 
   actuators = car.CarControl.Actuators.new_message()
@@ -158,7 +159,7 @@ def state_control(frame, path_plan, CS, CP, state, events, AM, LaC, lac_log):
   active = isActive(state)
 
   # Steering PID loop and lateral MPC
-  actuators.steer, actuators.steerAngle, lac_log = LaC.update(CS.lkMode, CS.vEgo, CS.steeringAngle, CS.steeringTorqueEps, CS.steeringPressed, CP, path_plan, CS.canTime)
+  actuators.steer, actuators.steerAngle, lac_log = LaC.update(CS.lkMode and (active or lkasMode), CS.vEgo, CS.steeringAngle, CS.steeringTorqueEps, CS.steeringPressed, CP, path_plan, CS.canTime)
     # parse warnings from car specific interface
   for e in get_events(events, [ET.WARNING]):
     extra_text = ""
@@ -245,6 +246,7 @@ def controlsd_thread(gctx=None):
   AM.add(sm.frame, startup_alert, False)
 
   LaC = LatControlPID(CP)
+  lkasMode = int(LaC.kegman.conf['lkasMode'])
   lac_log = None #car.CarState.lateralControlState.pidState.new_message()
 
   state = State.disabled
@@ -266,7 +268,7 @@ def controlsd_thread(gctx=None):
 
     # Compute actuators (runs PID loops and lateral MPC)
     sm.update(0)
-    actuators, lac_log = state_control(sm.frame, sm['pathPlan'], CS, CP, state, events, AM, LaC, lac_log)
+    actuators, lac_log = state_control(sm.frame, lkasMode, sm['pathPlan'], CS, CP, state, events, AM, LaC, lac_log)
 
     # Publish data
     CC, events_prev = data_send(sm, CS, CI, CP, state, events, actuators, carstate, carcontrol, carevents, carparams,

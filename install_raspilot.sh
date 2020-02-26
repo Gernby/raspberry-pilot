@@ -22,6 +22,7 @@
 #
 # connect to Wifi
 # sudo apt install network-manager
+# systemctl start NetworkManager
 # nmcli d wifi list
 # nmcli d wifi connect <WiFiSSID> password <WiFiPassword>
 # 
@@ -67,6 +68,7 @@ sudo make
 # This will also take a long time while "writing files to temporary folder" (or something like that)
 sudo checkinstall
 
+cd ~/
 git clone https://github.com/gernby/raspberry-pilot.git raspilot
 pip3 install pipenv --user
 
@@ -96,5 +98,4 @@ sudo apt clean -y
 sudo bash phonelibs/install_capnp.sh
 
 pipenv install
-pipenv shell
-bash build_all.sh
+pipenv run bash build_all.sh

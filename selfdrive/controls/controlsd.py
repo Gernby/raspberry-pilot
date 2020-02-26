@@ -247,6 +247,7 @@ def controlsd_thread(gctx=None):
 
   LaC = LatControlPID(CP)
   lkasMode = int(LaC.kegman.conf['lkasMode'])
+  #CI.CS.lkasMode = (lkasMode == 0)
   lac_log = None #car.CarState.lateralControlState.pidState.new_message()
 
   state = State.disabled

@@ -220,8 +220,11 @@ while 1:
           lane_width += 0.01 * (min(700, max(570, l_offset[output_list[-1]] -  r_offset[output_list[-1]]) - lane_width))
         else:
           lane_width = min(700, max(570, l_offset[output_list[-1]] -  r_offset[output_list[-1]]) - lane_width)
-        half_width = lane_width * 0.5
-
+        half_width = min(half_width + 3, max(half_width - 5, lane_width * 0.47))
+      else:
+        half_width = min(half_width + 3, max(half_width - 5, lane_width * 0.43))
+      
+   
       l_prob = abs(l_prob)
       r_prob = abs(r_prob)
       l_prob_smooth = l_prob  #max(0.05, l_prob_smooth - 0.1, min(l_prob_smooth + 0.1, l_prob))
@@ -236,7 +239,7 @@ while 1:
       left_center = l_prob_smooth * left_center + (1 - l_prob_smooth) * calc_center
       right_center = r_prob_smooth * right_center + (1 - r_prob_smooth) * calc_center 
       
-      angle = (descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer) + descaled_output[0][0,0:1]
+      angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer) + descaled_output[0][0,0:1], angle - 1.0, angle + 1.0)
       #angle = np.add(descaled_output[0][1:,0], np.multiply(np.diff(descaled_output[0][:,0]), advanceSteer))
       calc_center = (l_prob_smooth * left_center + r_prob_smooth * right_center) / (l_prob_smooth + r_prob_smooth + 0.05) 
 

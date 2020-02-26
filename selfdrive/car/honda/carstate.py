@@ -265,7 +265,7 @@ class CarState():
     self.kegman = kegman_conf()
     self.trMode = int(self.kegman.conf['lastTrMode'])     # default to last distance interval on startup
     #self.trMode = 1
-    self.lkMode = False
+    self.lkMode = True
     self.read_distance_lines_prev = 4
     self.CP = CP
     self.can_define = CANDefine(DBC[CP.carFingerprint]['pt'])

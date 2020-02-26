@@ -38,6 +38,16 @@
 # monitor CPU temperature
 # cat /sys/class/thermal/thermal_zone0/temp
 # 42355 = 42.355 C
+#
+# monitor CPU / DISK / Network etc... stats
+# (Note: let user know whats going on, ex. 'pipenv install' take too much time,user can check status by self)
+# dstat
+# --total-cpu-usage-- -dsk/total- -net/total- ---paging-- ---system--
+# usr sys idl wai stl| read  writ| recv  send|  in   out | int   csw 
+# 88  12   0   0   0|   0   976k|  39k   15k|   0     0 |1556  1644 
+#
+# check all progress
+# ps aux
 
 # update software from repository
 sudo apt update
@@ -59,7 +69,7 @@ sudo apt install -y opencl-headers pkg-config python-pip wget checkinstall libus
 sudo apt install -y clang-3.8 libatlas-base-dev libopenblas-base libopenblas-dev gcc gfortran ocl-icd-opencl-dev 
 sudo apt install -y capnproto opencl-headers autotools-dev uuid-dev libsodium-dev valgrind python-qt4
 sudo apt install -y libusb-dev cmake libnewlib-arm-none-eabi libhdf5-serial-dev hdf5-tools smbclient
-sudo apt install -y influxdb apt-transport-https software-properties-common adduser libfontconfig1
+sudo apt install -y influxdb apt-transport-https software-properties-common adduser libfontconfig1 dstat
 wget https://dl.grafana.com/oss/release/grafana_6.6.2_arm64.deb
 sudo dpkg -i grafana_6.6.2_arm64.deb
 sudo /bin/systemctl daemon-reload

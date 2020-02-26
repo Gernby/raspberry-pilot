@@ -67,6 +67,7 @@ sudo make
 # This will also take a long time while "writing files to temporary folder" (or something like that)
 sudo checkinstall
 
+cd ~
 git clone https://github.com/gernby/raspberry-pilot.git raspilot
 pip3 install pipenv --user
 

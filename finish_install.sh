@@ -26,5 +26,5 @@ sudo apt --fix-broken install -y
 sudo apt clean -y
 sudo bash phonelibs/install_capnp.sh
 
-pipenv install
+pipenv install -v
 pipenv run bash build_all.sh

@@ -15,9 +15,13 @@
 # create flash using something like Balena Etcher
 # https://www.balena.io/etcher/
 #
+# In Linux:
+# xzcat ubuntu-18.04.4-preinstalled-server-arm64+raspi3.img.xz | sudo dd bs=4M of=/dev/blkmmc0
+#
 # connect to LAN, monitor and keyboard
 # change default password for ubuntu (default login is ubuntu / ubuntu)
-# SSH into RPi (ifconfig to get IP address)
+# ifconfig to get IP address
+# SSH into RPi
 # ssh ubuntu@<ip address>
 #
 # connect to Wifi

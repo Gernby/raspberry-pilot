@@ -68,6 +68,7 @@ sudo make
 sudo checkinstall
 
 git clone https://github.com/gernby/raspberry-pilot.git raspilot
+sudo chown -R "{$USER}:{$USER}" ~/.local
 pip3 install pipenv --user
 
 # Exit SSH and log in again, since pipenv won't work without it

@@ -28,7 +28,7 @@
 # sudo apt install network-manager
 # systemctl start NetworkManager
 # nmcli d wifi list
-# nmcli d wifi connect <WiFiSSID> password <WiFiPassword>
+# sudo nmcli d wifi connect <WiFiSSID> password <WiFiPassword>
 # 
 # monitor CPU temperature
 # cat /sys/class/thermal/thermal_zone0/temp

@@ -23,6 +23,11 @@
 # run ifconfig to get the Pi IP address
 # SSH into RPi
 # ssh ubuntu@<ip address>
+# top
+# Press <i> to reduce the number of active processes shown
+# Device will automatically update
+# Wait for "up" in the top left corner to reach 10 minutes
+# (Note: you cannot proceed with installing wifi support until the auto update completes)
 #
 # connect to Wifi
 # sudo apt install network-manager

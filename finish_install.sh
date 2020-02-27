@@ -19,6 +19,7 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 (crontab -l; echo "@reboot bash raspilot/launch_openpilot.sh";) | crontab -
 crontab -l
 
+sudo cp ~/raspilot/phonelibs/btcmd.txt /boot/firmware
 sudo cp ~/raspilot/phonelibs/usercfg.txt /boot/firmware/usercfg.txt
 sudo cp ~/raspilot/phonelibs/influxdb.conf /etc/influxdb/influxdb.conf
 

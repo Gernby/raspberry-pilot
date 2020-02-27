@@ -26,5 +26,6 @@ sudo apt --fix-broken install -y
 sudo apt clean -y
 sudo bash phonelibs/install_capnp.sh
 
-pipenv install
-pipenv run bash build_all.sh
+python3 -m pipenv --python 3.7
+python3 -m pipenv install
+python3 -m pipenv run bash build_all.sh

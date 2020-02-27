@@ -167,7 +167,7 @@ while 1:
           l_offset[cs.canTime] = cs.camLeft.parm2
           r_offset[cs.canTime] = cs.camRight.parm2
           
-          input_array = list(np.array(scaled_array).reshape(history_rows * len(scaled_array[0][0])).astype('float'))
+          input_array = list(np.asarray(scaled_array).reshape(history_rows * len(scaled_array[0][0])).astype('float'))
           input_array.append(cs.canTime)
           if recv_frames > 5 or sent_frames % 5 == 0:
             gernModelInputs.send_json(list(input_array))
@@ -189,7 +189,7 @@ while 1:
       if recv_frames <= 5:  sent_frames = recv_frames
 
       output_list = list(socket.recv_json())
-      model_output = np.array(output_list[:-1])
+      model_output = np.asarray(output_list[:-1])
       if scaler_padding is None:
         column_count = Outputs
         row_count = len(model_output)//column_count
@@ -203,7 +203,7 @@ while 1:
 
       model_output = model_output.reshape(row_count,column_count)
 
-      scaler_padding[0] = np.array(model_output)
+      scaler_padding[0] = np.asarray(model_output)
       descaled_output = [output_scaler.inverse_transform(scaler_padding[0]), output_scaler.inverse_transform(scaler_padding[1])]
 
       l_prob = l_probs.pop(output_list[-1])
@@ -220,9 +220,9 @@ while 1:
           lane_width += 0.01 * (min(700, max(570, l_offset[output_list[-1]] -  r_offset[output_list[-1]]) - lane_width))
         else:
           lane_width = min(700, max(570, l_offset[output_list[-1]] -  r_offset[output_list[-1]]) - lane_width)
-        half_width = min(half_width + 3, max(half_width - 5, lane_width * 0.47))
+        half_width = min(half_width + 1, max(half_width - 1, lane_width * 0.48))
       else:
-        half_width = min(half_width + 3, max(half_width - 5, lane_width * 0.43))
+        half_width = min(half_width + 1, max(half_width - 1, lane_width * 0.47))
       
    
       l_prob = abs(l_prob)

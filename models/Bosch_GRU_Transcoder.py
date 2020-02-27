@@ -71,7 +71,7 @@ while 1:
   model_input_array = gernModelInputs.recv()
 
   input_list = json.loads(model_input_array)
-  model_input = np.array(input_list[:-1]).reshape(history_rows, inputs)
+  model_input = np.asarray(input_list[:-1]).reshape(history_rows, inputs)
   #print(model_input.shape)
 
   all_inputs = [[model_input[:,:-40-3]], [model_input[:,-40-3:-40]], [model_input[:,-40:-20]], [model_input[:,-20:]]]

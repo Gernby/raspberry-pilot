@@ -123,6 +123,9 @@ path_send.init('pathPlan')
 advanceSteer = 1
 back_log = 0
 dump_sock(carState)
+              
+r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')
+
 row_count = 0
 column_count = 0
 while 1:
@@ -220,10 +223,10 @@ while 1:
           lane_width += 0.01 * (min(700, max(570, l_offset[output_list[-1]] -  r_offset[output_list[-1]]) - lane_width))
         else:
           lane_width = min(700, max(570, l_offset[output_list[-1]] -  r_offset[output_list[-1]]) - lane_width)
+          half_width = lane_width / 2
         half_width = min(half_width + 1, max(half_width - 1, lane_width * 0.48))
       else:
         half_width = min(half_width + 1, max(half_width - 1, lane_width * 0.47))
-      
    
       l_prob = abs(l_prob)
       r_prob = abs(r_prob)

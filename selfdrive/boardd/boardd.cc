@@ -149,9 +149,9 @@ bool usb_connect() {
 
   // power on charging, only the first time. Panda can also change mode and it causes a brief disconneciton
 //#ifndef __x86_64__
-//  if (!connected_once) {
-//    libusb_control_transfer(dev_handle, 0xc0, 0xe6, (uint16_t)(cereal::HealthData::UsbPowerMode::CDP), 0, NULL, 0, TIMEOUT);
-//  }
+  if (!connected_once) {
+    libusb_control_transfer(dev_handle, 0xc0, 0xe6, (uint16_t)(cereal::HealthData::UsbPowerMode::CDP), 0, NULL, 0, TIMEOUT);
+  }
 //#endif
   connected_once = true;
 
@@ -173,6 +173,7 @@ bool usb_connect() {
 fail:
   return false;
 }
+
 
 void usb_retry_connect() {
   LOG("attempting to connect");

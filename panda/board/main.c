@@ -80,12 +80,12 @@ void started_interrupt_handler(uint8_t interrupt_line) {
 
     #ifdef EON
       // set power savings mode here if on EON build
-      int power_save_state = current_board->check_ignition() ? POWER_SAVE_STATUS_DISABLED : POWER_SAVE_STATUS_ENABLED;
+      int power_save_state = POWER_SAVE_STATUS_DISABLED; //current_board->check_ignition() ? POWER_SAVE_STATUS_DISABLED : POWER_SAVE_STATUS_ENABLED;
       set_power_save_state(power_save_state);
       // set CDP usb power mode everytime that the car starts to make sure EON is charging
-      if (current_board->check_ignition()) {
-        current_board->set_usb_power_mode(USB_POWER_CDP);
-      }
+      //if (current_board->check_ignition()) {
+      current_board->set_usb_power_mode(USB_POWER_CDP);
+      //}
     #endif
   }
   EXTI->PR = (1U << interrupt_line);
@@ -578,6 +578,7 @@ void __attribute__ ((noinline)) enable_fpu(void) {
 
 uint64_t tcnt = 0;
 
+
 // go into NOOUTPUT when the EON does not send a heartbeat for this amount of seconds.
 #define EON_HEARTBEAT_IGNITION_CNT_ON 5U
 #define EON_HEARTBEAT_IGNITION_CNT_OFF 2U
@@ -619,7 +620,7 @@ void TIM3_IRQHandler(void) {
     #ifdef EON
     if (heartbeat_counter >= (current_board->check_ignition() ? EON_HEARTBEAT_IGNITION_CNT_ON : EON_HEARTBEAT_IGNITION_CNT_OFF)) {
       puts("EON hasn't sent a heartbeat for 0x"); puth(heartbeat_counter); puts(" seconds. Safety is set to NOOUTPUT mode.\n");
-      if(current_safety_mode != SAFETY_NOOUTPUT){
+      if(current_safety_mode != SAFETY_HONDA_BOSCH){
         set_safety_mode(SAFETY_HONDA_BOSCH, SAFETY_HONDA_BOSCH);
       }
     }

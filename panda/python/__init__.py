@@ -215,14 +215,14 @@ class Panda(object):
     self.close()
     time.sleep(1.0)
     success = False
-    # wait up to 15 seconds
-    for i in range(0, 15):
+    # wait up to 30 seconds
+    for i in range(0, 30):
       try:
         self.connect()
         success = True
         break
       except Exception:
-        print("reconnecting is taking %d seconds..." % (i+1))
+        print("*****   The panda should be flashing %s.  Please unplug the cable from the Panda for 10 seconds, then plug it back in before this timer expires: %d" % (self.flashing_color, 30 - i))
         try:
           dfu = PandaDFU(PandaDFU.st_serial_to_dfu_serial(self._serial))
           dfu.recover()
@@ -231,6 +231,7 @@ class Panda(object):
         time.sleep(1.0)
     if not success:
       raise Exception("reconnect failed")
+    self.flashing_color = "red slowly"
 
   @staticmethod
   def flash_static(handle, code):
@@ -261,6 +262,7 @@ class Panda(object):
       pass
 
   def flash(self, fn=None, code=None, reconnect=True):
+    self.flashing_color = "green rapidly"
     print("flash: main version is " + self.get_version())
     if not self.bootstub:
       self.reset(enter_bootstub=True)

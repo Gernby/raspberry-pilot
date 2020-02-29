@@ -216,13 +216,13 @@ class Panda(object):
     time.sleep(1.0)
     success = False
     # wait up to 15 seconds
-    for i in range(0, 15):
+    for i in range(0, 30):
       try:
         self.connect()
         success = True
         break
       except Exception:
-        print("reconnecting is taking %d seconds..." % (i+1))
+        print("*****   Please unplug the USB cable from the RPi for 10 seconds, then plug it back in before this timer expires: %d" % (30 - i))
         try:
           dfu = PandaDFU(PandaDFU.st_serial_to_dfu_serial(self._serial))
           dfu.recover()

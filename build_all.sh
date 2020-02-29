@@ -1,10 +1,9 @@
 #!/bin/bash
 # This must be run from inside the pipenv!
-cd ~/raspilot
-cd selfdrive/boardd
+cd selfdrive/can
 make clean
 PYTHONPATH=~/raspilot make 
 cd ..
-cd can
+cd boardd
 make clean
 PYTHONPATH=~/raspilot make 

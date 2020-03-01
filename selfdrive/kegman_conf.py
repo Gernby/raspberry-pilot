@@ -108,6 +108,11 @@ class kegman_conf():
       self.config.update({"lkasMode":"0"})
       self.element_updated = True
 
+    if "lateralOffset" not in self.config:
+      self.config.update({"lateralOffset":"0"})
+      self.config.update({"angleOffset":"0"})
+      self.element_updated = True
+
     if ("type" not in self.config or self.config['type'] == "-1") and CP != None:
       self.config.update({"type":CP.lateralTuning.which()})
       print(CP.lateralTuning.which())

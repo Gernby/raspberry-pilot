@@ -154,7 +154,7 @@ class Panda(object):
     self._handle.close()
     self._handle = None
 
-  def connect(self, claim=True, wait=False):
+  def connect(self, claim=True, wait=False, print_devices=False):
     if self._handle != None:
       self.close()
 
@@ -170,10 +170,12 @@ class Panda(object):
       while 1:
         try:
           for device in context.getDeviceList(skip_on_error=True):
-            #print(device)
+            if print_devices: print(device)
             if device.getVendorID() == 0xbbaa and device.getProductID() in [0xddcc, 0xddee]:
               try:
                 this_serial = device.getSerialNumber()
+                with open("/data/params/d/DongleId", "w") as f:
+                  f.write(this_serial)
               except Exception:
                 continue
               if self._serial is None or this_serial == self._serial:
@@ -218,7 +220,7 @@ class Panda(object):
     # wait up to 30 seconds
     for i in range(0, 30):
       try:
-        self.connect()
+        self.connect(print_devices=(i==0))
         success = True
         break
       except Exception:

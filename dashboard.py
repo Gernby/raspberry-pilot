@@ -10,22 +10,6 @@ from common.params import Params
 import numpy as np
 from setproctitle import setproctitle
 
-def get_format_strings(measurement, user_id, data):
-  insert_format_string = "%s,user=%s " % (measurement,user_id)
-  data_format_string = ""
-  for i in range(len(data)):
-    insert_format_string += "%d=" % i + "%s,"
-    data_format_string += "%f,"
-  data_format_string = data_format_string[:-1]
-  insert_format_string = insert_format_string + "gern_time=%s,mpc_time=%s,model_time=%s,path_time=%s %s\n"
-  return insert_format_string, data_format_string
-
-def get_format_string_arrays(measurements, user_id, data):
-  data_format_strings = []
-  for i in range(len(measurements)):
-    format_strings = get_format_strings(measurements[i], user_id, data[i])
-    data_format_strings.append(format_strings)
-  return data_format_strings
 
 def dashboard_thread(rate=100):
 
@@ -47,10 +31,9 @@ def dashboard_thread(rate=100):
     server_address = "192.168.137.1"
     op_address = "192.168.137.7"
   else:
-    server_address = None
+    server_address = "gernstation.synology.me"
 
   print("using %s" % (server_address))
-
 
   context = zmq.Context()
   poller = zmq.Poller()
@@ -87,7 +70,7 @@ def dashboard_thread(rate=100):
     config['userID'] = user_id
     #tunePush.send_json(config)
     #tunePush = None
-  print(user_id)
+  user_id = user_id.decode()
   try:
     if len(user_id) < 2: user_id = 'ddd3e089e7bbe0fc'
   except:
@@ -119,46 +102,6 @@ def dashboard_thread(rate=100):
   cs = None
 
   messaging.drain_sock(carState, True)
-
-  if False: 
-    DIR = '~/logs/'
-    filenumber = len([name for name in os.listdir(DIR) if os.path.isfile(os.path.join(DIR, name))])
-
-    print("start")
-    with open(DIR + '/dashboard_file_%d.csv' % filenumber, mode='w') as dash_file:
-      print("opened")
-      dash_writer = csv.writer(dash_file, delimiter=',', quotechar='', quoting=csv.QUOTE_NONE)
-      print("initialized")
-      dash_writer.writerow(['angleSteersDes','angleSteers','vEgo','steerOverride','upSteer','uiSteer','ufSteer','time'])
-      print("first row")
-
-      while 1:
-        receiveTime = int(time.time() * 1000)
-        for socket, event in poller.poll(0):
-          if socket is live100:
-            _live100 = messaging.recv_one(socket)
-            vEgo = _live100.live100.vEgo
-            if vEgo >= 0:
-              frame_count += 1
-              dash_writer.writerow([str(round(_live100.live100.angleSteersDes, 2)),
-                                    str(round(_live100.live100.angleSteers, 2)),
-                                    str(round(_live100.live100.vEgo, 1)),
-                                    1 if _live100.live100.steerOverride else 0,
-                                    str(round(_live100.live100.upSteer, 4)),
-                                    str(round(_live100.live100.uiSteer, 4)),
-                                    str(round(_live100.live100.ufSteer, 4)),
-                                    str(receiveTime)])
-            else:
-              skipped_count += 1
-          else:
-            skipped_count += 1
-        if frame_count % 200 == 0:
-          print("captured = %d" % frame_count)
-          frame_count += 1
-        if skipped_count % 200 == 0:
-          print("skipped = %d" % skipped_count)
-          skipped_count += 1
-
 
   while 1:
     for socket, event in poller.poll(3000):
@@ -195,9 +138,9 @@ def dashboard_thread(rate=100):
           pp = _pp.pathPlan
           if vEgo >= 0 and not cs is None:
             format_count = 6 * len(pp.lPoly)
-            pathDataString += polyDataString[:format_count] % tuple(map(float, pp.lPoly)[:15])
-            pathDataString += polyDataString[:format_count] % tuple(map(float, pp.rPoly)[:15])
-            pathDataString += polyDataString[:format_count] % tuple(map(float, pp.cPoly)[:15])
+            pathDataString += polyDataString[:format_count] % tuple(float(x) for x in pp.lPoly)
+            pathDataString += polyDataString[:format_count] % tuple(float(x) for x in pp.rPoly)
+            pathDataString += polyDataString[:format_count] % tuple(float(x) for x in pp.cPoly)
             pathDataString +=  (pathDataFormatString % (pp.mpcAngles[3], pp.mpcAngles[4], pp.mpcAngles[5], pp.mpcAngles[6], pp.mpcAngles[10], pp.lProb, pp.rProb, pp.cProb, pp.laneWidth, pp.angleSteers, pp.rateSteers, cs.canTime - pp.canTime, cs.canTime))
         frame += 1
 

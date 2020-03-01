@@ -97,6 +97,7 @@ gernModelOutputs = sub_sock(8605, poller=poller)
 recv_frames = 1
 sent_frames = 1
 frame_count = 1
+dashboard_count = 0
 
 try:
   input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_A.scaler' % (scaler_type, Inputs)))
@@ -249,6 +250,8 @@ while 1:
       path_send.pathPlan.mpcAngles = [float(x) for x in angle[:]]
       path_send.pathPlan.angleSteers = float(angle[5])
       path_send.pathPlan.laneWidth = float(lane_width)
+      path_send.pathPlan.lPoly = [float(x) for x in (left_center[:,0] + half_width)]
+      path_send.pathPlan.rPoly = [float(x) for x in (right_center[:,0] - half_width)]
       path_send.pathPlan.cPoly = [float(x) for x in (calc_center[:,0])]
       path_send.pathPlan.lProb = float(l_prob)
       path_send.pathPlan.rProb = float(r_prob)
@@ -272,7 +275,8 @@ while 1:
       try:
         r = requests.post(url_string, data=pathDataString + carStateDataString1 + carStateDataString2)
         #print(influxLineString)
-        print('%d %s' % (frame_count, r))
+        if dashboard_count % 3 == 0: print('%d %s' % (frame_count, r))
+        dashboard_count += 1
       except:
         r = requests.post(url_string, data='create database carDB')
         print(r)

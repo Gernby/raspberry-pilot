@@ -60,8 +60,6 @@ class LatControlPID(object):
     self.damp_rate_steers_des = 0.0
     self.damp_angle_steers_des = 0.0
     self.old_plan_count = 0
-    self.lateral_offset = 0.0
-    self.angle_offset = 0.0
     self.last_plan_time = 0
     self.path_age = 0
     #self.lane_compensation = 0.
@@ -81,7 +79,7 @@ class LatControlPID(object):
     #self.mpc_angles = None #np.zeros((30))
 
     try:
-      lateral_params = self.params.get("LateralParams")
+      lateral_params = self.params.get("LateralGain")
       lateral_params = json.loads(lateral_params)
       self.angle_ff_gain = max(1.0, float(lateral_params['angle_ff_gain']))
     except:
@@ -89,15 +87,13 @@ class LatControlPID(object):
 
   def live_tune(self, CP):
     if False and self.frame % 3600 == 0:
-      self.params.put("LateralParams", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
+      self.params.put("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
     if self.frame % 300 == 0:
       try:
         self.kegman = kegman_conf()  #.read_config()
         self.pid._k_i = ([0.], [float(self.kegman.conf['Ki'])])
         self.pid._k_p = ([0.], [float(self.kegman.conf['Kp'])])
         self.pid.k_f = (float(self.kegman.conf['Kf']))
-        self.angle_offset = float(self.kegman.conf['angleOffset'])
-        self.lateral_offset = float(self.kegman.conf['lateralOffset']) * 1500
         self.damp_time = (float(self.kegman.conf['dampTime']))
         self.react_mpc = (float(self.kegman.conf['reactMPC']))
         self.damp_mpc = (float(self.kegman.conf['dampMPC']))
@@ -129,7 +125,7 @@ class LatControlPID(object):
       self.avg_plan_age += 0.01 * (path_age - self.avg_plan_age)
 
       self.c_prob = max(self.c_prob - 0.0333, min(self.c_prob + 0.0333, path_plan.cProb))
-      self.projected_lane_error = self.c_prob * self.poly_factor * (sum(path_plan.cPoly) + self.lateral_offset + self.polyReact * 15 * (path_plan.cPoly[-1] - path_plan.cPoly[-2]))
+      self.projected_lane_error = self.c_prob * self.poly_factor * (sum(path_plan.cPoly) + self.polyReact * 15 * (path_plan.cPoly[-1] - path_plan.cPoly[-2]))
       if abs(self.projected_lane_error) < abs(self.prev_projected_lane_error) and (self.projected_lane_error > 0) == (self.prev_projected_lane_error > 0):
         self.projected_lane_error *= gernterp(angle_steers, [0, 4], [0.25, 1.0])
       #self.damp_adjust = gernterp(abs(path_plan.cPoly[-1]), [0,50], [1., 0.5])
@@ -188,7 +184,7 @@ class LatControlPID(object):
 
       deadzone = 0.0
 
-      output_steer = self.pid.update(self.damp_angle_steers_des + self.angle_offset, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override,
+      output_steer = self.pid.update(self.damp_angle_steers_des, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override,
                                     add_error=float(self.path_error_comp), feedforward=steer_feedforward, speed=v_ego, deadzone=deadzone)
 
     pid_log.active = True

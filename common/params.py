@@ -73,6 +73,7 @@ keys = {
   "IsUploadVideoOverCellularEnabled": [TxType.PERSISTENT],
   "LastUpdateTime": [TxType.PERSISTENT],
   "LateralParams": [TxType.PERSISTENT],
+  "LateralGain": [TxType.PERSISTENT],
   "LateralTune": [TxType.PERSISTENT],
   "LimitSetSpeed": [TxType.PERSISTENT],
   "LimitSetSpeedNeural": [TxType.PERSISTENT],

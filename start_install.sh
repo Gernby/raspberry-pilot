@@ -39,7 +39,10 @@ sudo apt update
 sudo apt install -y  network-manager
 sudo systemctl start NetworkManager
 
-# connect to Wifi
+# force rescan of the available wifi networks
+# sudo nmcli dev wifi rescan
+
+# connect to Wifi (these are optional parameters and won't block the script from running)
 sudo nmcli d wifi connect $1 password $2
 
 # disable unattended upgrades

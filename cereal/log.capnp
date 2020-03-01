@@ -718,6 +718,7 @@ struct PathPlan {
   mpcTimes @19 :List(Float32);
   yawRatesOP @23 :List(Float32);
   yawRatesVSA @24 :List(Float32);
+  lateralOffset @26 :Float32;
   sensorValid @14 :Bool;
   commIssue @15 :Bool;
   posenetValid @16 :Bool;

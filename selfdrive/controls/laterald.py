@@ -18,8 +18,18 @@ from cffi import FFI
 from setproctitle import setproctitle
 
 from common.params import Params
-params = Params()
-user_id = str(params.get("DongleId"))
+
+try:
+  params = Params()
+  user_id = str(params.get("DongleId"))
+  lateral_params = params.get("LateralParams")
+  lateral_params = json.loads(lateral_params)
+  lateral_offset = float(lateral_params['lateral_offset'])
+  angle_offset = float(angle_offset['angle_offset'])
+except:
+  user_id = "unidentified"  
+  lateral_offset = 0.0
+  angle_offset = 0.0
 
 url_string = 'http://127.0.0.1:8086/write?db=carDB&u=liveOP&p=liveOP&precision=ms'
 
@@ -69,8 +79,8 @@ def sub_sock(port, poller=None, addr="127.0.0.1", conflate=False, timeout=None):
 pathFormatString1 = 'pathPlan,user=' + user_id + ' l0=%0.3f,l1=%0.3f,l2=%0.3f,l3=%0.3f,l4=%0.3f,l5=%0.3f,l6=%0.3f,l7=%0.3f,l8=%0.3f,l9=%0.3f,l10=%0.3f,l11=%0.3f,l12=%0.3f,l13=%0.3f,l14=%0.3f,'
 pathFormatString2 = "r0=%0.3f,r1=%0.3f,r2=%0.3f,r3=%0.3f,r4=%0.3f,r5=%0.3f,r6=%0.3f,r7=%0.3f,r8=%0.3f,r9=%0.3f,r10=%0.3f,r11=%0.3f,r12=%0.3f,r13=%0.3f,r14=%0.3f,"
 pathFormatString3 = "c0=%0.3f,c1=%0.3f,c2=%0.3f,c3=%0.3f,c4=%0.3f,c5=%0.3f,c6=%0.3f,c7=%0.3f,c8=%0.3f,c9=%0.3f,c10=%0.3f,c11=%0.3f,c12=%0.3f,c13=%0.3f,c14=%0.3f,"
-pathFormatString4 = "a3=%0.3f,a4=%0.3f,a5=%0.3f,a6=%0.3f,a10=%0.3f,lprob=%0.3f,rprob=%0.3f,cprob=%0.3f,lane_width=%0.3f,angle=%0.3f,rate=%0.3f,plan_age=%0.3f %d\n"
-carStateFormatString2 = "carState,user=" + user_id + " angle_steers=%0.4f,angle_rate=%0.4f,driver_torque=%0.4f,request=%0.4f,angle_rate_eps=%0.4f,yaw_rate_can=%0.4f,angle_steers_eps=%0.4f,long_accel=%0.4f,p2=%0.4f,p=%0.4f,i=%0.4f,f=%0.4f,damp_angle_steers=%0.4f,damp_angle_steers_des=%0.4f,ff_rate=%0.4f,ff_angle=%0.4f,left_frame=%d,far_right_frame=%d,v_ego=%0.4f,wheel_speed_fl=%0.4f,wheel_speed_fr=%0.4f,wheel_speed_rl=%0.4f,wheel_speed_rr=%0.4f,l_blinker=%d,r_blinker=%d,lk_mode=%d,enabled=%d,left_frame=%d,left_1=%d,left_2=%d,left_3=%d,left_4=%d,left_5=%d,left_6=%d,left_7=%d,left_8=%d,left_9=%d,left_10=%d,left_solid=%d,left_dashed=%d,right_frame=%d,right_1=%d,right_2=%d,right_3=%d,right_4=%d,right_5=%d,right_6=%d,right_7=%d,right_8=%d,right_9=%d,right_10=%d,right_solid=%d,right_dashed=%d,far_left_frame=%d,far_left_1=%d,far_left_2=%d,far_left_3=%d,far_left_4=%d,far_left_5=%d,far_left_6=%d,far_left_7=%d,far_left_8=%d,far_left_9=%d,far_left_10=%d,far_left_solid=%d,far_left_dashed=%d,far_right_frame=%d,far_right_1=%d,far_right_2=%d,far_right_3=%d,far_right_4=%d,far_right_5=%d,far_right_6=%d,far_right_7=%d,far_right_8=%d,far_right_9=%d,far_right_10=%d,far_right_solid=%d,far_right_dashed=%d %d\n"
+pathFormatString4 = "a3=%0.3f,a4=%0.3f,a5=%0.3f,a6=%0.3f,a10=%0.3f,lprob=%0.3f,rprob=%0.3f,cprob=%0.3f,lane_width=%0.3f,angle=%0.3f,rate=%0.3f,angle_offset=%0.2f,lateral_offset=%0.2f,plan_age=%0.3f %d\n"
+carStateFormatString2 = "carState,user=" + user_id + " angle_offset=%0.2f,lateral_offset=%0.2f,angle_steers=%0.4f,angle_rate=%0.4f,driver_torque=%0.4f,request=%0.4f,angle_rate_eps=%0.4f,yaw_rate_can=%0.4f,angle_steers_eps=%0.4f,long_accel=%0.4f,p2=%0.4f,p=%0.4f,i=%0.4f,f=%0.4f,damp_angle_steers=%0.4f,damp_angle_steers_des=%0.4f,ff_rate=%0.4f,ff_angle=%0.4f,left_frame=%d,far_right_frame=%d,v_ego=%0.4f,wheel_speed_fl=%0.4f,wheel_speed_fr=%0.4f,wheel_speed_rl=%0.4f,wheel_speed_rr=%0.4f,l_blinker=%d,r_blinker=%d,lk_mode=%d,enabled=%d,left_frame=%d,left_1=%d,left_2=%d,left_3=%d,left_4=%d,left_5=%d,left_6=%d,left_7=%d,left_8=%d,left_9=%d,left_10=%d,left_solid=%d,left_dashed=%d,right_frame=%d,right_1=%d,right_2=%d,right_3=%d,right_4=%d,right_5=%d,right_6=%d,right_7=%d,right_8=%d,right_9=%d,right_10=%d,right_solid=%d,right_dashed=%d,far_left_frame=%d,far_left_1=%d,far_left_2=%d,far_left_3=%d,far_left_4=%d,far_left_5=%d,far_left_6=%d,far_left_7=%d,far_left_8=%d,far_left_9=%d,far_left_10=%d,far_left_solid=%d,far_left_dashed=%d,far_right_frame=%d,far_right_1=%d,far_right_2=%d,far_right_3=%d,far_right_4=%d,far_right_5=%d,far_right_6=%d,far_right_7=%d,far_right_8=%d,far_right_9=%d,far_right_10=%d,far_right_solid=%d,far_right_dashed=%d %d\n"
 carStateFormatString1 = "carState,user=" + user_id + " angle_steers=%0.4f,angle_rate=%0.4f,driver_torque=%0.4f,request=%0.4f,angle_rate_eps=%0.4f,yaw_rate_can=%0.4f,angle_steers_eps=%0.4f,long_accel=%0.4f,p2=%0.4f,p=%0.4f,i=%0.4f,f=%0.4f,damp_angle_steers=%0.4f,damp_angle_steers_des=%0.4f,ff_rate=%0.4f,ff_angle=%0.4f,left_frame=%d,far_right_frame=%d %d\n"
 pathDataString = ""
 kegmanDataString = ""
@@ -138,7 +148,7 @@ while 1:
       cs = _cs.carState
       frame_count += 1
 
-      unscaled_input_array = [[cs.vEgo, cs.steeringAngle, cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN, cs.longAccel,              0 ,    0           , cs.steeringRate, cs.steeringTorque, cs.torqueRequest,
+      unscaled_input_array = [[cs.vEgo, cs.steeringAngle - angle_offset + 1, cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN, cs.longAccel,              0 ,    0           , cs.steeringRate, cs.steeringTorque, cs.torqueRequest,
                       cs.camLeft.parm1, cs.camLeft.parm2, cs.camLeft.parm3, cs.camLeft.parm4, cs.camLeft.parm5, cs.camLeft.parm6, cs.camLeft.parm7, cs.camLeft.parm8, cs.camLeft.parm9, cs.camLeft.parm10, 
                       cs.camFarLeft.parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4, cs.camFarLeft.parm5, cs.camFarLeft.parm6, cs.camFarLeft.parm7, cs.camFarLeft.parm8, cs.camFarLeft.parm9, cs.camFarLeft.parm10, 
                       cs.camRight.parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4, cs.camRight.parm5, cs.camRight.parm6, cs.camRight.parm7, cs.camRight.parm8, cs.camRight.parm9, cs.camRight.parm10, 
@@ -175,7 +185,7 @@ while 1:
           input_array.append(cs.canTime)
           if recv_frames > 5 or sent_frames % 5 == 0:
             gernModelInputs.send_json(list(input_array))
-          carStateDataString2 += (carStateFormatString2 % (cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
+          carStateDataString2 += (carStateFormatString2 % (angle_offset, lateral_offset, cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
                                                             cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
                                                             cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, cs.camLeft.frame, cs.camFarRight.frame, \
                                                             cs.vEgo, cs.wheelSpeeds.fl, cs.wheelSpeeds.fr, cs.wheelSpeeds.rl, cs.wheelSpeeds.rr, cs.leftBlinker, cs.rightBlinker, cs.lkMode, cs.cruiseState.enabled, \
@@ -246,13 +256,28 @@ while 1:
       angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer) + descaled_output[0][0,0:1], angle - 1.0, angle + 1.0)
       #angle = np.add(descaled_output[0][1:,0], np.multiply(np.diff(descaled_output[0][:,0]), advanceSteer))
       calc_center = (l_prob_smooth * left_center + r_prob_smooth * right_center) / (l_prob_smooth + r_prob_smooth + 0.05) 
-
-      path_send.pathPlan.mpcAngles = [float(x) for x in angle[:]]
-      path_send.pathPlan.angleSteers = float(angle[5])
+      if cs.vEgo > 10 and abs(cs.torqueRequest) < 1 and abs(cs.steeringRate) < 5:
+        offset = calc_center[2,0]
+        if l_prob_smooth > 0.5 and r_prob_smooth > 0.5:
+          offset_curvature = calc_center[-1,0] - calc_center[2,0]
+          lateral_offset = min(lateral_offset + 0.01, max(0, lateral_offset - 0.01))
+          if offset_curvature > 0:
+            angle_offset -= 0.001
+          elif offset_curvature < 0:
+            angle_offset += 0.001
+        elif l_prob > 0.5:
+          lateral_offset = min(50, lateral_offset + 1)
+        elif r_prob > 0.5:
+          lateral_offset = max(-50, lateral_offset - 1)
+      lateral_offset = 0
+      path_send.pathPlan.angleSteers = float(angle[5] + angle_offset)
+      path_send.pathPlan.mpcAngles = [float(x) for x in (angle[:] + angle_offset - 1)]
       path_send.pathPlan.laneWidth = float(lane_width)
+      path_send.pathPlan.angleOffset = float(angle_offset)
+      path_send.pathPlan.lateralOffset = float(lateral_offset)      
       path_send.pathPlan.lPoly = [float(x) for x in (left_center[:,0] + half_width)]
       path_send.pathPlan.rPoly = [float(x) for x in (right_center[:,0] - half_width)]
-      path_send.pathPlan.cPoly = [float(x) for x in (calc_center[:,0])]
+      path_send.pathPlan.cPoly = [float(x) for x in (calc_center[:,0] + lateral_offset)]
       path_send.pathPlan.lProb = float(l_prob)
       path_send.pathPlan.rProb = float(r_prob)
       path_send.pathPlan.cProb = float(lr_prob)
@@ -264,12 +289,12 @@ while 1:
         pathDataString += pathFormatString3 % tuple([float(x) for x in calc_center[:,0]])
         pathDataString += pathFormatString4 % (path_send.pathPlan.mpcAngles[3], path_send.pathPlan.mpcAngles[4], path_send.pathPlan.mpcAngles[5], path_send.pathPlan.mpcAngles[6], 
                           path_send.pathPlan.mpcAngles[10], path_send.pathPlan.lProb, path_send.pathPlan.rProb, path_send.pathPlan.cProb, path_send.pathPlan.laneWidth, 
-                          path_send.pathPlan.angleSteers, path_send.pathPlan.rateSteers, path_send.pathPlan.canTime - path_send.pathPlan.canTime, cs.canTime)
+                          path_send.pathPlan.angleSteers, path_send.pathPlan.rateSteers, angle_offset, lateral_offset, path_send.pathPlan.canTime - path_send.pathPlan.canTime, cs.canTime)
       path_send = log.Event.new_message()
       path_send.init('pathPlan')
       if recv_frames % 30 == 0:
         #try:
-        print(' sent: %d dropped: %d backlog: %d half_width: %0.1f center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  advance_steer:  %0.2f' % (sent_frames, sent_frames - recv_frames, back_log, half_width, calc_center[-1], l_prob, r_prob, advanceSteer))
+        print(' sent: %d dropped: %d backlog: %d half_width: %0.1f center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  advance_steer:  %0.2f  angle_offset:  %0.2f  lateral_offset:  %0.2f' % (sent_frames, sent_frames - recv_frames, back_log, half_width, calc_center[-1], l_prob, r_prob, advanceSteer, angle_offset, lateral_offset))
 
     if frame_count >= 100 and back_log == 1:
       try:
@@ -286,11 +311,16 @@ while 1:
       pathDataString = ''
       frame_count = 0
 
+    # TODO: replace kegman_conf with params!
     if recv_frames % 100 == 0 and back_log == 2:
       try:
         kegman = kegman_conf()  
         advanceSteer = max(0, float(kegman.conf['advanceSteer']))
+
         #print("advanceSteer = ", advanceSteer)
       except:
         pass
+    
+    if recv_frames % 1000 == 2 and back_log == 2:
+      params.put("LateralParams", json.dumps({'angle_offset': angle_offset, 'lateral_offset': lateral_offset}))
 

@@ -82,19 +82,21 @@ def dashboard_thread(rate=100):
   #tuneSub.setsockopt(zmq.SUBSCRIBE, str(user_id))
   kegmanFormatString = user_id + ",sources=kegman reactRate=%s,dampRate=%s,longOffset=%s,backlash=%s,dampMPC=%s,reactMPC=%s,dampSteer=%s,reactSteer=%s,KpV=%s,KiV=%s,rateFF=%s,angleFF=%s,delaySteer=%s,oscFactor=%s,centerFactor=%s,dampPoly=%s,reactPoly=%s %s\n"
   canFormatString="CANData,user=" + user_id + ",src=%s,pid=%s d1=%si,d2=%si "
-  pathFormatString = "pathPlan,user=" + user_id + " l0=%s,l1=%s,l2=%s,l3=%s,l4=%s,l5=%s,l6=%s,l7=%s,l8=%s,l9=%s,l10=%s,l11=%s,l12=%s,l13=%s,l14=%s,r0=%s,r1=%s,r2=%s,r3=%s,r4=%s,r5=%s,r6=%s,r7=%s,r8=%s,r9=%s,r10=%s,r11=%s,r12=%s,r13=%s,r14=%s,c0=%s,c1=%s,c2=%s,c3=%s,c4=%s,c5=%s,c6=%s,c7=%s,c8=%s,c9=%s,c10=%s,c11=%s,c12=%s,c13=%s,c14=%s,a3=%s,a4=%s,a5=%s,a6=%s,a10=%s,lprob=%s,rprob=%s,cprob=%s,lane_width=%s,angle=%s,rate=%s,plan_age=%s %s\n"
-  pathDataFormatString = "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d|"
+  pathFormatString = "pathPlan,user=" + user_id + " l0=%s,l1=%s,l2=%s,l3=%s,l4=%s,l5=%s,l6=%s,l7=%s,l8=%s,l9=%s,l10=%s,l11=%s,l12=%s,l13=%s,l14=%s,r0=%s,r1=%s,r2=%s,r3=%s,r4=%s,r5=%s,r6=%s,r7=%s,r8=%s,r9=%s,r10=%s,r11=%s,r12=%s,r13=%s,r14=%s,c0=%s,c1=%s,c2=%s,c3=%s,c4=%s,c5=%s,c6=%s,c7=%s,c8=%s,c9=%s,c10=%s,c11=%s,c12=%s,c13=%s,c14=%s,a3=%s,a4=%s,a5=%s,a6=%s,a10=%s,lprob=%s,rprob=%s,cprob=%s,lane_width=%s,angle=%s,rate=%s,angle_offset=%s,lateral_offset=%s,plan_age=%s %s\n"
+  pathDataFormatString = "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d|"
   polyDataString = "%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,"
   pathDataString = ""
   kegmanDataString = ""
   insertString = ""
   canInsertString = ""
-  carStateFormatString2 = "carState,user=" + user_id + " angle_steers=%s,angle_rate=%s,driver_torque=%s,request=%s,angle_rate_eps=%s,yaw_rate_can=%s,angle_steers_eps=%s,long_accel=%s,p2=%s,p=%s,i=%s,f=%s,damp_angle_steers=%s,damp_angle_steers_des=%s,ff_rate=%s,ff_angle=%s,left_frame=%s,far_right_frame=%s,v_ego=%s,wheel_speed_fl=%s,wheel_speed_fr=%s,wheel_speed_rl=%s,wheel_speed_rr=%s,l_blinker=%s,r_blinker=%s,lk_mode=%s,enabled=%s,left_frame=%s,left_1=%s,left_2=%s,left_3=%s,left_4=%s,left_5=%s,left_6=%s,left_7=%s,left_8=%s,left_9=%s,left_10=%s,left_solid=%s,left_dashed=%s,right_frame=%s,right_1=%s,right_2=%s,right_3=%s,right_4=%s,right_5=%s,right_6=%s,right_7=%s,right_8=%s,right_9=%s,right_10=%s,right_solid=%s,right_dashed=%s,far_left_frame=%s,far_left_1=%s,far_left_2=%s,far_left_3=%s,far_left_4=%s,far_left_5=%s,far_left_6=%s,far_left_7=%s,far_left_8=%s,far_left_9=%s,far_left_10=%s,far_left_solid=%s,far_left_dashed=%s,far_right_frame=%s,far_right_1=%s,far_right_2=%s,far_right_3=%s,far_right_4=%s,far_right_5=%s,far_right_6=%s,far_right_7=%s,far_right_8=%s,far_right_9=%s,far_right_10=%s,far_right_solid=%s,far_right_dashed=%s %s\n"
+  carStateFormatString2 = "carState,user=" + user_id + " angle_offset=%s,lateral_offset=%s,angle_steers=%s,angle_rate=%s,driver_torque=%s,request=%s,angle_rate_eps=%s,yaw_rate_can=%s,angle_steers_eps=%s,long_accel=%s,p2=%s,p=%s,i=%s,f=%s,damp_angle_steers=%s,damp_angle_steers_des=%s,ff_rate=%s,ff_angle=%s,left_frame=%s,far_right_frame=%s,v_ego=%s,wheel_speed_fl=%s,wheel_speed_fr=%s,wheel_speed_rl=%s,wheel_speed_rr=%s,l_blinker=%s,r_blinker=%s,lk_mode=%s,enabled=%s,left_frame=%s,left_1=%s,left_2=%s,left_3=%s,left_4=%s,left_5=%s,left_6=%s,left_7=%s,left_8=%s,left_9=%s,left_10=%s,left_solid=%s,left_dashed=%s,right_frame=%s,right_1=%s,right_2=%s,right_3=%s,right_4=%s,right_5=%s,right_6=%s,right_7=%s,right_8=%s,right_9=%s,right_10=%s,right_solid=%s,right_dashed=%s,far_left_frame=%s,far_left_1=%s,far_left_2=%s,far_left_3=%s,far_left_4=%s,far_left_5=%s,far_left_6=%s,far_left_7=%s,far_left_8=%s,far_left_9=%s,far_left_10=%s,far_left_solid=%s,far_left_dashed=%s,far_right_frame=%s,far_right_1=%s,far_right_2=%s,far_right_3=%s,far_right_4=%s,far_right_5=%s,far_right_6=%s,far_right_7=%s,far_right_8=%s,far_right_9=%s,far_right_10=%s,far_right_solid=%s,far_right_dashed=%s %s\n"
   carStateFormatString1 = "carState,user=" + user_id + " angle_steers=%s,angle_rate=%s,driver_torque=%s,request=%s,angle_rate_eps=%s,yaw_rate_can=%s,angle_steers_eps=%s,long_accel=%s,p2=%s,p=%s,i=%s,f=%s,damp_angle_steers=%s,damp_angle_steers_des=%s,ff_rate=%s,ff_angle=%s,left_frame=%s,far_right_frame=%s %s\n"
-  carStateDataFormatString2 = "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d|"
+  carStateDataFormatString2 = "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d|"
   carStateDataFormatString1 = "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d,%d|"
   carStateDataString1 = ""
   carStateDataString2 = ""
+  angle_offset = 0
+  lateral_offset = 0
 
   frame = 0
   active = False
@@ -115,7 +117,7 @@ def dashboard_thread(rate=100):
           vEgo = cs.vEgo
           if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
             stock_cam_frame_prev = cs.camLeft.frame
-            carStateDataString2 += (carStateDataFormatString2 % (cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
+            carStateDataString2 += (carStateDataFormatString2 % (angle_offset, lateral_offset, cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
                                                               cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
                                                               cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, cs.camLeft.frame, cs.camFarRight.frame, \
                                                               vEgo, cs.wheelSpeeds.fl, cs.wheelSpeeds.fr, cs.wheelSpeeds.rl, cs.wheelSpeeds.rr, cs.leftBlinker, cs.rightBlinker, cs.lkMode, cs.cruiseState.enabled, \
@@ -141,7 +143,7 @@ def dashboard_thread(rate=100):
             pathDataString += polyDataString[:format_count] % tuple(float(x) for x in pp.lPoly)
             pathDataString += polyDataString[:format_count] % tuple(float(x) for x in pp.rPoly)
             pathDataString += polyDataString[:format_count] % tuple(float(x) for x in pp.cPoly)
-            pathDataString +=  (pathDataFormatString % (pp.mpcAngles[3], pp.mpcAngles[4], pp.mpcAngles[5], pp.mpcAngles[6], pp.mpcAngles[10], pp.lProb, pp.rProb, pp.cProb, pp.laneWidth, pp.angleSteers, pp.rateSteers, cs.canTime - pp.canTime, cs.canTime))
+            pathDataString +=  (pathDataFormatString % (pp.mpcAngles[3], pp.mpcAngles[4], pp.mpcAngles[5], pp.mpcAngles[6], pp.mpcAngles[10], pp.lProb, pp.rProb, pp.cProb, pp.laneWidth, pp.angleSteers, pp.rateSteers, pp.angleOffset, pp.lateralOffset, cs.canTime - pp.canTime, cs.canTime))
         frame += 1
 
       if socket is tuneSub:

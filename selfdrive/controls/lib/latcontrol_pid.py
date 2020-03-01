@@ -97,7 +97,7 @@ class LatControlPID(object):
         self.pid._k_p = ([0.], [float(self.kegman.conf['Kp'])])
         self.pid.k_f = (float(self.kegman.conf['Kf']))
         self.angle_offset = float(self.kegman.conf['angleOffset'])
-        self.lateral_offset = float(self.kegman.conf['lateralOffset']) * 100
+        self.lateral_offset = float(self.kegman.conf['lateralOffset']) * 1500
         self.damp_time = (float(self.kegman.conf['dampTime']))
         self.react_mpc = (float(self.kegman.conf['reactMPC']))
         self.damp_mpc = (float(self.kegman.conf['dampMPC']))
@@ -129,7 +129,7 @@ class LatControlPID(object):
       self.avg_plan_age += 0.01 * (path_age - self.avg_plan_age)
 
       self.c_prob = max(self.c_prob - 0.0333, min(self.c_prob + 0.0333, path_plan.cProb))
-      self.projected_lane_error = self.c_prob * self.poly_factor * (sum(path_plan.cPoly + self.lateral_offset) + self.polyReact * 15 * (path_plan.cPoly[-1] - path_plan.cPoly[-2]))
+      self.projected_lane_error = self.c_prob * self.poly_factor * (sum(path_plan.cPoly) + self.lateral_offset + self.polyReact * 15 * (path_plan.cPoly[-1] - path_plan.cPoly[-2]))
       if abs(self.projected_lane_error) < abs(self.prev_projected_lane_error) and (self.projected_lane_error > 0) == (self.prev_projected_lane_error > 0):
         self.projected_lane_error *= gernterp(angle_steers, [0, 4], [0.25, 1.0])
       #self.damp_adjust = gernterp(abs(path_plan.cPoly[-1]), [0,50], [1., 0.5])

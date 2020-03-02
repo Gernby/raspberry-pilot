@@ -273,7 +273,7 @@ while 1:
           lateral_offset = max(-50, lateral_offset - 1)
       lateral_offset = 0
       path_send.pathPlan.angleSteers = float(angle[5] + round(angle_offset, 1))
-      path_send.pathPlan.mpcAngles = [float(x) for x in (angle[:] + round(angle_offset,1))]
+      path_send.pathPlan.mpcAngles = [float(x) for x in (angle[:])]
       path_send.pathPlan.laneWidth = float(lane_width)
       path_send.pathPlan.angleOffset = float(round(angle_offset,1))
       path_send.pathPlan.lateralOffset = float(lateral_offset)      

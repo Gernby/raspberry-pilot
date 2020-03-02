@@ -148,7 +148,7 @@ while 1:
       cs = _cs.carState
       frame_count += 1
 
-      unscaled_input_array = [[cs.vEgo, round(cs.steeringAngle - angle_offset, 1), cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN, cs.longAccel,              0 ,    0           , cs.steeringRate, cs.steeringTorque, cs.torqueRequest,
+      unscaled_input_array = [[cs.vEgo, round(cs.steeringAngle + angle_offset, 1), cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN, cs.longAccel,              0 ,    0           , cs.steeringRate, cs.steeringTorque, cs.torqueRequest,
                       cs.camLeft.parm1, cs.camLeft.parm2, cs.camLeft.parm3, cs.camLeft.parm4, cs.camLeft.parm5, cs.camLeft.parm6, cs.camLeft.parm7, cs.camLeft.parm8, cs.camLeft.parm9, cs.camLeft.parm10, 
                       cs.camFarLeft.parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4, cs.camFarLeft.parm5, cs.camFarLeft.parm6, cs.camFarLeft.parm7, cs.camFarLeft.parm8, cs.camFarLeft.parm9, cs.camFarLeft.parm10, 
                       cs.camRight.parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4, cs.camRight.parm5, cs.camRight.parm6, cs.camRight.parm7, cs.camRight.parm8, cs.camRight.parm9, cs.camRight.parm10, 
@@ -254,7 +254,7 @@ while 1:
       left_center = l_prob_smooth * left_center + (1 - l_prob_smooth) * calc_center
       right_center = r_prob_smooth * right_center + (1 - r_prob_smooth) * calc_center 
       
-      angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer), angle - 1.0, angle + 1.0)
+      angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer), angle - 0.5, angle + 0.5)
       #angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer) + descaled_output[0][0,0:1], angle - 1.0, angle + 1.0)
       #angle = np.add(descaled_output[0][1:,0], np.multiply(np.diff(descaled_output[0][:,0]), advanceSteer))
       calc_center = (l_prob_smooth * left_center + r_prob_smooth * right_center) / (l_prob_smooth + r_prob_smooth + 0.05) 

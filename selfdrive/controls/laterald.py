@@ -254,7 +254,7 @@ while 1:
       left_center = l_prob_smooth * left_center + (1 - l_prob_smooth) * calc_center
       right_center = r_prob_smooth * right_center + (1 - r_prob_smooth) * calc_center 
       
-      angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer) + angle_steers.pop(output_list[-1]), angle - 1.0, angle + 1.0)
+      angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer), angle - 1.0, angle + 1.0)
       #angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer) + descaled_output[0][0,0:1], angle - 1.0, angle + 1.0)
       #angle = np.add(descaled_output[0][1:,0], np.multiply(np.diff(descaled_output[0][:,0]), advanceSteer))
       calc_center = (l_prob_smooth * left_center + r_prob_smooth * right_center) / (l_prob_smooth + r_prob_smooth + 0.05) 
@@ -273,7 +273,7 @@ while 1:
           lateral_offset = max(-50, lateral_offset - 1)
       lateral_offset = 0
       path_send.pathPlan.angleSteers = float(angle[5] + round(angle_offset, 1))
-      path_send.pathPlan.mpcAngles = [float(x) for x in (angle[:])]
+      path_send.pathPlan.mpcAngles = [float(x) for x in (angle[:] + angle_steers.pop(output_list[-1]))]
       path_send.pathPlan.laneWidth = float(lane_width)
       path_send.pathPlan.angleOffset = float(round(angle_offset,1))
       path_send.pathPlan.lateralOffset = float(lateral_offset)      

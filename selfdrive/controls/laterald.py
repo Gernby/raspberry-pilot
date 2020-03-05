@@ -112,8 +112,8 @@ try:
   input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_A.scaler' % (scaler_type, Inputs)))
   output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_A.scaler' % (scaler_type, Outputs)))
 except:
-  input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_C.scaler' % (scaler_type, Inputs)))
-  output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_C.scaler' % (scaler_type, Outputs)))
+  input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_001.scaler' % (scaler_type, Inputs)))
+  output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_001.scaler' % (scaler_type, Outputs)))
 
 scaler_padding = None 
 scaled_camera_array = []
@@ -150,30 +150,39 @@ while 1:
 
       #lateral_offset = 0
       steer_angle = round(cs.steeringAngle - angle_offset, 1)
-      left_parm1 = min(cs.camLeft.parm1 + cs.camLeft.parm4, max(cs.camLeft.parm1 - cs.camLeft.parm4, cs.camLeft.parm1 - int(lateral_offset)))
-      right_parm1 = min(cs.camRight.parm1 + cs.camRight.parm4, max(cs.camRight.parm1 - cs.camRight.parm4, cs.camRight.parm1 - int(lateral_offset)))
-      far_left_parm1 = min(cs.camFarLeft.parm1 + cs.camFarLeft.parm4, max(cs.camFarLeft.parm1 - cs.camFarLeft.parm4, cs.camFarLeft.parm1 - int(lateral_offset)))
-      far_right_parm1 = min(cs.camFarRight.parm1 + cs.camFarRight.parm4, max(cs.camFarRight.parm1 - cs.camFarRight.parm4, cs.camFarRight.parm1 - int(lateral_offset)))
+      #left_parm1 = min(cs.camLeft.parm1 + cs.camLeft.parm4, max(cs.camLeft.parm1 - cs.camLeft.parm4, cs.camLeft.parm1 - int(lateral_offset)))
+      #right_parm1 = min(cs.camRight.parm1 + cs.camRight.parm4, max(cs.camRight.parm1 - cs.camRight.parm4, cs.camRight.parm1 - int(lateral_offset)))
+      #far_left_parm1 = min(cs.camFarLeft.parm1 + cs.camFarLeft.parm4, max(cs.camFarLeft.parm1 - cs.camFarLeft.parm4, cs.camFarLeft.parm1 - int(lateral_offset)))
+      #far_right_parm1 = min(cs.camFarRight.parm1 + cs.camFarRight.parm4, max(cs.camFarRight.parm1 - cs.camFarRight.parm4, cs.camFarRight.parm1 - int(lateral_offset)))
 
       unscaled_input_array = [[cs.vEgo, steer_angle, cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN, cs.longAccel,              0 ,    0           , cs.steeringRate, cs.steeringTorque, cs.torqueRequest,
-                      left_parm1, cs.camLeft.parm2, cs.camLeft.parm3, cs.camLeft.parm4, cs.camLeft.parm5, cs.camLeft.parm6, cs.camLeft.parm7, cs.camLeft.parm8, cs.camLeft.parm9, cs.camLeft.parm10, 
-                      far_left_parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4, cs.camFarLeft.parm5, cs.camFarLeft.parm6, cs.camFarLeft.parm7, cs.camFarLeft.parm8, cs.camFarLeft.parm9, cs.camFarLeft.parm10, 
-                      right_parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4, cs.camRight.parm5, cs.camRight.parm6, cs.camRight.parm7, cs.camRight.parm8, cs.camRight.parm9, cs.camRight.parm10, 
-                      far_right_parm1, cs.camFarRight.parm2, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm6, cs.camFarRight.parm7, cs.camFarRight.parm8, cs.camFarRight.parm9, cs.camFarRight.parm10]] 
+                      cs.camLeft.parm1, cs.camLeft.parm2, cs.camLeft.parm3, cs.camLeft.parm4, cs.camLeft.parm5, cs.camLeft.parm6, cs.camLeft.parm7, cs.camLeft.parm8, cs.camLeft.parm9, cs.camLeft.parm10, 
+                      cs.camFarLeft.parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4, cs.camFarLeft.parm5, cs.camFarLeft.parm6, cs.camFarLeft.parm7, cs.camFarLeft.parm8, cs.camFarLeft.parm9, cs.camFarLeft.parm10, 
+                      cs.camRight.parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4, cs.camRight.parm5, cs.camRight.parm6, cs.camRight.parm7, cs.camRight.parm8, cs.camRight.parm9, cs.camRight.parm10, 
+                      cs.camFarRight.parm1, cs.camFarRight.parm2, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm6, cs.camFarRight.parm7, cs.camFarRight.parm8, cs.camFarRight.parm9, cs.camFarRight.parm10]] 
 
       scaled_data = input_scaler.transform(unscaled_input_array)
       scaled_vehicle_array.append(scaled_data[:,:11])
 
       if cs.vEgo > 10:
-        if cs.camLeft.parm4 > 60 and cs.camRight.parm4 > 60 and abs(cs.torqueRequest) < 0.4 and abs(cs.torqueRequest) > 0:
-          if cs.camLeft.parm2 + cs.camRight.parm2 < 0 and (cs.camLeft.parm1 + cs.camRight.parm1) > 2 * lateral_offset:
-            lateral_offset += (0.0001 * cs.vEgo)
-          elif cs.camLeft.parm2 + cs.camRight.parm2 > 0 and (cs.camLeft.parm1 + cs.camRight.parm1) < 2 * lateral_offset:
-            lateral_offset -= (0.0001 * cs.vEgo)
         if cs.yawRateCAN < 0 and cs.steeringAngle > angle_offset:
           angle_offset += (0.0001 * cs.vEgo)
         elif cs.yawRateCAN > 0 and cs.steeringAngle < angle_offset:
           angle_offset -= (0.0001 * cs.vEgo)
+        elif abs(cs.lateralControlState.pidState.p2 - cs.torqueRequest) > 1.1 * abs(cs.lateralControlState.pidState.p2) and abs(cs.torqueRequest) < 1 and abs(cs.steeringRate) < 5:
+          if cs.lateralControlState.pidState.p2 < 0:
+            lateral_offset -= (0.0001 * cs.vEgo)
+          else:
+            lateral_offset += (0.0001 * cs.vEgo)
+        #elif cs.camLeft.parm4 > 60 and cs.camRight.parm4 > 60 and abs(cs.torqueRequest) < 0.4 and abs(cs.torqueRequest) > 0 and abs(cs.steeringRate) < 5:
+        #  if cs.camLeft.parm2 + cs.camRight.parm2 < -2 or (cs.camLeft.parm2 + cs.camRight.parm2 < 0 and cs.yawRateCAN < 0):
+        #    lateral_offset -= (0.0001 * cs.vEgo)
+        #  elif cs.camLeft.parm2 + cs.camRight.parm2 > 2 or (cs.camLeft.parm2 + cs.camRight.parm2 > 0 and cs.yawRateCAN > 0):
+        #    lateral_offset += (0.0001 * cs.vEgo)
+          #if cs.camLeft.parm2 + cs.camRight.parm2 < 0 and (cs.camLeft.parm1 + cs.camRight.parm1) > 2 * lateral_offset:
+          #  lateral_offset += (0.0001 * cs.vEgo)
+          #elif cs.camLeft.parm2 + cs.camRight.parm2 > 0 and (cs.camLeft.parm1 + cs.camRight.parm1) < 2 * lateral_offset:
+          #  lateral_offset -= (0.0001 * cs.vEgo)
 
       if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
         back_log = 0
@@ -278,7 +287,7 @@ while 1:
       #angle = np.add(descaled_output[0][1:,0], np.multiply(np.diff(descaled_output[0][:,0]), advanceSteer))
       calc_center = (l_prob_smooth * left_center + r_prob_smooth * right_center) / (l_prob_smooth + r_prob_smooth + 0.05) 
       path_send.pathPlan.angleSteers = float(angle[5] + cs.steeringAngle)
-      path_send.pathPlan.mpcAngles = [float(x) for x in (angle[:] + cs.steeringAngle)]   #angle_steers.pop(output_list[-1]))]
+      path_send.pathPlan.mpcAngles = [float(x) for x in (angle[:] + cs.steeringAngle + lateral_offset)]   #angle_steers.pop(output_list[-1]))]
       path_send.pathPlan.laneWidth = float(lane_width)
       path_send.pathPlan.angleOffset = float(round(angle_offset,1))
       path_send.pathPlan.lateralOffset = float(lateral_offset)      

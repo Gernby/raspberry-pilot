@@ -24,7 +24,7 @@ try:
   lateral_params = params.get("LateralParams")
   lateral_params = json.loads(lateral_params)
   lateral_offset = float(lateral_params['lateral_offset'])
-  angle_offset = float(angle_offset['angle_offset'])
+  angle_offset = float(lateral_params['angle_offset'])
 except:
   user_id = "unidentified"  
   lateral_offset = 0.0
@@ -148,14 +148,33 @@ while 1:
       cs = _cs.carState
       frame_count += 1
 
-      unscaled_input_array = [[cs.vEgo, round(cs.steeringAngle - angle_offset, 1), cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN, cs.longAccel,              0 ,    0           , cs.steeringRate, cs.steeringTorque, cs.torqueRequest,
-                      cs.camLeft.parm1, cs.camLeft.parm2, cs.camLeft.parm3, cs.camLeft.parm4, cs.camLeft.parm5, cs.camLeft.parm6, cs.camLeft.parm7, cs.camLeft.parm8, cs.camLeft.parm9, cs.camLeft.parm10, 
-                      cs.camFarLeft.parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4, cs.camFarLeft.parm5, cs.camFarLeft.parm6, cs.camFarLeft.parm7, cs.camFarLeft.parm8, cs.camFarLeft.parm9, cs.camFarLeft.parm10, 
-                      cs.camRight.parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4, cs.camRight.parm5, cs.camRight.parm6, cs.camRight.parm7, cs.camRight.parm8, cs.camRight.parm9, cs.camRight.parm10, 
-                      cs.camFarRight.parm1, cs.camFarRight.parm2, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm6, cs.camFarRight.parm7, cs.camFarRight.parm8, cs.camFarRight.parm9, cs.camFarRight.parm10]] 
+      #lateral_offset = 0
+      steer_angle = round(cs.steeringAngle - angle_offset, 1)
+      left_parm1 = min(cs.camLeft.parm1 + cs.camLeft.parm4, max(cs.camLeft.parm1 - cs.camLeft.parm4, cs.camLeft.parm1 - int(lateral_offset)))
+      right_parm1 = min(cs.camRight.parm1 + cs.camRight.parm4, max(cs.camRight.parm1 - cs.camRight.parm4, cs.camRight.parm1 - int(lateral_offset)))
+      far_left_parm1 = min(cs.camFarLeft.parm1 + cs.camFarLeft.parm4, max(cs.camFarLeft.parm1 - cs.camFarLeft.parm4, cs.camFarLeft.parm1 - int(lateral_offset)))
+      far_right_parm1 = min(cs.camFarRight.parm1 + cs.camFarRight.parm4, max(cs.camFarRight.parm1 - cs.camFarRight.parm4, cs.camFarRight.parm1 - int(lateral_offset)))
+
+      unscaled_input_array = [[cs.vEgo, steer_angle, cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN, cs.longAccel,              0 ,    0           , cs.steeringRate, cs.steeringTorque, cs.torqueRequest,
+                      left_parm1, cs.camLeft.parm2, cs.camLeft.parm3, cs.camLeft.parm4, cs.camLeft.parm5, cs.camLeft.parm6, cs.camLeft.parm7, cs.camLeft.parm8, cs.camLeft.parm9, cs.camLeft.parm10, 
+                      far_left_parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4, cs.camFarLeft.parm5, cs.camFarLeft.parm6, cs.camFarLeft.parm7, cs.camFarLeft.parm8, cs.camFarLeft.parm9, cs.camFarLeft.parm10, 
+                      right_parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4, cs.camRight.parm5, cs.camRight.parm6, cs.camRight.parm7, cs.camRight.parm8, cs.camRight.parm9, cs.camRight.parm10, 
+                      far_right_parm1, cs.camFarRight.parm2, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm6, cs.camFarRight.parm7, cs.camFarRight.parm8, cs.camFarRight.parm9, cs.camFarRight.parm10]] 
 
       scaled_data = input_scaler.transform(unscaled_input_array)
       scaled_vehicle_array.append(scaled_data[:,:11])
+
+      if cs.vEgo > 10:
+        if cs.camLeft.parm4 > 60 and cs.camRight.parm4 > 60 and abs(cs.torqueRequest) < 0.4 and abs(cs.torqueRequest) > 0:
+          if cs.camLeft.parm2 + cs.camRight.parm2 < 0 and (cs.camLeft.parm1 + cs.camRight.parm1) > 2 * lateral_offset:
+            lateral_offset += (0.0001 * cs.vEgo)
+          elif cs.camLeft.parm2 + cs.camRight.parm2 > 0 and (cs.camLeft.parm1 + cs.camRight.parm1) < 2 * lateral_offset:
+            lateral_offset -= (0.0001 * cs.vEgo)
+        if cs.yawRateCAN < 0 and cs.steeringAngle > angle_offset:
+          angle_offset += (0.0001 * cs.vEgo)
+        elif cs.yawRateCAN > 0 and cs.steeringAngle < angle_offset:
+          angle_offset -= (0.0001 * cs.vEgo)
+
       if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
         back_log = 0
         scaled_camera_array.append(scaled_data[:,11:])
@@ -186,7 +205,7 @@ while 1:
           input_array.append(cs.canTime)
           if recv_frames > 5 or sent_frames % 5 == 0:
             gernModelInputs.send_json(list(input_array))
-          carStateDataString2 += (carStateFormatString2 % (angle_offset, lateral_offset, cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
+          carStateDataString2 += (carStateFormatString2 % (round(angle_offset, 1), int(lateral_offset), cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
                                                             cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
                                                             cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, cs.camLeft.frame, cs.camFarRight.frame, \
                                                             cs.vEgo, cs.wheelSpeeds.fl, cs.wheelSpeeds.fr, cs.wheelSpeeds.rl, cs.wheelSpeeds.rr, cs.leftBlinker, cs.rightBlinker, cs.lkMode, cs.cruiseState.enabled, \
@@ -254,32 +273,18 @@ while 1:
       left_center = l_prob_smooth * left_center + (1 - l_prob_smooth) * calc_center
       right_center = r_prob_smooth * right_center + (1 - r_prob_smooth) * calc_center 
       
-      angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer), angle - 0.75, angle + 0.75)
+      angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer), angle - 0.25 * cs.vEgo, angle + 0.025 * cs.vEgo)
       #angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer) + descaled_output[0][0,0:1], angle - 1.0, angle + 1.0)
       #angle = np.add(descaled_output[0][1:,0], np.multiply(np.diff(descaled_output[0][:,0]), advanceSteer))
       calc_center = (l_prob_smooth * left_center + r_prob_smooth * right_center) / (l_prob_smooth + r_prob_smooth + 0.05) 
-      if cs.vEgo > 10 and abs(cs.torqueRequest) < 1 and abs(cs.steeringRate) < 5:
-        offset = calc_center[2,0]
-        if l_prob_smooth > 0.5 and r_prob_smooth > 0.5:
-          offset_curvature = calc_center[-1,0] - calc_center[2,0]
-          lateral_offset = min(lateral_offset + 0.01, max(0, lateral_offset - 0.01))
-          if offset_curvature > 0:
-            angle_offset += 0.001
-          elif offset_curvature < 0:
-            angle_offset -= 0.001
-        elif l_prob > 0.5:
-          lateral_offset = min(50, lateral_offset + 1)
-        elif r_prob > 0.5:
-          lateral_offset = max(-50, lateral_offset - 1)
-      lateral_offset = 0
-      path_send.pathPlan.angleSteers = float(angle[5] + round(angle_offset, 1))
-      path_send.pathPlan.mpcAngles = [float(x) for x in (angle[:] + angle_steers.pop(output_list[-1]))]
+      path_send.pathPlan.angleSteers = float(angle[5] + cs.steeringAngle)
+      path_send.pathPlan.mpcAngles = [float(x) for x in (angle[:] + cs.steeringAngle)]   #angle_steers.pop(output_list[-1]))]
       path_send.pathPlan.laneWidth = float(lane_width)
       path_send.pathPlan.angleOffset = float(round(angle_offset,1))
       path_send.pathPlan.lateralOffset = float(lateral_offset)      
       path_send.pathPlan.lPoly = [float(x) for x in (left_center[:,0] + half_width)]
       path_send.pathPlan.rPoly = [float(x) for x in (right_center[:,0] - half_width)]
-      path_send.pathPlan.cPoly = [float(x) for x in (calc_center[:,0] + lateral_offset)]
+      path_send.pathPlan.cPoly = [float(x) for x in (calc_center[:,0])]
       path_send.pathPlan.lProb = float(l_prob)
       path_send.pathPlan.rProb = float(r_prob)
       path_send.pathPlan.cProb = float(lr_prob)
@@ -318,7 +323,6 @@ while 1:
       try:
         kegman = kegman_conf()  
         advanceSteer = max(0, float(kegman.conf['advanceSteer']))
-
         #print("advanceSteer = ", advanceSteer)
       except:
         pass

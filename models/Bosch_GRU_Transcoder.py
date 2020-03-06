@@ -4,7 +4,7 @@ if False:
   model_name = 'gpu-model'
 else:
   os.environ["CUDA_VISIBLE_DEVICES"]="-1"
-  model_name = 'cpu-model-001'
+  model_name = 'cpu-model-002'
 history_rows = 5
 inputs = 51
 

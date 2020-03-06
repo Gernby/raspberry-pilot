@@ -112,8 +112,8 @@ try:
   input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_A.scaler' % (scaler_type, Inputs)))
   output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_A.scaler' % (scaler_type, Outputs)))
 except:
-  input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_001.scaler' % (scaler_type, Inputs)))
-  output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_001.scaler' % (scaler_type, Outputs)))
+  input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_002.scaler' % (scaler_type, Inputs)))
+  output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_002.scaler' % (scaler_type, Outputs)))
 
 scaler_padding = None 
 scaled_camera_array = []
@@ -169,11 +169,11 @@ while 1:
           angle_offset += (0.0001 * cs.vEgo)
         elif cs.yawRateCAN > 0 and cs.steeringAngle < angle_offset:
           angle_offset -= (0.0001 * cs.vEgo)
-        elif abs(cs.lateralControlState.pidState.p2 - cs.torqueRequest) > 1.1 * abs(cs.lateralControlState.pidState.p2) and abs(cs.torqueRequest) < 1 and abs(cs.steeringRate) < 5:
+        elif abs(cs.lateralControlState.pidState.p2 - cs.torqueRequest) > abs(cs.lateralControlState.pidState.p2) and abs(cs.steeringRate) < 5:
           if cs.lateralControlState.pidState.p2 < 0:
-            lateral_offset -= (0.0001 * cs.vEgo)
+            lateral_offset -= (0.00002 * cs.vEgo)
           else:
-            lateral_offset += (0.0001 * cs.vEgo)
+            lateral_offset += (0.00002 * cs.vEgo)
         #elif cs.camLeft.parm4 > 60 and cs.camRight.parm4 > 60 and abs(cs.torqueRequest) < 0.4 and abs(cs.torqueRequest) > 0 and abs(cs.steeringRate) < 5:
         #  if cs.camLeft.parm2 + cs.camRight.parm2 < -2 or (cs.camLeft.parm2 + cs.camRight.parm2 < 0 and cs.yawRateCAN < 0):
         #    lateral_offset -= (0.0001 * cs.vEgo)

@@ -171,9 +171,9 @@ while 1:
           angle_offset -= (0.0001 * cs.vEgo)
         elif abs(cs.lateralControlState.pidState.p2 - cs.torqueRequest) > 1.1 * abs(cs.lateralControlState.pidState.p2) and abs(cs.torqueRequest) < 1 and abs(cs.steeringRate) < 5:
           if cs.lateralControlState.pidState.p2 < 0:
-            lateral_offset -= (0.0001 * cs.vEgo)
+            lateral_offset -= (0.00002 * cs.vEgo)
           else:
-            lateral_offset += (0.0001 * cs.vEgo)
+            lateral_offset += (0.00002 * cs.vEgo)
         #elif cs.camLeft.parm4 > 60 and cs.camRight.parm4 > 60 and abs(cs.torqueRequest) < 0.4 and abs(cs.torqueRequest) > 0 and abs(cs.steeringRate) < 5:
         #  if cs.camLeft.parm2 + cs.camRight.parm2 < -2 or (cs.camLeft.parm2 + cs.camRight.parm2 < 0 and cs.yawRateCAN < 0):
         #    lateral_offset -= (0.0001 * cs.vEgo)
@@ -287,7 +287,7 @@ while 1:
       #angle = np.add(descaled_output[0][1:,0], np.multiply(np.diff(descaled_output[0][:,0]), advanceSteer))
       calc_center = (l_prob_smooth * left_center + r_prob_smooth * right_center) / (l_prob_smooth + r_prob_smooth + 0.05) 
       path_send.pathPlan.angleSteers = float(angle[5] + cs.steeringAngle)
-      path_send.pathPlan.mpcAngles = [float(x) for x in (angle[:] + cs.steeringAngle + lateral_offset)]   #angle_steers.pop(output_list[-1]))]
+      path_send.pathPlan.mpcAngles = [float(x) for x in (angle[:] + cs.steeringAngle + round(lateral_offset,3))]   #angle_steers.pop(output_list[-1]))]
       path_send.pathPlan.laneWidth = float(lane_width)
       path_send.pathPlan.angleOffset = float(round(angle_offset,1))
       path_send.pathPlan.lateralOffset = float(lateral_offset)      

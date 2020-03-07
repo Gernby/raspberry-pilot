@@ -112,8 +112,8 @@ try:
   input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_A.scaler' % (scaler_type, Inputs)))
   output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_A.scaler' % (scaler_type, Outputs)))
 except:
-  input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_002.scaler' % (scaler_type, Inputs)))
-  output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_002.scaler' % (scaler_type, Outputs)))
+  input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_003.scaler' % (scaler_type, Inputs)))
+  output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_003.scaler' % (scaler_type, Outputs)))
 
 scaler_padding = None 
 scaled_camera_array = []
@@ -266,7 +266,7 @@ while 1:
       left_center = l_prob_smooth * left_center + (1 - l_prob_smooth) * calc_center
       right_center = r_prob_smooth * right_center + (1 - r_prob_smooth) * calc_center 
       
-      angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer), angle - 0.25 * cs.vEgo, angle + 0.025 * cs.vEgo)
+      angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer), angle - 0.05 * cs.vEgo, angle + 0.05 * cs.vEgo)
       #angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer) + descaled_output[0][0,0:1], angle - 1.0, angle + 1.0)
       #angle = np.add(descaled_output[0][1:,0], np.multiply(np.diff(descaled_output[0][:,0]), advanceSteer))
       calc_center = (l_prob_smooth * left_center + r_prob_smooth * right_center) / (l_prob_smooth + r_prob_smooth + 0.05) 

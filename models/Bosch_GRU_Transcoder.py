@@ -4,14 +4,14 @@ if False:
   model_name = 'gpu-model'
 else:
   os.environ["CUDA_VISIBLE_DEVICES"]="-1"
-  model_name = 'cpu-model-002'
+  model_name = 'cpu-model-003'
 history_rows = 5
 inputs = 51
 
 import zmq
 import time
 import json
-import platform
+import platform 
 import subprocess
 import multiprocessing
 from tensorflow.python.keras.models import load_model #, Model  #, Sequential

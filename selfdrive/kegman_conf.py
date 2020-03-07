@@ -76,7 +76,7 @@ class kegman_conf():
 
     if Reset or not os.path.isfile(os.path.expanduser('~/kegman.json')):
       self.config = {"Kp":"-1","Ki":"-1","Kf":"-1","rateFFGain":"-1","reactMPC":"-1","dampMPC":"-1","dampSteer":"-1","advanceSteer":"-1","lkasMode":"0", "reactSteer":"-1","cameraOffset":"0.06", "lastTrMode":"1", "battChargeMin":"60", "battChargeMax":"70", "wheelTouchSeconds":"180", \
-          "battPercOff":"25", "carVoltageMinEonShutdown":"11800", "brakeStoppingTarget":"0.25", "lkasMode":"0", "leadDistance":"5"}
+          "battPercOff":"25", "carVoltageMinEonShutdown":"11800", "brakeStoppingTarget":"0.25", "leadDistance":"5"}
     else:
       with open(os.path.expanduser('~/kegman.json'), 'r') as f:
         self.config = json.load(f)
@@ -94,11 +94,6 @@ class kegman_conf():
     if "leadDistance" not in self.config:
       self.config.update({"leadDistance":"5"})
       self.element_updated = True
-
-    if "tuneRev" not in self.config or self.config['tuneRev'] != base_config['tuneRev']:
-      for key, value in base_config.items():
-        self.config.update({key: value})
-        self.element_updated = True
 
     if "advanceSteer" not in self.config:
       self.config.update({"advanceSteer":"0.0"})
@@ -122,6 +117,11 @@ class kegman_conf():
       self.config.update({"dashIP":"tcp://gernstation.synology.me"})
       self.config.update({"dashCapture":"controlsState,liveParameters,gpsLocation"})
       self.element_updated = True
+
+    if "tuneRev" not in self.config or self.config['tuneRev'] != base_config['tuneRev']:
+      for key, value in base_config.items():
+        self.config.update({key: value})
+        self.element_updated = True
 
     if self.element_updated:
       print("updated")

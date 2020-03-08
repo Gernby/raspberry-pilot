@@ -267,8 +267,7 @@ while 1:
       right_center = r_prob_smooth * right_center + (1 - r_prob_smooth) * calc_center 
       
       angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer), angle - 0.05 * cs.vEgo, angle + 0.05 * cs.vEgo)
-      #angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer) + descaled_output[0][0,0:1], angle - 1.0, angle + 1.0)
-      #angle = np.add(descaled_output[0][1:,0], np.multiply(np.diff(descaled_output[0][:,0]), advanceSteer))
+
       calc_center = (l_prob_smooth * left_center + r_prob_smooth * right_center) / (l_prob_smooth + r_prob_smooth + 0.05) 
       path_send.pathPlan.angleSteers = float(angle[5] + cs.steeringAngle)
       path_send.pathPlan.mpcAngles = [float(x) for x in (angle[:] + cs.steeringAngle)]   #angle_steers.pop(output_list[-1]))]

@@ -75,7 +75,7 @@ void *safety_setter_thread(void *s) {
   //  }
   //  usleep(100*1000);
   //}
-  printf("got CarVin %s", value_vin);
+  //printf("got CarVin %s", value_vin);
 
   pthread_mutex_lock(&usb_lock);
 
@@ -221,12 +221,15 @@ bool can_recv(void *s, bool force_send) {
   // TODO: Split bus 0 and 1 into separate packets synced to 330 for bus 0 and 586 for bus 1
   // TODO: Add CAN filter
   big_index = big_recv/0x10;
+  force_send = false;
   for (int i = 0; i<(recv/0x10); i++) {
     big_data[(big_index + i)*4] = data[i*4];
     big_data[(big_index + i)*4+1] = data[i*4+1];
     big_data[(big_index + i)*4+2] = data[i*4+2];
     big_data[(big_index + i)*4+3] = data[i*4+3];
-    big_recv += 0x10;
+    big_recv += 0x10;    
+    //if (data[i*4] >> 21 == 229 && (data[i*4+1] >> 4) & 0xff == 1) force_send = true;
+    if (data[i*4] >> 21 == 330) force_send = true;
   }
   if (force_send) {
     frame_sent = true;
@@ -460,9 +463,9 @@ void *can_recv_thread(void *crap) {
   bool frame_sent, skip_once, force_send;
   uint64_t wake_time, cur_time, last_long_sleep;
   int recv_state = 0;
-  int long_sleep_us = 4000;
+  int long_sleep_us = 4500;
   int panda_loops = 2;
-  int short_sleep_us = 10000 - (panda_loops * long_sleep_us);
+  int short_sleep_us =  10000 - (panda_loops * long_sleep_us);
   force_send = true;
   last_long_sleep = 1e-3 * nanos_since_boot();
   wake_time = last_long_sleep;
@@ -470,11 +473,17 @@ void *can_recv_thread(void *crap) {
   while (!do_exit) {
 
     frame_sent = can_recv(publisher, force_send);
+    if (frame_sent) recv_state = 0;
 
     // drain the Panda with a sleep, then MAYBE once more if it is ahead of schedule
     if (recv_state++ < panda_loops) {
       last_long_sleep = 1e-3 * nanos_since_boot();
-      wake_time += long_sleep_us;
+      if (recv_state == 0) {
+        wake_time += long_sleep_us - short_sleep_us;
+      }
+      else {
+        wake_time += long_sleep_us + short_sleep_us;
+      }
       force_send = false;
       if (last_long_sleep < wake_time) {
         usleep(wake_time - last_long_sleep);
@@ -491,9 +500,9 @@ void *can_recv_thread(void *crap) {
             if (last_long_sleep < wake_time) {
               usleep(wake_time - last_long_sleep);
             }
-            else {
-              printf("   boardd lagged, skip sleep!\n");
-            }
+            //else {
+            //  printf("   boardd lagged, skip sleep! %d\n", recv_state);
+            //}
           }
         }
       }
@@ -646,15 +655,8 @@ void *pigeon_thread(void *crap) {
       pigeon_needs_init = false;
       pigeon_init();
     }
+
     int alen = 0;
-    
-    pthread_mutex_lock(&usb_lock);
-
-    // VIN query done, stop listening to OBDII
-    libusb_control_transfer(dev_handle, 0x40, 0xdc, (uint16_t)(cereal::CarParams::SafetyModel::HONDA_BOSCH), 0, NULL, 0, TIMEOUT);
-
-    pthread_mutex_unlock(&usb_lock);
-
     while (alen < 0xfc0) {
       pthread_mutex_lock(&usb_lock);
       int len = libusb_control_transfer(dev_handle, 0xc0, 0xe0, 1, 0, dat+alen, 0x40, TIMEOUT);

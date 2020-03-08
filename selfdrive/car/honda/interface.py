@@ -422,7 +422,7 @@ class CarInterface(CarInterfaceBase):
     #if self.frame % 100 == 0: print(self.canTime)
 
     self.cp.update_strings(can_strings)
-    self.cp.update(0, False)
+    #self.cp.update(0, False)
     if not self.cp_cam is None: 
       self.cp_cam.update_strings(can_strings)
       #self.cp_cam.update(0, False)

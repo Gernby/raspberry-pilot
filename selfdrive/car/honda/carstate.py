@@ -40,12 +40,8 @@ def get_cam_can_signals():
       ("FRAME_ID", "ADJ_LANE_RIGHT_2", 0),
       ("DASHED_LINE", "CUR_LANE_LEFT_2", 0),
       ("DASHED_LINE", "CUR_LANE_RIGHT_2", 0),
-      ("DASHED_LINE", "ADJ_LANE_LEFT_2", 0),
-      ("DASHED_LINE", "ADJ_LANE_RIGHT_2", 0),
       ("SOLID_LINE", "CUR_LANE_LEFT_2", 0),
       ("SOLID_LINE", "CUR_LANE_RIGHT_2", 0),
-      ("SOLID_LINE", "ADJ_LANE_LEFT_2", 0),
-      ("SOLID_LINE", "ADJ_LANE_RIGHT_2", 0),
       ("PARM_1", "CUR_LANE_LEFT_1", 0),
       ("PARM_2", "CUR_LANE_LEFT_1", 0),
       ("PARM_3", "CUR_LANE_LEFT_1", 0),
@@ -53,9 +49,11 @@ def get_cam_can_signals():
       ("PARM_5", "CUR_LANE_LEFT_1", 0),
       ("PARM_6", "CUR_LANE_LEFT_2", 0),
       ("PARM_7", "CUR_LANE_LEFT_2", 0),
-      ("PARM_8", "CUR_LANE_LEFT_2", 0),
       ("PARM_9", "CUR_LANE_LEFT_2", 0),
       ("PARM_10", "CUR_LANE_LEFT_2", 0),
+      ("PARM_11", "CUR_LANE_LEFT_2", 0),
+      ("PARM_12", "CUR_LANE_LEFT_2", 0),
+      ("PARM_13", "CUR_LANE_LEFT_2", 0),
       ("PARM_1", "CUR_LANE_RIGHT_1", 0),
       ("PARM_2", "CUR_LANE_RIGHT_1", 0),
       ("PARM_3", "CUR_LANE_RIGHT_1", 0),
@@ -63,9 +61,11 @@ def get_cam_can_signals():
       ("PARM_5", "CUR_LANE_RIGHT_1", 0),
       ("PARM_6", "CUR_LANE_RIGHT_2", 0),
       ("PARM_7", "CUR_LANE_RIGHT_2", 0),
-      ("PARM_8", "CUR_LANE_RIGHT_2", 0),
       ("PARM_9", "CUR_LANE_RIGHT_2", 0),
       ("PARM_10", "CUR_LANE_RIGHT_2", 0),
+      ("PARM_11", "CUR_LANE_RIGHT_2", 0),
+      ("PARM_12", "CUR_LANE_RIGHT_2", 0),
+      ("PARM_13", "CUR_LANE_RIGHT_2", 0),
       ("PARM_1", "ADJ_LANE_RIGHT_1", 0),
       ("PARM_2", "ADJ_LANE_RIGHT_1", 0),
       ("PARM_3", "ADJ_LANE_RIGHT_1", 0),
@@ -73,9 +73,11 @@ def get_cam_can_signals():
       ("PARM_5", "ADJ_LANE_RIGHT_1", 0),
       ("PARM_6", "ADJ_LANE_RIGHT_2", 0),
       ("PARM_7", "ADJ_LANE_RIGHT_2", 0),
-      ("PARM_8", "ADJ_LANE_RIGHT_2", 0),
       ("PARM_9", "ADJ_LANE_RIGHT_2", 0),
       ("PARM_10", "ADJ_LANE_RIGHT_2", 0),
+      ("PARM_11", "ADJ_LANE_RIGHT_2", 0),
+      ("PARM_12", "ADJ_LANE_RIGHT_2", 0),
+      ("PARM_13", "ADJ_LANE_RIGHT_2", 0),
       ("PARM_1", "ADJ_LANE_LEFT_1", 0),
       ("PARM_2", "ADJ_LANE_LEFT_1", 0),
       ("PARM_3", "ADJ_LANE_LEFT_1", 0),
@@ -83,9 +85,11 @@ def get_cam_can_signals():
       ("PARM_5", "ADJ_LANE_LEFT_1", 0),
       ("PARM_6", "ADJ_LANE_LEFT_2", 0),
       ("PARM_7", "ADJ_LANE_LEFT_2", 0),
-      ("PARM_8", "ADJ_LANE_LEFT_2", 0),
       ("PARM_9", "ADJ_LANE_LEFT_2", 0),
       ("PARM_10", "ADJ_LANE_LEFT_2", 0),
+      ("PARM_11", "ADJ_LANE_LEFT_2", 0),
+      ("PARM_12", "ADJ_LANE_LEFT_2", 0),
+      ("PARM_13", "ADJ_LANE_LEFT_2", 0),
   ]
   checks = [
       ("CUR_LANE_LEFT_1", 15),
@@ -270,6 +274,7 @@ class CarState():
     self.CP = CP
     self.can_define = CANDefine(DBC[CP.carFingerprint]['pt'])
     self.shifter_values = self.can_define.dv["GEARBOX"]["GEAR_SHIFTER"]
+    self.brake_pressed = 0
 
     self.user_gas, self.user_gas_pressed = 0., 0
     self.brake_switch_prev = 0

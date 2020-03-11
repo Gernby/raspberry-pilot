@@ -189,6 +189,9 @@ struct CarState {
     parm8 @7 :Int16;
     parm9 @8 :Int16;
     parm10 @9 :Int16;
+    parm11 @13 :Int16;
+    parm12 @14 :Int16;
+    parm13 @15 :Int16;
     frame @10 :Int16;
     solid @11 :Int16;
     dashed @12 :Int16;

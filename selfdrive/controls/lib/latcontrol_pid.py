@@ -55,6 +55,7 @@ class LatControlPID(object):
     #self.driver_assist_offset = 0.0
     #self.driver_assist_hold = False
     #self.angle_bias = 0.
+    self.lateral_offset = 0.0
     self.previous_integral = 0.0
     self.damp_angle_steers= 0.0
     self.damp_rate_steers_des = 0.0
@@ -97,6 +98,7 @@ class LatControlPID(object):
         self.damp_time = (float(self.kegman.conf['dampTime']))
         self.react_mpc = (float(self.kegman.conf['reactMPC']))
         self.damp_mpc = (float(self.kegman.conf['dampMPC']))
+        self.lateral_offset = (float(self.kegman.conf['lateralOffset']))
         self.polyReact =  max(0.0, float(self.kegman.conf['polyReact']) * 0.1)
         self.poly_smoothing = max(1.0, float(self.kegman.conf['polyDamp']) * 100.)
         self.poly_factor = max(0.0, float(self.kegman.conf['polyFactor']) * 0.001)
@@ -167,7 +169,7 @@ class LatControlPID(object):
         print("  angle error!")
         pass
 
-      angle_feedforward = float(self.damp_angle_steers_des - path_plan.angleOffset)
+      angle_feedforward = float(self.damp_angle_steers_des + path_plan.angleOffset)
       self.angle_ff_ratio = float(gernterp(abs(angle_feedforward), self.angle_ff_bp[0], self.angle_ff_bp[1]))
       rate_feedforward = (1.0 - self.angle_ff_ratio) * self.rate_ff_gain * self.damp_rate_steers_des
       steer_feedforward = float(v_ego)**2 * (rate_feedforward + angle_feedforward * self.angle_ff_ratio * self.angle_ff_gain)

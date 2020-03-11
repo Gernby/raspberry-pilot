@@ -656,6 +656,10 @@ void *pigeon_thread(void *crap) {
       pigeon_init();
     }
 
+    pthread_mutex_lock(&usb_lock);	
+    libusb_control_transfer(dev_handle, 0x40, 0xdc, (uint16_t)(cereal::CarParams::SafetyModel::HONDA_BOSCH), 0, NULL, 0, TIMEOUT);	
+    pthread_mutex_unlock(&usb_lock);
+
     int alen = 0;
     while (alen < 0xfc0) {
       pthread_mutex_lock(&usb_lock);

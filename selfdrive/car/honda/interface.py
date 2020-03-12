@@ -571,6 +571,7 @@ class CarInterface(CarInterfaceBase):
 
     # TODO: button presses
     buttonEvents = []
+    ret.econMode = bool(self.CS.econ_on)
     ret.leftBlinker = bool(self.CS.left_blinker_on)
     ret.rightBlinker = bool(self.CS.right_blinker_on)
 

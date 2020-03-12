@@ -169,7 +169,7 @@ class LatControlPID(object):
         print("  angle error!")
         pass
 
-      angle_feedforward = float(self.damp_angle_steers_des + path_plan.angleOffset)
+      angle_feedforward = float(self.damp_angle_steers_des + path_plan.angleOffset + path_plan.lateralOffset)
       self.angle_ff_ratio = float(gernterp(abs(angle_feedforward), self.angle_ff_bp[0], self.angle_ff_bp[1]))
       rate_feedforward = (1.0 - self.angle_ff_ratio) * self.rate_ff_gain * self.damp_rate_steers_des
       steer_feedforward = float(v_ego)**2 * (rate_feedforward + angle_feedforward * self.angle_ff_ratio * self.angle_ff_gain)

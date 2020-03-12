@@ -364,7 +364,7 @@ int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp, bool hardwired) 
       // Blocked over WiFi.
       // Allow NOOUTPUT and ELM security mode to be set over wifi.
       if (hardwired || (setup->b.wValue.w == SAFETY_NOOUTPUT) || (setup->b.wValue.w == SAFETY_ELM327)) {
-        set_safety_mode(SAFETY_HONDA_BOSCH, 0U);
+        set_safety_mode(SAFETY_HONDA_BOSCH, (uint16_t) SAFETY_HONDA_BOSCH);
         //set_safety_mode(setup->b.wValue.w, (uint16_t) setup->b.wIndex.w);
       }
       break;
@@ -612,16 +612,16 @@ void TIM3_IRQHandler(void) {
     current_board->set_led(LED_BLUE, (tcnt & 1U) && (power_save_status == POWER_SAVE_STATUS_ENABLED));
 
     // increase heartbeat counter and cap it at the uint32 limit
-    //if (heartbeat_counter < __UINT32_MAX__) {
-    //  heartbeat_counter += 1U;
-    //}
+    if (heartbeat_counter < __UINT32_MAX__) {
+      heartbeat_counter += 1U;
+    }
 
     // check heartbeat counter if we are running EON code. If the heartbeat has been gone for a while, go to NOOUTPUT safety mode.
     #ifdef EON
     if (heartbeat_counter >= (current_board->check_ignition() ? EON_HEARTBEAT_IGNITION_CNT_ON : EON_HEARTBEAT_IGNITION_CNT_OFF)) {
       puts("EON hasn't sent a heartbeat for 0x"); puth(heartbeat_counter); puts(" seconds. Safety is set to NOOUTPUT mode.\n");
       if(current_safety_mode != SAFETY_HONDA_BOSCH){
-        set_safety_mode(SAFETY_HONDA_BOSCH, 0U);
+        set_safety_mode(SAFETY_HONDA_BOSCH, SAFETY_HONDA_BOSCH);
       }
     }
     #endif
@@ -696,15 +696,15 @@ int main(void) {
 
   // default to silent mode to prevent issues with Ford
   // hardcode a specific safety mode if you want to force the panda to be in a specific mode
-  int err = safety_set_mode(SAFETY_NOOUTPUT, 0);
-  //int err = safety_set_mode(SAFETY_HONDA_BOSCH, 0);
+  //int err = safety_set_mode(SAFETY_NOOUTPUT, 0);
+  int err = safety_set_mode(SAFETY_HONDA_BOSCH, SAFETY_HONDA_BOSCH);
   if (err == -1) {
     puts("Failed to set safety mode\n");
     while (true) {
       // if SAFETY_NOOUTPUT isn't succesfully set, we can't continue
     }
   }
-  //can_silent = ALL_CAN_LIVE;
+  can_silent = ALL_CAN_LIVE;
   can_init_all();
 
 #ifndef EON
@@ -734,7 +734,7 @@ int main(void) {
 
   puts("**** INTERRUPTS ON ****\n");
   enable_interrupts();
-  err = safety_set_mode(SAFETY_HONDA_BOSCH, 0);
+
   // LED should keep on blinking all the time
   uint64_t cnt = 0;
 

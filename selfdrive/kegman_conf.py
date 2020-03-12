@@ -75,7 +75,7 @@ class kegman_conf():
       base_config = json.load(f)
 
     if Reset or not os.path.isfile(os.path.expanduser('~/kegman.json')):
-      self.config = {"Kp":"-1","Ki":"-1","Kf":"-1","rateFFGain":"-1","reactMPC":"-1","dampMPC":"-1","dampSteer":"-1","advanceSteer":"-1","lkasMode":"0", "reactSteer":"-1","cameraOffset":"0.06", "lastTrMode":"1", "battChargeMin":"60", "battChargeMax":"70", "wheelTouchSeconds":"180", \
+      self.config = {"Kp":"-1","Ki":"-1","Kf":"-1","rateFFGain":"-1","reactMPC":"-1","dampMPC":"-1","dampSteer":"-1","advanceSteer":"-1","angleFactor":"1.0","lkasMode":"0", "reactSteer":"-1","cameraOffset":"0.06", "lastTrMode":"1", "battChargeMin":"60", "battChargeMax":"70", "wheelTouchSeconds":"180", \
           "battPercOff":"25", "carVoltageMinEonShutdown":"11800", "brakeStoppingTarget":"0.25", "leadDistance":"5"}
     else:
       with open(os.path.expanduser('~/kegman.json'), 'r') as f:
@@ -97,6 +97,10 @@ class kegman_conf():
 
     if "advanceSteer" not in self.config:
       self.config.update({"advanceSteer":"0.0"})
+      self.element_updated = True
+
+    if "angleFactor" not in self.config:
+      self.config.update({"angleFactor":"1.0"})
       self.element_updated = True
 
     if "lkasMode" not in self.config:

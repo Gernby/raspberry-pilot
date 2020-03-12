@@ -142,6 +142,7 @@ struct CarState {
   camRight @32 :CameraPacket;
   camFarLeft @33 :CameraPacket;
   camFarRight @34 :CameraPacket;
+  econMode @47 :Bool;
 
   # lock info
   doorOpen @24 :Bool;

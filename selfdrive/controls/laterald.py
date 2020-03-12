@@ -21,7 +21,11 @@ from common.params import Params
 params = Params()
 user_id = str(params.get("DongleId"))
 lateral_params = params.get("LateralParams")
-lateral_params = json.loads(lateral_params)
+try:
+  lateral_params = json.loads(lateral_params)
+except:
+  lateral_params = {'angle_bias': 0, 'angle_offset': 0, 'lateral_offset': 0.}
+
 if "angle_bias" in lateral_params:
   angle_bias = float(lateral_params['angle_bias'])
 else:
@@ -360,4 +364,4 @@ while 1:
         pass
     
     if recv_frames % 1000 == 2 and back_log == 2:
-      params.put("LateralParams", json.dumps({'angle_offset': angle_offset, 'angle_bias': angle_bias}))
+      params.put("LateralParams", json.dumps({'angle_offset': angle_offset, 'angle_bias': angle_bias, 'lateral_offset': lateral_offset}))

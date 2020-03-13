@@ -220,6 +220,8 @@ while 1:
           r_offset[cs.canTime] = cs.camRight.parm2
           angle_steers[cs.canTime] = cs.steeringAngle
           
+          #if recv_frames % 50 == 0: print(cs.camLeft.full1, cs.camLeft.full2)
+
           input_array = list(np.asarray(scaled_array).reshape(history_rows * len(scaled_array[0][0])).astype('float'))
           input_array.append(cs.canTime)
           if recv_frames > 5 or sent_frames % 5 == 0:

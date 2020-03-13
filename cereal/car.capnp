@@ -196,6 +196,8 @@ struct CarState {
     frame @10 :Int16;
     solid @11 :Int16;
     dashed @12 :Int16;
+    full1 @16 :UInt64;
+    full2 @17 :UInt64;
   }
 
   lateralControlState :union {

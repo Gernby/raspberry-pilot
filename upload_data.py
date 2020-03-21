@@ -10,9 +10,10 @@ import gc
 from common.params import Params
 if len(sys.argv) < 2 or sys.argv[1] == 0:
   destination = "gernstation.synology.me"
-  min_time = (time.time() - 72 * 60 * 60) * 1000
-#elif sys.argv[2] == '1':
-#  destination = "192.168.1.180"
+  min_time = 0  #(time.time() - 72 * 60 * 60) * 1000
+elif sys.argv[2] == '1':
+  min_time = 0
+  destination = "192.168.1.180"
 
 params = Params()
 user_id = params.get("DongleId")

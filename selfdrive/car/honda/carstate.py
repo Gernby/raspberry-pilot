@@ -453,13 +453,13 @@ class CarState():
     self.prev_steering_counter = steer_counter
 
     self.brake_switch = cp.vl["POWERTRAIN_DATA"]['BRAKE_SWITCH']
-
+  
     if self.CP.radarOffCan:
       self.cruise_mode = cp.vl["ACC_HUD"]['CRUISE_CONTROL_LABEL']
       self.stopped = cp.vl["ACC_HUD"]['CRUISE_SPEED'] == 252.
       self.cruise_speed_offset = calc_cruise_offset(0, self.v_ego)
       if self.CP.carFingerprint in (CAR.CIVIC_BOSCH, CAR.ACCORDH, CAR.INSIGHT, CAR.CRV_HYBRID):
-        if self.brake_pressed and speed > 0:
+        if self.brake_pressed and self.v_ego > 0:
           self.brake_switch = cp.vl["POWERTRAIN_DATA"]['BRAKE_SWITCH']
           self.brake_pressed = cp.vl["POWERTRAIN_DATA"]['BRAKE_PRESSED'] or \
                             (self.brake_switch and self.brake_switch_prev and \

@@ -8,11 +8,11 @@ import requests
 import sys 
 import gc
 from common.params import Params
-
 if len(sys.argv) < 2 or sys.argv[1] == 0:
   destination = "gernstation.synology.me"
-elif int(sys.argv[1]) == 1:
-  destination = "192.168.1.180"
+  min_time = (time.time() - 72 * 60 * 60) * 1000
+#elif sys.argv[2] == '1':
+#  destination = "192.168.1.180"
 
 params = Params()
 user_id = params.get("DongleId")
@@ -27,6 +27,7 @@ for cols in ["angle_offset,lateral_offset,wheel_speed_fl,wheel_speed_fr,wheel_sp
   recordcount = 0
   max_limit = 5000
   min_time = 0
+
   while min(max_limit, limit) > 0 and recordcount % max_limit == 0:
     exec_query = '&q=select %s time > %dms fill(previous) limit %s ' % (cols, min_time, min(max_limit, limit))
     r = requests.get('http://localhost:8086/query?db=carDB&u=liveOP&p=liveOP&epoch=ms&precision=ms%s' % exec_query)

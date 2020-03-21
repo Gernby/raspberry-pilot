@@ -565,7 +565,7 @@ class CarInterface(CarInterfaceBase):
       ret.camFarRight.parm12 = self.CS.cam_far_right_2['PARM_12']
       ret.camFarRight.parm13 = self.CS.cam_far_right_2['PARM_13']
       ret.camFarRight.frame = self.CS.cam_far_right_1['FRAME_ID'] + self.CS.cam_far_right_2['FRAME_ID']
-      #if self.frame % 100 == 0: print(self.CS.cam_left_1['FULL'],self.CS.cam_left_2['FULL'],self.CS.cam_right_1['FULL'],self.CS.cam_right_2['FULL'])
+      #if self.frame % 1000 == 0: print(self.CS.cam_left_1['FULL'],self.CS.cam_left_2['FULL'],self.CS.cam_right_1['FULL'],self.CS.cam_right_2['FULL'])
       #print(self.cp_cam.vl["CUR_LANE_LEFT_1"]['FRAME_ID'], )
     
     #if ret.camLeft.parm2 < -100:

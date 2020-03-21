@@ -101,8 +101,7 @@ carStateDataString2 = ""
 insertString = ""
 canInsertString = ""
 
-
-Inputs = 43
+Inputs = 71
 Outputs = 5
 
 scaler_type = 'MinMax_tanh'
@@ -123,11 +122,11 @@ frame_count = 1
 dashboard_count = 0
 
 try:
+  input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_008.scaler' % (scaler_type, Inputs)))
+  output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_008.scaler' % (scaler_type, Outputs)))
+except:
   input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_A.scaler' % (scaler_type, Inputs)))
   output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_A.scaler' % (scaler_type, Outputs)))
-except:
-  input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_006.scaler' % (scaler_type, Inputs)))
-  output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_006.scaler' % (scaler_type, Outputs)))
 
 scaler_padding = None 
 scaled_camera_array = []
@@ -150,6 +149,8 @@ back_log = 0
 dump_sock(carState)
               
 r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')
+
+bit_mask = [128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8]
 
 row_count = 0
 column_count = 0
@@ -174,12 +175,22 @@ while 1:
           angle_offset -= (0.00001 * cs.vEgo)
       adjusted_angle /= angle_factor
 
+      camera_flags = np.bitwise_and([cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm8, 
+                                     cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm8,
+                                     cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm8,
+                                     cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm8], bit_mask)
+
+      left_10 = cs.camLeft.parm10 if cs.camLeft.parm10 >= 0 else cs.camLeft.parm10 + 128
+      far_left_10 = cs.camFarLeft.parm10 if cs.camFarLeft.parm10 >= 0 else cs.camFarLeft.parm10 + 128
+      right_10 = cs.camRight.parm10 if cs.camRight.parm10 <= 0 else cs.camRight.parm10 - 128
+      far_right_10 = cs.camFarRight.parm10 if cs.camFarRight.parm10 <= 0 else cs.camFarRight.parm10 - 128
+      
       #steer_angle = round(cs.steeringAngle + angle_offset, 1)
-      unscaled_input_array = [[cs.vEgo, adjusted_angle, cs.lateralAccel, cs.steeringTorqueEps / angle_factor, cs.yawRateCAN, cs.longAccel, 0 , 0 , cs.steeringRate / angle_factor, cs.steeringTorque, cs.torqueRequest,
-                      cs.camLeft.parm1, cs.camLeft.parm2, cs.camLeft.parm3, cs.camLeft.parm4,                    cs.camLeft.parm5,      cs.camLeft.parm7,  cs.camLeft.parm9, cs.camLeft.parm10, 
-                      cs.camFarLeft.parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4,     cs.camFarLeft.parm5,   cs.camFarLeft.parm7,  cs.camFarLeft.parm9, cs.camFarLeft.parm10, 
-                      cs.camRight.parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4,               cs.camRight.parm5,     cs.camRight.parm7,  cs.camRight.parm9, cs.camRight.parm10, 
-                      cs.camFarRight.parm1, cs.camFarRight.parm2, cs.camFarRight.parm3, cs.camFarRight.parm4,cs.camFarRight.parm5,  cs.camFarRight.parm7,  cs.camFarRight.parm9, cs.camFarRight.parm10]] 
+      unscaled_input_array = [np.concatenate(([cs.vEgo, adjusted_angle, cs.lateralAccel, cs.steeringTorqueEps / angle_factor, cs.yawRateCAN, cs.longAccel, 0 , 0 , cs.steeringRate / angle_factor, cs.steeringTorque, cs.torqueRequest],  camera_flags, 
+                      [cs.camLeft.parm1, cs.camLeft.parm2, cs.camLeft.parm3, cs.camLeft.parm4,                    cs.camLeft.parm5,      cs.camLeft.parm7,  cs.camLeft.parm9, left_10, 
+                      cs.camFarLeft.parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4,     cs.camFarLeft.parm5,   cs.camFarLeft.parm7,  cs.camFarLeft.parm9, far_left_10, 
+                      cs.camRight.parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4,               cs.camRight.parm5,     cs.camRight.parm7,  cs.camRight.parm9, right_10, 
+                      cs.camFarRight.parm1, cs.camFarRight.parm2, cs.camFarRight.parm3, cs.camFarRight.parm4,cs.camFarRight.parm5,  cs.camFarRight.parm7,  cs.camFarRight.parm9, far_right_10]),axis=0)] 
 
       scaled_data = input_scaler.transform(unscaled_input_array)
       scaled_vehicle_array.append(scaled_data[:,:11])
@@ -220,7 +231,8 @@ while 1:
           r_offset[cs.canTime] = cs.camRight.parm2
           angle_steers[cs.canTime] = cs.steeringAngle
           
-          #if recv_frames % 50 == 0: print(cs.camLeft.full1, cs.camLeft.full2)
+          #if recv_frames % 15 == 0: print(left_10, far_left_10, right_10, far_right_10)
+          if recv_frames % 15 == 0: print(camera_flags)
 
           input_array = list(np.asarray(scaled_array).reshape(history_rows * len(scaled_array[0][0])).astype('float'))
           input_array.append(cs.canTime)

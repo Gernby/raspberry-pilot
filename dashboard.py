@@ -55,28 +55,9 @@ def dashboard_thread(rate=100):
 
   frame_count = 0
   user_id = 'ddd3e089e7bbe0fc'
-  try:
-    if os.path.isfile(os.path.expanduser('~/kegman.json')):
-      with open(os.path.expanduser('~/kegman.json'), 'r') as f:
-        config = json.load(f)
-        user_id = config['userID']
-        #tunePush.send_json(config)
-        #tunePush = None
-    else:
-        params = Params()
-        user_id = params.get("DongleId")
-  except:
-    params = Params()
-    user_id = params.get("DongleId")
-    config['userID'] = user_id
-    #tunePush.send_json(config)
-    #tunePush = None
+  params = Params()
+  user_id = params.get("DongleId")
   user_id = user_id.decode()
-  try:
-    if len(user_id) < 2: user_id = 'ddd3e089e7bbe0fc'
-  except:
-    user_id = 'ddd3e089e7bbe0fc'
-
 
   #tunePush.send_json(config)
   #tunePush = None

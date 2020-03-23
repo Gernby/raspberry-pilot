@@ -101,4 +101,4 @@
 
 The ACC functionality is 100% stock; it remains engaged after a press of the gas and it disengages immediately upon a press of the brakes
 
-However, this fork does attempt to steer 100% of the time; it does not wait for you to engage the ACC and the steering does not disengage just because you press the gas or brake.
+However, this fork does attempt to steer 100% of the time by default; it does not wait for you to engage the ACC and the steering does not disengage just because you press the gas or brake. Press the LKAS button on the steering wheel to toggle lateral control on and off.

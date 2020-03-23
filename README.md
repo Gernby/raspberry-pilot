@@ -37,8 +37,8 @@
 
 1. Log into the Pi as "ubuntu" if you are not still logged in from earlier steps. Clone the repository
 
-  cd ~
-  git clone https://github.com/Gernby/raspberry-pilot.git
+    cd ~
+    git clone https://github.com/Gernby/raspberry-pilot.git
 
 2. Ask in Discord for the name of the current branch to checkout.
 3. `cd raspilot`

@@ -43,8 +43,8 @@
 
 2. Ask in Discord for the name of the current branch to checkout.
 3. `cd raspilot`
-4. `git checkout \<branch name\>`
-5. `bash start_install.sh \<your WiFi name\> \<your WiFi password\>`
+4. `git checkout <branch name>`
+5. `bash start_install.sh <your WiFi name> <your WiFi password>`
 6. Wait 45 minutes (please verify)
 7. Log out of the Pi and log back in using "ubuntu" and your new password
 8. `cd raspilot`
@@ -61,7 +61,7 @@
 19. If all four processes are present, you are ready to flash your Panda
 20. If you cannot hit your home WiFi from the car, turn on the hotspot on your phone and connect the Pi to your hotspot WiFi
 
-`nmcli d wifi connect \<your hotspot wifi name\> password \<your hotspot wifi password\>`
+`nmcli d wifi connect <your hotspot wifi name> password <your hotspot wifi password>`
 
 21. Run `ifconfig` to get the IP address that the Pi either grabbed from your home WiFi or your hotspot -- whichever one you're going to use in the car
 22. Shut down the Pi

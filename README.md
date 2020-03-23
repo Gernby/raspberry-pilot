@@ -82,7 +82,7 @@
 (Note: If you are using the Paw, slide the Power switch to 'Off', insert the Paw into the Panda, press and hold the button on the Paw, and while keeping the button pressed, slide the Power switch on the Panda to 'On')
 11. On your laptop, ssh into the Pi using the IP address you recorded earlier
 12. `cd ~/raspilot`
-13. `sh flash_panda.sh`
+13. `bash flash_panda.sh`
 14. Watch the progress and follow any instructions to remove and reseat the USB cable connecting the Pi to the Panda, if prompted
 (Note: Watch closely as you may be prompted to move the USB cable from one USB port on the Pi to another within 10 seconds)
 15. Take note of the color of the status indicator on the Panda after the flashing process has completed. If the Panda LED is slowly flashing red, the flash was successful. If it is flashing a fast green, it was not successful so please come to Discord to discuss.

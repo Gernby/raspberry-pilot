@@ -75,18 +75,19 @@
 4. Plug the Panda into the Giraffe you plan to use for flashing (Note that you want a clean CAN bus, so disconnect the Giraffe from the car and the LKAS camera if you only have one Giraffe)
 5. Connect the Comma Power into the Giraffe you plan to use for flashing
 6. Connect the USB C cable into the 12-volt power adapter or 120/240-volt AC inverter with high power USB power adapter
-7. Turn on the car if you need to in order to provide power to the Pi
-8. Connect the USB C cable into the power port on the Raspberry Pi
-9. Connect the USB A-to-A cable (or mini USB cable for use with the Paw) into the Pi. If you are using the Paw, attach it to the far end of the mini USB cable now.
-10. Insert the far end of the USB A-to-A cable or the USB A end of the Comma Paw into the Panda.
+7. Turn on your cellular hotspot if you cannot hit your home WiFi from the car
+8. Turn on the car if you need to in order to provide power to the Pi
+9. Connect the USB C cable into the power port on the Raspberry Pi
+10. Connect the USB A-to-A cable (or mini USB cable for use with the Paw) into the Pi. If you are using the Paw, attach it to the far end of the mini USB cable now.
+11. Insert the far end of the USB A-to-A cable or the USB A end of the Comma Paw into the Panda.
 (Note: If you are using the Paw, slide the Power switch to 'Off', insert the Paw into the Panda, press and hold the button on the Paw, and while keeping the button pressed, slide the Power switch on the Panda to 'On')
-11. On your laptop, ssh into the Pi using the IP address you recorded earlier
-12. `cd ~/raspilot`
-13. `bash flash_panda.sh`
-14. Watch the progress and follow any instructions to remove and reseat the USB cable connecting the Pi to the Panda, if prompted
+12. On your laptop, ssh into the Pi using the IP address you recorded earlier (either the one from your house WiFi or cellular hotpsot)
+13. `cd ~/raspilot`
+14. `bash flash_panda.sh`
+15. Watch the progress and follow any instructions to remove and reseat the USB cable connecting the Pi to the Panda, if prompted
 (Note: Watch closely as you may be prompted to move the USB cable from one USB port on the Pi to another within 10 seconds)
-15. Take note of the color of the status indicator on the Panda after the flashing process has completed. If the Panda LED is slowly flashing red, the flash was successful. If it is flashing a fast green, it was not successful so please come to Discord to discuss.
-16. Shut down the Pi and turn off the car
+16. Take note of the color of the status indicator on the Panda after the flashing process has completed. If the Panda LED is slowly flashing red, the flash was successful. If it is flashing a fast green, it was not successful so please come to Discord to discuss.
+17. Shut down the Pi and turn off the car
 
 ## Reconfigure and boot up
 

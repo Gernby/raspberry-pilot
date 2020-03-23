@@ -30,7 +30,7 @@
 10. Connect the USB cable to power and then insert the USB C end into the Pi
 11. Wait for the Pi to boot and wait several seconds after the login is presented to finish the first boot
 12. Log into the Pi using "ubuntu" for the username and the password
-13. You will be forced to change the password. Enter "ubuntu" as the "Current UNIX password" when prompted and then enter your new password twice to change it.
+13. You will be forced to change the password. Enter "ubuntu" as the "Current UNIX password" when prompted and then enter your new password twice to change it. From this point forward, you may continue using the keyboard and monitor to work on the Pi or you may return to your primary computer and log into the Pi using `ssh`.
 
 ## Software installation
 (Note: You must have hardline Ethernet connectivity at this point to proceed)

@@ -43,7 +43,7 @@
 2. Ask in Discord for the name of the current branch to checkout.
 3. `cd raspilot`
 4. `git checkout <branch name>`
-5. `bash start_install.sh <your WiFi name> <your WiFi password>`
+5. `bash start_install.sh <your WiFi name> <your WiFi password>` (Note that this step is required to add WiFi support to the Pi and log into your home WiFi)
 6. Wait 45 minutes (please verify)
 7. Log out of the Pi and log back in using "ubuntu" and your new password
 8. `cd raspilot`

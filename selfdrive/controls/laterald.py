@@ -122,8 +122,8 @@ frame_count = 1
 dashboard_count = 0
 
 try:
-  input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_008.scaler' % (scaler_type, Inputs)))
-  output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_008.scaler' % (scaler_type, Outputs)))
+  input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_009.scaler' % (scaler_type, Inputs)))
+  output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_009.scaler' % (scaler_type, Outputs)))
 except:
   input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_A.scaler' % (scaler_type, Inputs)))
   output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_A.scaler' % (scaler_type, Outputs)))

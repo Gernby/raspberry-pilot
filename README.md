@@ -52,7 +52,7 @@
 10. Wait about 2.5 hours
 11. If it completes successfully, reboot the Pi and log back in
 12. `top -u ubuntu`
-13. Look for `controlsd`, `boardd`, and `laterald`. You will not see `transcoderd`.
+13. Look for `controlsd`, `boardd`, and `laterald`.
 14. If you see all three, let Gernby know you're ready for the model. He will email it to you.
 15. When you receive the model, download the attachment from your email and copy it to `~/raspilot/models` (note that the 's' at the end is critical). The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
 16. Reboot the Pi, and log back in

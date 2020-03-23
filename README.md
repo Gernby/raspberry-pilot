@@ -18,7 +18,7 @@
 ## MicroSD card preparation and first login
 
 1. Go to https://ubuntu.com/download/raspberry-pi
-2. Under Raspberry Pi 4, locate the row for Ubuntu 18.04.4 LTS, and click "Download 64-bit" at the far right end
+2. In the Raspberry Pi 4 column, locate the row for Ubuntu 18.04.4 LTS, and click "Download 64-bit" at the far right end
 3. Decompress the image file that has been compressed with `xz` (process varies by Operating System)
 4. Insert the microSD card into the microSD-to-SD card adapter and then into the computer you will use to burn the image
 5. Umount ("eject") the microSD card if the computer automatically mounted it but do not remove it from the slot

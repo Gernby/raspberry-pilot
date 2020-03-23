@@ -3,7 +3,7 @@
 ## Requirements
 
 1. A laptop capable of burning microSD cards and can be carried to the car
-2. The 'xz' compression utility on the above computer (titles and installation process varies by Operating System)
+2. The `xz` compression utility on the above computer (titles and installation process varies by Operating System)
 3. Raspberry Pi 4 with 4GB RAM
 4. USB A to C cable
 5. USB A to A cable or mini USB cable with a Panda Paw from the Comma.ai shop (for flashing the Panda from the Pi)
@@ -19,7 +19,7 @@
 
 1. Go to https://ubuntu.com/download/raspberry-pi
 2. Under Raspberry Pi 4, locate the row for Ubuntu 18.04.4 LTS, and click "Download 64-bit" at the far right end
-3. Decompress the image file that has been compressed with 'xz' (process varies by Operating System)
+3. Decompress the image file that has been compressed with `xz` (process varies by Operating System)
 4. Insert the microSD card into the microSD-to-SD card adapter and then into the computer you will use to burn the image
 5. Umount ("eject") the microSD card if the computer automatically mounted it but do not remove it from the slot
 6. Burn the decompressed image to the microSD card (process varies by Operating System)
@@ -37,33 +37,32 @@
 
 1. Log into the Pi as "ubuntu" if you are not still logged in from earlier steps. Clone the repository
 
-cd ~
-
-git clone https://github.com/Gernby/raspberry-pilot.git
+  cd ~
+  git clone https://github.com/Gernby/raspberry-pilot.git
 
 2. Ask in Discord for the name of the current branch to checkout.
-3. cd raspilot
-4. git checkout \<branch name\>
-5. bash start_install.sh \<your WiFi name\> \<your WiFi password\>
+3. `cd raspilot`
+4. `git checkout \<branch name\>`
+5. `bash start_install.sh \<your WiFi name\> \<your WiFi password\>`
 6. Wait 45 minutes (please verify)
 7. Log out of the Pi and log back in using "ubuntu" and your new password
-8. cd raspilot
-9. bash finish_install.sh
+8. `cd raspilot`
+9. `bash finish_install.sh`
 10. Wait about 2.5 hours
 11. If it completes successfully, reboot the Pi and log back in
-12. top -u ubuntu
-13. Look for controlsd, boardd, and laterald. You will not see transcoderd.
+12. `top -u ubuntu`
+13. Look for `controlsd`, `boardd`, and `laterald`. You will not see `transcoderd`.
 14. If you see all three, let Gernby know you're ready for the model. He will email it to you.
-15. When you receive the model, download the attachment from your email and copy it to ~/raspilot/models (note that the 's' at the end is critical). The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
+15. When you receive the model, download the attachment from your email and copy it to `~/raspilot/models` (note that the 's' at the end is critical). The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
 16. Reboot the Pi, and log back in
-17. top -u ubuntu
-18. Look for controlsd, boardd, laterald, and transcoderd
+17. `top -u ubuntu`
+18. Look for `controlsd`, `boardd`, `laterald`, and `transcoderd`
 19. If all four processes are present, you are ready to flash your Panda
 20. If you cannot hit your home WiFi from the car, turn on the hotspot on your phone and connect the Pi to your hotspot WiFi
 
-nmcli d wifi connect \<your hotspot wifi name\> password \<your hotspot wifi password\>
+  nmcli d wifi connect \<your hotspot wifi name\> password \<your hotspot wifi password\>
 
-21. Run 'ifconfig' to get the IP address that the Pi either grabbed from your home WiFi or your hotspot -- whichever one you're going to use in the car
+21. Run `ifconfig` to get the IP address that the Pi either grabbed from your home WiFi or your hotspot -- whichever one you're going to use in the car
 22. Shut down the Pi
 
 ## Flashing the Panda
@@ -81,8 +80,8 @@ nmcli d wifi connect \<your hotspot wifi name\> password \<your hotspot wifi pas
 10. Insert the far end of the USB A-to-A cable or the USB A end of the Comma Paw into the Panda.
 (Note: If you are using the Paw, slide the Power switch to 'Off', insert the Paw into the Panda, press and hold the button on the Paw, and while keeping the button pressed, slide the Power switch on the Panda to 'On')
 11. On your laptop, ssh into the Pi using the IP address you recorded earlier
-12. cd ~/raspilot
-13. sh flash_panda.sh
+12. `cd ~/raspilot`
+13. `sh flash_panda.sh`
 14. Watch the progress and follow any instructions to remove and reseat the USB cable connecting the Pi to the Panda, if prompted
 (Note: Watch closely as you may be prompted to move the USB cable from one USB port on the Pi to another within 10 seconds)
 15. Take note of the color of the status indicator on the Panda after the flashing process has completed. If the Panda LED is slowly flashing red, the flash was successful. If it is flashing a fast green, it was not successful so please come to Discord to discuss.

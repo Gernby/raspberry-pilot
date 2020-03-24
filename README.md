@@ -5,15 +5,17 @@
 1. A laptop capable of burning microSD cards and has a decent battery life (min. 30 minutes)
 2. Compression software on the above laptop that can decompress the `xz` format (titles and installation process varies by Operating System)
 3. Raspberry Pi 4 with 4GB RAM
-4. USB A-to-C cable
-5. USB A-to-A cable or mini USB cable with a Panda Paw from the Comma.ai shop (for flashing the Panda from the Pi)
-6. A way to power the Pi in your car (high power 12v to USB adapter, USB port on laptop above, or 12v to 120/240v inverter)
-7. Minimum 32GB class 10 microSD card
-8. Micro-HDMI adapter (the Raspberry Pi 4 does not use the same HDMI connectors as any previous models)
-9. TV or monitor that accepts HDMI input
-10. USB keyboard
-11. Physical Ethernet connection for the initial installation inside your home
-12. Cellular hotspot (or WiFi you can reach from your car)
+4. White Panda or Gray Panda from Comma.ai shop
+5. Comma.ai Giraffe or custom-built Giraffe or harness for your car
+6. USB A-to-C cable
+7. USB A-to-A cable or mini USB cable with a Panda Paw from the Comma.ai shop (for flashing the Panda from the Pi)
+8. A way to power the Pi in your car (high power 12v to USB adapter, USB port on laptop above, or 12v to 120/240v inverter)
+9. Minimum 32GB class 10 microSD card
+10. Micro-HDMI adapter (the Raspberry Pi 4 does not use the same HDMI connectors as any previous models)
+11. TV or monitor that accepts HDMI input
+12. USB keyboard
+13. Physical Ethernet connection for the initial installation inside your home
+14. Cellular hotspot (or WiFi you can reach from your car)
 
 ## MicroSD card preparation and first login
 

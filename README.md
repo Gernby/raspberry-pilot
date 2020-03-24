@@ -7,7 +7,7 @@
 3. Raspberry Pi 4 with 4GB RAM
 4. USB A-to-C cable
 5. USB A-to-A cable or mini USB cable with a Panda Paw from the Comma.ai shop (for flashing the Panda from the Pi)
-6. A way to power the Pi in your car -- either a 12-volt to USB high power adapter or a 12-volt to 120/240-volt inverter with a standard USB power adapter
+6. A way to power the Pi in your car (high power 12v to USB adapter, USB port on laptop above, or 12v to 120/240v inverter)
 7. Minimum 32GB class 10 microSD card
 8. Micro-HDMI adapter (the Raspberry Pi 4 does not use the same HDMI connectors as any previous models)
 9. TV or monitor that accepts HDMI input

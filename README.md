@@ -5,7 +5,7 @@
 1. A laptop capable of burning microSD cards and has a decent battery life (min. 30 minutes)
 2. Compression software on the above laptop that can decompress the `xz` format (titles and installation process varies by Operating System)
 3. Raspberry Pi 4 with 4GB RAM
-4. White Panda or Gray Panda from Comma.ai shop
+4. White Panda or Gray Panda from Comma.ai shop (Note: Black Pandas are electrically incompatible at this time. Do not use until advised it is safe.)
 5. Comma.ai Giraffe or custom-built Giraffe or harness for your car
 6. USB A-to-C cable
 7. USB A-to-A cable or mini USB cable with a Panda Paw from the Comma.ai shop (for flashing the Panda from the Pi)

@@ -5,8 +5,8 @@
 1. A laptop capable of burning microSD cards and has a decent battery life (min. 30 minutes)
 2. Compression software on the above laptop that can decompress the `xz` format (titles and installation process varies by Operating System)
 3. Raspberry Pi 4 with 4GB RAM
-4. White Panda or Gray Panda from Comma.ai shop (Note: Black Pandas are electrically incompatible at this time. Do not use until advised it is safe.)
-5. Comma.ai Giraffe or custom-built Giraffe or harness for your car
+4. White, Gray, or Black Panda (with appropriate car harness) from Comma.ai shop
+5. Comma.ai Giraffe or custom-built Giraffe or harness for your car if using a White or Gray Panda
 6. USB A-to-C cable
 7. USB A-to-A cable or mini USB cable with a Panda Paw from the Comma.ai shop (for flashing the Panda from the Pi)
 8. A way to power the Pi in your car (high power 12v to USB adapter, USB port on laptop above, or 12v to 120/240v inverter)
@@ -68,33 +68,30 @@
 22. Shut down the Pi (run the `sudo halt` command)
 
 ## Flashing the Panda
-(Note: The Pi and the Panda need to be powered separately for this step)
+(Note 1: The Pi and the Panda need to be powered separately for this step)
 
-1. You need to decide how you plan to power the Pi and Panda separately
-2. You may wish to use a separate Giraffe just for flashing this Panda
-3. Connect the Comma Power to the OBD-II port if it is not already connected
-4. Plug the Panda into the Giraffe you plan to use for flashing (Note that you want a clean CAN bus, so disconnect the Giraffe from the car and the LKAS camera if you only have one Giraffe)
-5. Connect the Comma Power into the Giraffe you plan to use for flashing
-6. Connect the USB C cable into the 12-volt power adapter or 120/240-volt AC inverter with high power USB power adapter
-7. Turn on your cellular hotspot if you cannot hit your home WiFi from the car
-8. Turn on the car if you need to in order to provide power to the Pi
-9. Connect the USB C cable into the power port on the Raspberry Pi
-10. Connect the USB A-to-A cable (or mini USB cable for use with the Paw) into the Pi. If you are using the Paw, attach it to the far end of the mini USB cable now.
-11. Insert the far end of the USB A-to-A cable or the USB A end of the Comma Paw into the Panda.
+1. If using a White or Gray Panda, separate the Giraffe from the LKAS camera and attach the Comma Power or other continuous power source
+2. If using a White or Gray Panda, plug the Panda into the Giraffe
+3. Connect the USB A-to-C cable that will power the Pi into the 12-volt power adapter or 120/240-volt AC inverter with high power USB power adapter
+4. Turn on your cellular hotspot if you cannot hit your home WiFi from the car
+5. Turn on the car if you need to in order to provide power to the Pi
+6. Connect the USB A-to-C cable into the power port on the Raspberry Pi
+7. Connect the USB A-to-A cable (or mini USB cable for use with the Paw) into the Pi. If you are using the Paw, attach it to the far end of the mini USB cable now.
+8. Insert the far end of the USB A-to-A cable or the USB A end of the Comma Paw into the Panda.
 (Note: If you are using the Paw, slide the Power switch to 'Off', insert the Paw into the Panda, press and hold the button on the Paw, and while keeping the button pressed, slide the Power switch on the Panda to 'On')
-12. On your laptop, ssh into the Pi using the IP address you recorded earlier (either the one from your house WiFi or cellular hotpsot)
-13. `cd ~/raspilot`
-14. `pipenv run bash flash_panda.sh`
-15. Watch the progress and follow any instructions to remove and reseat the USB cable connecting the Pi to the Panda, if prompted
+9. On your laptop, ssh into the Pi using the IP address you recorded earlier (either the one from your house WiFi or cellular hotpsot)
+10. `cd ~/raspilot`
+11. `pipenv run bash flash_panda.sh`
+12. Watch the progress and follow any instructions to remove and reseat the USB cable connecting the Pi to the Panda, if prompted
 (Note: Watch closely as you may be prompted to move the USB cable from one USB port on the Pi to another within 10 seconds)
-16. Take note of the color of the status indicator on the Panda after the flashing process has completed. If the Panda LED is slowly flashing red, the flash was successful. If it is flashing a fast green, it was not successful so please come to Discord to discuss.
-17. Shut down the Pi and turn off the car
+13. Take note of the color of the status indicator on the Panda after the flashing process has completed. If the Panda LED is slowly flashing red, the flash was successful. If it is flashing a fast green, it was not successful so please come to Discord to discuss.
+14. Shut down the Pi and turn off the car
 
 ## Reconfigure and boot up
 
 1. With the Pi and the car powered off, remove all of the USB cables and the Comma Power from the Giraffe
-2. Move the Panda to the Giraffe installed in your car if you used a separate Giraffe just for flashing purposes or reinstall the Giraffe and Panda combination in between the LKAS camera and the car-side wiring bundle if you only have one Giraffe and one Panda
-3. Use the USB C cable to connect the USB A port on the Panda with the USB C port on the Pi
+2. Return the Panda and/or Giraffe to the standard configuration (Giraffe and/or Panda are installed between the LKAS camera and the car-side wiring)
+3. Use the USB A-to-C cable to connect the USB A port on the Panda with the USB C port on the Pi (Note: DO NOT USE A USB C-TO-C CABLE WITH A BLACK PANDA)
 3. Start the car. Immediately verify that the Panda is showing a pulsing red LED.
 4. Wait approximately 90 seconds. If the dash goes green and does not flash orange for a split second at the end of the startup process, you should be good to go for a drive.
 
@@ -102,4 +99,4 @@
 
 The ACC functionality is 100% stock; it remains engaged after a press of the gas and it disengages immediately upon a press of the brakes
 
-However, this fork does attempt to steer 100% of the time by default; it does not wait for you to engage the ACC and the steering does not disengage just because you press the gas or brake. Press the LKAS button on the steering wheel to toggle lateral control on and off.
+This fork is configured to steer 100% of the time by default. Lateral control (self-steering) operates separately from the ACC activation and does not disengage with a press of the gas or brakes. Press the LKAS button on the steering wheel to toggle lateral control.

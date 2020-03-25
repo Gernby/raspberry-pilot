@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 import os
-if False:
-  model_name = 'gpu-model'
+
+model_version = '010'
+history_rows = 5
+inputs = 57
+
+if os.path.exists(os.path.expanduser('./models/gpu-model-%s.hdf5' % model_version)):
+  model_name = 'gpu-model-%s' % model_version
 else:
   os.environ["CUDA_VISIBLE_DEVICES"]="-1"
-  model_name = 'cpu-model-009'
-history_rows = 5
-inputs = 71
+  model_name = 'cpu-model-%s' % model_version
 
 import zmq
 import time
@@ -62,7 +65,7 @@ gernModelOutputs.bind("tcp://*:8605")
 
 model = load_model(os.path.expanduser('./models/' + model_name + '.hdf5'))
 model_input = np.zeros((history_rows, inputs))
-model.predict_on_batch([[model_input[:,:8]], [model_input[:,8:11]], [model_input[:,-60:-32]], [model_input[:,-32:-16]], [model_input[:,-16:]]])
+model.predict_on_batch([[model_input[:,:8]], [model_input[:,8:11]], [model_input[:,-46:-32]], [model_input[:,-32:-16]], [model_input[:,-16:]]])
 frame = 0
 
 drain_sock(gernModelInputs, True)
@@ -74,7 +77,7 @@ while 1:
   model_input = np.asarray(input_list[:-1]).reshape(history_rows, inputs)
   #print(model_input.shape)
 
-  all_inputs = [[model_input[:,:-60-3]], [model_input[:,-60-3:-60]], [model_input[:,-60:-32]], [model_input[:,-32:-16]], [model_input[:,-16:]]]
+  all_inputs = [[model_input[:,:-46-3]], [model_input[:,-46-3:-46]], [model_input[:,-46:-32]], [model_input[:,-32:-16]], [model_input[:,-16:]]]
   #print(model_output[0])
 
   model_output = list(model.predict_on_batch(all_inputs)[0].astype('float'))

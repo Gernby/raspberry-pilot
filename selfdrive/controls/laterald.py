@@ -101,11 +101,12 @@ carStateDataString2 = ""
 insertString = ""
 canInsertString = ""
 
-Inputs = 71
+Inputs = 57
 Outputs = 5
+model_version = '010'
+history_rows = 5
 
 scaler_type = 'MinMax_tanh'
-history_rows = 5
 
 setproctitle('laterald')
 set_realtime_priority(1)
@@ -122,8 +123,8 @@ frame_count = 1
 dashboard_count = 0
 
 try:
-  input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_009.scaler' % (scaler_type, Inputs)))
-  output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_009.scaler' % (scaler_type, Outputs)))
+  input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_%s.scaler' % (scaler_type, Inputs, model_version)))
+  output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_%s.scaler' % (scaler_type, Outputs, model_version)))
 except:
   input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_A.scaler' % (scaler_type, Inputs)))
   output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_A.scaler' % (scaler_type, Outputs)))
@@ -150,7 +151,8 @@ dump_sock(carState)
               
 r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')
 
-bit_mask = [128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8]
+bit_mask = [128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8] #, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8]
+#bit_clear = [ 1,  1,  1, 1, 1, 1, 1,  1,  1,  1, 1, 1, 1, 1] #,   1,  1,  1, 1, 1, 1, 1,   0,  0,  0, 0, 0, 0, 0]
 
 row_count = 0
 column_count = 0
@@ -166,19 +168,18 @@ while 1:
 
       if cs.vEgo > 10 and abs(cs.steeringRate) < 5:
         if cs.lateralAccel > 0 and adjusted_angle < 0:
-          lateral_offset += (0.0001 * cs.vEgo)
+          lateral_offset += (0.000001 * cs.vEgo)
         elif cs.lateralAccel < 0 and adjusted_angle > 0:
-          lateral_offset -= (0.0001 * cs.vEgo)
+          lateral_offset -= (0.000001 * cs.vEgo)
         elif cs.yawRateCAN > 0 and adjusted_angle - lateral_offset < 0:
-          angle_offset += (0.00001 * cs.vEgo)
+          angle_offset += (0.000001 * cs.vEgo)
         elif cs.yawRateCAN < 0 and adjusted_angle - lateral_offset > 0:
-          angle_offset -= (0.00001 * cs.vEgo)
+          angle_offset -= (0.000001 * cs.vEgo)
       adjusted_angle /= angle_factor
 
       camera_flags = np.bitwise_and([cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm8, 
-                                     cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm8,
-                                     cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm8,
-                                     cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm8], bit_mask) // bit_mask
+                                     cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm8], bit_mask) // bit_mask
+      #camera_flags *= bit_clear
 
       left_10 = cs.camLeft.parm10 if cs.camLeft.parm10 >= 0 else cs.camLeft.parm10 + 128
       far_left_10 = cs.camFarLeft.parm10 if cs.camFarLeft.parm10 >= 0 else cs.camFarLeft.parm10 + 128
@@ -194,7 +195,7 @@ while 1:
       scaled_data = input_scaler.transform(unscaled_input_array)
       scaled_vehicle_array.append(scaled_data[:,:11])
 
-      if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
+      if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarLeft.frame:
         back_log = 0
         scaled_camera_array.append(scaled_data[:,11:])
         if len(scaled_camera_array) > history_rows:
@@ -265,10 +266,10 @@ while 1:
       r_prob = r_probs.pop(output_list[-1])
 
       if l_prob < 0 and r_prob > 0 and descaled_output[0][-1:, 1:2] > -descaled_output[0][-1:, 2:3] * 1.2:
-        l_prob *= 0.2
+        #l_prob *= 0.2
         print("      Diverging Left", l_prob)
       elif r_prob < 0 and l_prob > 0 and descaled_output[0][-1:, 1:2] * 1.2 < -descaled_output[0][-1:,2:3]:
-        r_prob *= 0.2
+        #r_prob *= 0.2
         print("      Diverging Right", r_prob)
       elif abs(l_prob) > 0 and abs(r_prob) > 0:
         if lane_width > 0:
@@ -303,9 +304,9 @@ while 1:
 
       if abs(cs.steeringRate) < 5 and abs(adjusted_angle) < 3 and cs.torqueRequest != 0:
         if calc_center[-1,0] < 0:
-          angle_bias += (0.00001 * cs.vEgo)
+          angle_bias += (0.000001 * cs.vEgo)
         elif calc_center[-1,0] > 0:
-          angle_bias -= (0.00001 * cs.vEgo)
+          angle_bias -= (0.000001 * cs.vEgo)
         
 
       path_send.pathPlan.angleSteers = float(angle[5] + cs.steeringAngle)

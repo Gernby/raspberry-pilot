@@ -91,7 +91,7 @@
 
 1. With the Pi and the car powered off, remove all of the USB cables and the Comma Power from the Giraffe
 2. Return the Panda and/or Giraffe to the standard configuration (Giraffe and/or Panda are installed between the LKAS camera and the car-side wiring)
-3. Use the USB A-to-C cable to connect the USB A port on the Panda with the USB C port on the Pi (Note: DO NOT TRY TO CONNECT THE PI TO A BLACK PANDA USING A USB C-TO-C CABLE. That is the relay box, NOT THE PANDA. The USB C port on the relay box has been electrically altered and will destroy your Pi if you try to use it for power.)
+3. Use the USB A-to-C cable to connect the USB A port on the Panda with the USB C port on the Pi (Note: DO NOT TRY TO CONNECT THE PI TO A BLACK PANDA USING A USB C-TO-C CABLE. That is the relay box, NOT THE PANDA. The USB C port on the relay box has been electrically altered and will destroy any USB device connected to it, including your Pi.)
 3. Start the car. Immediately verify that the Panda is showing a pulsing red LED.
 4. Wait approximately 90 seconds. If the dash goes green and does not flash orange for a split second at the end of the startup process, you should be good to go for a drive.
 

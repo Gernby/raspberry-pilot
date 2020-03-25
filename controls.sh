@@ -1,6 +1,4 @@
 #!/bin/bash
-export PYTHONPATH="$PWD"
-export PASSIVE="0"
 pkill -f boardd
 nice -8 ~/raspilot/selfdrive/boardd/boardd &
 pkill -f controlsd

@@ -11,7 +11,7 @@ from common.params import Params
 if len(sys.argv) < 2 or sys.argv[1] == 0:
   destination = "gernstation.synology.me"
   min_time = 0  #(time.time() - 72 * 60 * 60) * 1000
-elif sys.argv[2] == '1':
+elif sys.argv[1] == '1':
   min_time = 0
   destination = "192.168.1.180"
 
@@ -42,7 +42,9 @@ for cols in ["angle_offset,lateral_offset,wheel_speed_fl,wheel_speed_fr,wheel_sp
         recordcount += len(result['results'][0]['series'][0]['values'])
         min_time = result['results'][0]['series'][0]['values'][-1][0]
       else:
+        print('Done uploading %d records' % recordcount)
         break
     except:
+      print('Done uploading %d records' % recordcount)
       limit = 0
     if recordcount > 0 and recordcount % (max_limit * 5) == 0: print("records: %d  time per record: %f" % (recordcount, (time.time() - startTime) / recordcount))

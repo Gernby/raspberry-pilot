@@ -40,19 +40,17 @@ def set_realtime_priority(level):
   print("/n/n realtime priority = %d  %s  %s/n" %(level, NR_gettid, str(tid)))
   return subprocess.call(['chrt', '-f', '-p', str(level), str(tid)])
 
-def drain_sock(sock, wait_for_one=False):
-  ret = []
+def dump_sock(sock, wait_for_one=False):
   if wait_for_one:
-    ret.append(sock.recv())
+    sock.recv()
   while 1:
     try:
-      ret.append(sock.recv(zmq.NOBLOCK))
+      sock.recv(zmq.NOBLOCK)
     except zmq.error.Again:
       break
-  return ret
 
 setproctitle('transcoderd')
-set_realtime_priority(1)
+#set_realtime_priority(1)
 ipaddress = "tcp://127.0.0.1"
 
 context = zmq.Context.instance()
@@ -68,7 +66,7 @@ model_input = np.zeros((history_rows, inputs))
 model.predict_on_batch([[model_input[:,:8]], [model_input[:,8:11]], [model_input[:,-46:-32]], [model_input[:,-32:-16]], [model_input[:,-16:]]])
 frame = 0
 
-drain_sock(gernModelInputs, True)
+dump_sock(gernModelInputs, True)
 
 while 1:
   model_input_array = gernModelInputs.recv()

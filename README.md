@@ -43,7 +43,7 @@
 `git clone https://github.com/Gernby/raspberry-pilot.git`  
 
 2. Ask in Discord for the name of the current branch to checkout.
-3. `cd raspilot`
+3. `cd raspberry-pilot`
 4. `git checkout <branch name>`
 5. `bash start_install.sh <your WiFi name> <your WiFi password>` (Note that this step adds WiFi support to the Pi and connects to your home WiFi as part of the install)
 6. Wait 45 minutes (please verify)

@@ -15,7 +15,7 @@
 11. TV or monitor that accepts HDMI input
 12. USB keyboard
 13. Physical Ethernet connection for the initial installation inside your home
-14. Cellular hotspot (or WiFi you can reach from your car)
+14. Cellular hotspot (or standard WiFi you can reach from your car -- no cable company or retail WiFi)
 
 ## MicroSD card preparation and first login
 

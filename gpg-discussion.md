@@ -10,7 +10,7 @@ Below are the steps required to generate your secret and public keys and for sha
 
 ## GPG Secret Key Generation
 
-**Note: All of these steps are to be performed on your Pi, not any other workstation you may use to build and configure your Pi.
+**Note: All of these steps are to be performed on your Pi, not any other workstation you may use to build and configure your Pi.**
 
 Create a file in your home directory with the following contents, make substitutions as appropriate:
 

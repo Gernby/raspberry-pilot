@@ -41,4 +41,8 @@ Once you have generated your key pair, run the following command in your home di
 
 `gpg --export -a`
 
-Copy and paste the output into a PR to add the output to the end of the file named for your car type, such as `Honda Bosch`.
+Copy and paste the output into a PR to add the output to the end of the file named for your car type, such as `Honda Bosch`. You must include the break lines surrounding the key data. 
+
+`-----BEGIN PGP PUBLIC KEY BLOCK-----` and `-----END PGP PUBLIC KEY BLOCK-----`
+
+Add a blank line before and after your key data for readability.

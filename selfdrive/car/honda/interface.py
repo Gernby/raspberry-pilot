@@ -493,7 +493,7 @@ class CarInterface(CarInterfaceBase):
     ret.cruiseState.speedOffset = self.CS.cruise_speed_offset
     ret.cruiseState.standstill = False
 
-    ret.readdistancelines = self.CS.read_distance_lines
+    #ret.readdistancelines = self.CS.read_distance_lines
     ret.lkMode = self.CS.lkMode
 
     if not self.cp_cam is None:

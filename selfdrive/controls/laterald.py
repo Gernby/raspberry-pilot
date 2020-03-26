@@ -101,9 +101,9 @@ carStateDataString2 = ""
 insertString = ""
 canInsertString = ""
 
-Inputs = 57
+Inputs = 71
 Outputs = 5
-model_version = '010'
+model_version = '011'
 history_rows = 5
 
 scaler_type = 'MinMax_tanh'
@@ -149,7 +149,7 @@ advanceSteer = 1
 back_log = 0
 dump_sock(carState)
               
-bit_mask = [128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8] #, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8]
+bit_mask = [128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8]
 #bit_clear = [ 1,  1,  1, 1, 1, 1, 1,  1,  1,  1, 1, 1, 1, 1] #,   1,  1,  1, 1, 1, 1, 1,   0,  0,  0, 0, 0, 0, 0]
 
 row_count = 0
@@ -176,7 +176,9 @@ while 1:
       adjusted_angle /= angle_factor
 
       camera_flags = np.bitwise_and([cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm8, 
-                                     cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm8], bit_mask) // bit_mask
+                                    cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm8, 
+                                     cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm8,
+                                     cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm8], bit_mask) // bit_mask
       #camera_flags *= bit_clear
 
       left_10 = cs.camLeft.parm10 if cs.camLeft.parm10 >= 0 else cs.camLeft.parm10 + 128

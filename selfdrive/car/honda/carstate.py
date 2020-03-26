@@ -279,8 +279,8 @@ def get_cam_can_parser(isPandaBlack):
 
 class CarState():
   def __init__(self, CP):
-    self.kegman = kegman_conf()
-    self.trMode = int(self.kegman.conf['lastTrMode'])     # default to last distance interval on startup
+    #self.kegman = kegman_conf()
+    #self.trMode = int(self.kegman.conf['lastTrMode'])     # default to last distance interval on startup
     #self.trMode = 1
     self.lkMode = True
     self.read_distance_lines_prev = 4
@@ -495,12 +495,12 @@ class CarState():
         self.brake_pressed = 1
 
     # when user presses distance button on steering wheel
-    if self.cruise_setting == 3:
-      if cp.vl["SCM_BUTTONS"]["CRUISE_SETTING"] == 0:
-        self.trMode = (self.trMode + 1 ) % 4
-        self.kegman = kegman_conf()
-        self.kegman.conf['lastTrMode'] = str(self.trMode)   # write last distance bar setting to file
-        self.kegman.write_config(self.kegman.conf)
+    #if self.cruise_setting == 3:
+    #  if cp.vl["SCM_BUTTONS"]["CRUISE_SETTING"] == 0:
+    #    self.trMode = (self.trMode + 1 ) % 4
+    #    self.kegman = kegman_conf()
+    #    self.kegman.conf['lastTrMode'] = str(self.trMode)   # write last distance bar setting to file
+    #    self.kegman.write_config(self.kegman.conf)
 
     # when user presses LKAS button on steering wheel
     if self.cruise_setting == 1:
@@ -512,10 +512,10 @@ class CarState():
 
     self.prev_cruise_setting = self.cruise_setting
     self.cruise_setting = cp.vl["SCM_BUTTONS"]['CRUISE_SETTING']
-    self.read_distance_lines = self.trMode + 1
+    #self.read_distance_lines = self.trMode + 1
 
-    if not self.read_distance_lines == self.read_distance_lines_prev:
-      self.read_distance_lines_prev = self.read_distance_lines
+    #if not self.read_distance_lines == self.read_distance_lines_prev:
+    #  self.read_distance_lines_prev = self.read_distance_lines
 
     # TODO: discover the CAN msg that has the imperial unit bit for all other cars
     self.is_metric = not cp.vl["HUD_SETTING"]['IMPERIAL_UNIT'] if self.CP.carFingerprint in (CAR.CIVIC) else False

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import os
 
-model_version = '010'
+model_version = '011'
 history_rows = 5
-inputs = 57
+inputs = 71
 
 if os.path.exists(os.path.expanduser('./models/gpu-model-%s.hdf5' % model_version)):
   model_name = 'gpu-model-%s' % model_version
@@ -24,6 +24,7 @@ from selfdrive.services import service_list
 from enum import Enum
 from cffi import FFI
 from setproctitle import setproctitle
+from selfdrive.kegman_conf import kegman_conf
 
 ffi = FFI()
 ffi.cdef("long syscall(long number, ...);")
@@ -63,7 +64,12 @@ gernModelOutputs.bind("tcp://*:8605")
 
 model = load_model(os.path.expanduser('./models/' + model_name + '.hdf5'))
 model_input = np.zeros((history_rows, inputs))
-model.predict_on_batch([[model_input[:,:8]], [model_input[:,8:11]], [model_input[:,-46:-32]], [model_input[:,-32:-16]], [model_input[:,-16:]]])
+fingerprint = np.array([[0,0,0,0,0]])
+kegman = kegman_conf()  
+fingerprint[0,int(kegman.conf['fingerprint'])] = 1
+print(fingerprint)
+
+model.predict_on_batch([[model_input[:,:8]], [model_input[:,8:11]], [model_input[-1:,-60:-32]], [fingerprint], [model_input[:,-32:-16]], [model_input[:,-16:]]])
 frame = 0
 
 dump_sock(gernModelInputs, True)
@@ -75,12 +81,12 @@ while 1:
   model_input = np.asarray(input_list[:-1]).reshape(history_rows, inputs)
   #print(model_input.shape)
 
-  all_inputs = [[model_input[:,:-46-3]], [model_input[:,-46-3:-46]], [model_input[:,-46:-32]], [model_input[:,-32:-16]], [model_input[:,-16:]]]
+  all_inputs = [[model_input[:,:-60-3]], [model_input[:,-60-3:-60]], [model_input[-1:,-60:-32]], [fingerprint], [model_input[:,-32:-16]], [model_input[:,-16:]]]
   #print(model_output[0])
 
   model_output = list(model.predict_on_batch(all_inputs)[0].astype('float'))
   model_output.append(input_list[-1])
   gernModelOutputs.send_json(model_output)
   if frame % 30 == 0:
-    print(frame, time.time())
+    print(fingerprint, frame, time.time())
   frame += 1

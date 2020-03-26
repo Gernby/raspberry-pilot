@@ -6,6 +6,7 @@ class kegman_conf():
     if CP is not None:
       self.type = CP.lateralTuning.which()
     self.conf = self.read_config(CP)
+
     #print(self.conf)
     if CP is not None:
       try:
@@ -44,6 +45,10 @@ class kegman_conf():
       if self.conf['rateFFGain'] == "-1":
         self.conf['rateFFGain'] = str(round(CP.lateralTuning.pid.rateFFGain,3))
         write_conf = True
+      if self.conf['fingerprint'] == "-1":
+        print("getting fingerprint!")
+        self.conf['fingerprint'] = str(self.get_fingerprint())
+        write_conf = True
       if self.conf['polyDamp'] == "-1":
         self.conf['polyReact'] = str(round(CP.lateralTuning.pid.polyReactTime,3))
         self.conf['polyDamp'] = str(round(CP.lateralTuning.pid.polyDampTime,3))
@@ -68,6 +73,17 @@ class kegman_conf():
     if write_conf:
       self.write_config(self.config)
 
+
+  def get_fingerprint(self):
+    from common.params import Params
+    params = Params()
+    fingerprints = ['4d00','3800','2d00','2e00']
+    this_car = str(params.get("DongleId"))
+    for i in range(len(fingerprints)):
+      if fingerprints[i] in this_car:
+        return i
+
+
   def read_config(self, CP=None, Reset=False):
     self.element_updated = False
 
@@ -75,8 +91,7 @@ class kegman_conf():
       base_config = json.load(f)
 
     if Reset or not os.path.isfile(os.path.expanduser('~/kegman.json')):
-      self.config = {"Kp":"-1","Ki":"-1","Kf":"-1","rateFFGain":"-1","reactMPC":"-1","dampMPC":"-1","dampSteer":"-1","advanceSteer":"-1","angleFactor":"1.0","lkasMode":"0", "reactSteer":"-1","cameraOffset":"0.06", "lastTrMode":"1", "battChargeMin":"60", "battChargeMax":"70", "wheelTouchSeconds":"180", \
-          "battPercOff":"25", "carVoltageMinEonShutdown":"11800", "brakeStoppingTarget":"0.25", "leadDistance":"5"}
+      self.config = {"Kp":"-1","Ki":"-1","Kf":"-1","fingerprint":"-1","rateFFGain":"-1","reactMPC":"-1","dampMPC":"-1","dampSteer":"-1","advanceSteer":"-1","angleFactor":"1.0","lkasMode":"0", "reactSteer":"-1","cameraOffset":"0.06"}
     else:
       with open(os.path.expanduser('~/kegman.json'), 'r') as f:
         self.config = json.load(f)
@@ -110,6 +125,10 @@ class kegman_conf():
     if "lateralOffset" not in self.config:
       self.config.update({"lateralOffset":"0"})
       self.config.update({"angleOffset":"0"})
+      self.element_updated = True
+
+    if "fingerprint" not in self.config:
+      self.config.update({"fingerprint":"-1"})
       self.element_updated = True
 
     if ("type" not in self.config or self.config['type'] == "-1") and CP != None:

@@ -29,7 +29,7 @@
 8. Insert the microSD card into the Rasperry Pi 4. The card inserts with the contacts facing the mainboard.
 9. Connect the keyboard, micro-HDMI adapter and the HDMI cable
 10. If you are near your Ethernet cable, plug it in. If not, don't worry -- you don't need it yet.
-11. Connect the USB cable to household power (not a PC USB port) and then insert the USB C end into the Pi
+11. Connect the USB A end of the USB A-to-C cable to the power suplly and the USB C end into the power port on the Pi
 12. Wait for the Pi to boot and wait several more seconds after the login is presented to finish the first boot
 13. Log into the Pi using "ubuntu" for the username and the password
 14. You will be forced to change the password. Enter "ubuntu" as the "Current UNIX password" when prompted and then enter your new password twice to change it. From this point forward, you may continue using the keyboard and monitor to work on the Pi or you may return to your primary computer and log into the Pi using `ssh`.

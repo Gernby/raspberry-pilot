@@ -8,7 +8,7 @@ The Raspberry Pilot installation instructions include a step to let Gernby know 
 
 Below are the steps required to generate your secret and public keys (called your "key pair") and for sharing your public key. This will simplify the model distribution while maintaining protections that are still required at this stage. This is only a temporary measure and the restriction will be lifted once more cars are validated.
 
-## GPG Secret Key Generation
+## GPG Key Pair Generation
 
 **Note: All of these steps are to be performed on your Pi, not any other workstation you may use to build and configure your Pi.**
 

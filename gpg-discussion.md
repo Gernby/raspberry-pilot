@@ -18,9 +18,9 @@ Create a file in your home directory with the following contents, make substitut
 %echo Generating a default key  
 Key-Type: default  
 Subkey-Type: default  
-Name-Real: \<your Discord nickname\>  
-Name-Comment: \<your car type\>  
-Name-Email: \<your email\>  
+Name-Real: <your Discord nickname>  
+Name-Comment: <your car type>  
+Name-Email: <your email>  
 Expire-Date: 1000  
 Passphrase: abc  
 %commit  

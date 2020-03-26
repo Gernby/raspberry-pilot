@@ -10,6 +10,8 @@ Below are the steps required to generate your secret and public keys and for sha
 
 ## GPG Secret Key Generation
 
+**Note: All of these steps are to be performed on your Pi, not any other workstation you may use to build and configure your Pi.
+
 Create a file in your home directory with the following contents, make substitutions as appropriate:
 
 ```
@@ -29,7 +31,11 @@ Then at the command prompt run
 
 `gpg --batch --generate-key <name of file with contents above>`
 
-Wait 7 hours. When done, run
+Wait 7 hours and validate that the command has completed successfully.
+
+## Exporting and sharing your Public Key
+
+Once you have generated your key pair, run the following command in your home directory.
 
 `gpg --export -a`
 

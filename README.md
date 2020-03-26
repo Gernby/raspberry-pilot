@@ -48,7 +48,7 @@
 5. `bash start_install.sh <your WiFi name> <your WiFi password>` (Note that this step adds WiFi support to the Pi and connects to your home WiFi as part of the install)
 6. Wait 45 minutes (please verify)
 7. Log out of the Pi and log back in as the "ubuntu" user
-8. `cd raspilot`
+8. `cd raspberry-pilot`
 9. `bash finish_install.sh`
 10. Wait about 2.5 hours
 11. If the process completes successfully, reboot the Pi and log back in as the "ubuntu" user

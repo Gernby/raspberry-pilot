@@ -12,7 +12,9 @@ Below are the steps required to generate your secret and public keys and for sha
 
 **Note: All of these steps are to be performed on your Pi, not any other workstation you may use to build and configure your Pi.**
 
-Create a file in your home directory with the following contents, make substitutions as appropriate:
+These steps should be performed after the entire installation process has completed and the Pi is now sitting idle. This process is CPU intensive, so it should be left to run overnight on an idling Pi. You will likely do this after Gernby has emailed the first working model to you.
+
+First, create a file in your home directory with the following contents, making substitutions as appropriate:
 
 ```
 %echo Generating a default key  

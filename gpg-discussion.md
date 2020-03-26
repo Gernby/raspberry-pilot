@@ -2,9 +2,9 @@
 
 ## About
 
-GnuPG (GPG) is a data encryption utility. It allows data to be encrypted in such a way that only specific people can decrypt it. It allows people who receive data to verify that it came from the person who claimed to send it.
+GnuPG (GPG) is an encryption and validation utility based on Public Key Cryptography. It allows data to be encrypted in such a way that only specific people can decrypt it. It also allows people who receive data to verify that it came from the person who claimed to send it.
 
-The installation instructions include a step to let Gernby know when you are ready to receive a model file. Raspberry Pilot will not be able to issue steering commands without that file. Once Gernby knows your car is ready to receive steering commands, he will need your GPG public key. Below are the steps required to generate your secret and public keys and for sharing your public key.
+The installation instructions include a step to let Gernby know when you are ready to receive a model file. Raspberry Pilot will not be able to issue steering commands without that file. Once Gernby knows your car is ready to receive steering commands, he will send the file to you. With your public key, he could publish one file that only the people who are ready for the file could use it. Below are the steps required to generate your secret and public keys and for sharing your public key. This will simplify the model distribution while maintaining protections that are still required at this stage.
 
 ## GPG Secret Key Generation
 

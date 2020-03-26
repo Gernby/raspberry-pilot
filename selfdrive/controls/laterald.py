@@ -149,8 +149,6 @@ advanceSteer = 1
 back_log = 0
 dump_sock(carState)
               
-r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')
-
 bit_mask = [128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8] #, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8]
 #bit_clear = [ 1,  1,  1, 1, 1, 1, 1,  1,  1,  1, 1, 1, 1, 1] #,   1,  1,  1, 1, 1, 1, 1,   0,  0,  0, 0, 0, 0, 0]
 
@@ -343,7 +341,10 @@ while 1:
         if dashboard_count % 3 == 0: print('%d %s' % (frame_count, r))
         dashboard_count += 1
       except:
-        r = requests.post(url_string, data='create database carDB')
+        try:
+          r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')
+        except:
+          r = requests.post(url_string, data='create database carDB')
         print(r)
       # Send data to influxdb (after converting to Python3.7)
       carStateDataString2 = ''

@@ -12,7 +12,7 @@ Below are the steps required to generate your secret and public keys and for sha
 
 **Note: All of these steps are to be performed on your Pi, not any other workstation you may use to build and configure your Pi.**
 
-These steps should be performed after the entire installation process has completed and the Pi is now sitting idle. This process is CPU intensive, so it should be left to run overnight on an idling Pi. You will likely do this after Gernby has emailed the first working model to you.
+These steps should be performed after the entire installation process has completed and the Pi is now sitting idle with all four key processes running. Therefore, this will be done after Gernby has emailed the current model file to you. This process is CPU intensive, so it should be left to run overnight on an idling Pi. If you interrupt the process, you will need to reissue the command and wait another 7 hours. This long process only needs to be executed once per install, but you will need to repeat it should you erase your SD card for any reason.
 
 First, create a file in your home directory with the following contents, making substitutions as appropriate:
 

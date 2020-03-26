@@ -8,8 +8,8 @@ GnuPG (GPG) is a data encryption utility. It allows data to be encrypted in such
 
 Create a file in your home directory with the following contents, make substitutions as appropriate:
 
-`%echo Generating a default key  `
-`Key-Type: default  `
+`%echo Generating a default key  
+Key-Type: default  `
 `Subkey-Type: default  `
 `Name-Real: \<your Discord nickname\>  `
 `Name-Comment: \<your car type\>  `

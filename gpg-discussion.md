@@ -15,8 +15,8 @@ Name-Real: \<your Discord nickname\>
 Name-Comment: \<your car type\>  
 Name-Email: \<your email\>  
 Expire-Date: 1000  
-Passphrase: abc  
-# Do a commit here, so that we can later print "done" :-)  
+Passphrase: abc  `
+`# Do a commit here, so that we can later print "done" :-)  
 %commit  
 %echo done  `
 

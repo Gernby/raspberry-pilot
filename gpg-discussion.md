@@ -9,16 +9,16 @@ GnuPG (GPG) is a data encryption utility. It allows data to be encrypted in such
 Create a file in your home directory with the following contents, make substitutions as appropriate:
 
 `%echo Generating a default key  
-Key-Type: default  `
-`Subkey-Type: default  `
-`Name-Real: \<your Discord nickname\>  `
-`Name-Comment: \<your car type\>  `
-`Name-Email: \<your email\>  `
-`Expire-Date: 1000  `
-`Passphrase: abc  `
-`# Do a commit here, so that we can later print "done" :-)  `
-`%commit  `
-`%echo done  `
+Key-Type: default  
+Subkey-Type: default  
+Name-Real: \<your Discord nickname\>  
+Name-Comment: \<your car type\>  
+Name-Email: \<your email\>  
+Expire-Date: 1000  
+Passphrase: abc  
+# Do a commit here, so that we can later print "done" :-)  
+%commit  
+%echo done  `
 
 Then at the command prompt run
 

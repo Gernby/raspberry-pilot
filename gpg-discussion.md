@@ -30,4 +30,4 @@ Wait 7 hours. When done, run
 
 `gpg --export -a`
 
-Copy and paste the output into a file called `<your name>.asc`. Submit a PR to add the output to the end of the file named for your car type, such as Honda Bosch.
+Copy and paste the output into a PR to add the output to the end of the file named for your car type, such as `Honda Bosch`.

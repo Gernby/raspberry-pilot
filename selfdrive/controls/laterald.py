@@ -103,7 +103,7 @@ canInsertString = ""
 
 Inputs = 71
 Outputs = 5
-model_version = '011'
+model_version = '012'
 history_rows = 5
 
 scaler_type = 'MinMax_tanh'

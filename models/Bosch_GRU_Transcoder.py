@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os
 
-model_version = '011'
+model_version = '012'
 history_rows = 5
 inputs = 71
 
@@ -71,7 +71,7 @@ print(fingerprint)
 
 model.predict_on_batch([[model_input[:,:8]], [model_input[:,8:11]], [model_input[-1:,-60:-32]], [fingerprint], [model_input[:,-32:-16]], [model_input[:,-16:]]])
 frame = 0
-
+mask_flags = 0
 dump_sock(gernModelInputs, True)
 
 while 1:
@@ -79,10 +79,9 @@ while 1:
 
   input_list = json.loads(model_input_array)
   model_input = np.asarray(input_list[:-1]).reshape(history_rows, inputs)
-  #print(model_input.shape)
 
-  all_inputs = [[model_input[:,:-60-3]], [model_input[:,-60-3:-60]], [model_input[-1:,-60:-32]], [fingerprint], [model_input[:,-32:-16]], [model_input[:,-16:]]]
-  #print(model_output[0])
+  mask_flags = abs(mask_flags - 1)
+  all_inputs = [[model_input[:,:-60-3]], [model_input[:,-60-3:-60]], [mask_flags * model_input[-1:,-60:-32]], [fingerprint], [model_input[:,-32:-16]], [model_input[:,-16:]]]
 
   model_output = list(model.predict_on_batch(all_inputs)[0].astype('float'))
   model_output.append(input_list[-1])

@@ -46,7 +46,7 @@
 3. `cd raspberry-pilot`
 4. `git checkout <branch name>`
 5. `bash start_install.sh <your WiFi name> <your WiFi password>` (Note that this step adds WiFi support to the Pi and connects to your home WiFi as part of the install)
-6. Wait 45 minutes (please verify)
+6. Wait 30 minutes
 7. Log out of the Pi and log back in as the "ubuntu" user
 8. `cd raspberry-pilot`
 9. `pipenv run bash finish_install.sh`

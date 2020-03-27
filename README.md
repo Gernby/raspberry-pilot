@@ -49,7 +49,7 @@
 6. Wait 30 minutes
 7. Log out of the Pi and log back in as the "ubuntu" user
 8. `cd raspberry-pilot`
-9. `pipenv run bash finish_install.sh`
+9. `bash finish_install.sh`
 10. Wait about 2.5 hours
 11. If the process completes successfully, reboot the Pi and log back in as the "ubuntu" user
 12. Run the command `top -u ubuntu`

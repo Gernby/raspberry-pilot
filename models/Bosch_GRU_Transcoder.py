@@ -66,12 +66,11 @@ model = load_model(os.path.expanduser('./models/' + model_name + '.hdf5'))
 model_input = np.zeros((history_rows, inputs))
 fingerprint = np.array([[0,0,0,0,0]])
 kegman = kegman_conf()  
-fingerprint[0,int(kegman.conf['fingerprint'])] = 1
-print(fingerprint)
+if int(kegman.conf['fingerprint']) >= 0: 
+  fingerprint[0,int(kegman.conf['fingerprint'])] = 1
 
 model.predict_on_batch([[model_input[:,:8]], [model_input[:,8:11]], [model_input[-1:,-60:-32]], [fingerprint], [model_input[:,-32:-16]], [model_input[:,-16:]]])
 frame = 0
-mask_flags = 0
 dump_sock(gernModelInputs, True)
 
 while 1:
@@ -80,8 +79,7 @@ while 1:
   input_list = json.loads(model_input_array)
   model_input = np.asarray(input_list[:-1]).reshape(history_rows, inputs)
 
-  mask_flags = abs(mask_flags - 1)
-  all_inputs = [[model_input[:,:-60-3]], [model_input[:,-60-3:-60]], [mask_flags * model_input[-1:,-60:-32]], [fingerprint], [model_input[:,-32:-16]], [model_input[:,-16:]]]
+  all_inputs = [[model_input[:,:-60-3]], [model_input[:,-60-3:-60]], [model_input[-1:,-60:-32]], [fingerprint], [model_input[:,-32:-16]], [model_input[:,-16:]]]
 
   model_output = list(model.predict_on_batch(all_inputs)[0].astype('float'))
   model_output.append(input_list[-1])

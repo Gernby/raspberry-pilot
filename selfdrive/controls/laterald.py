@@ -148,7 +148,8 @@ path_send.init('pathPlan')
 advanceSteer = 1
 back_log = 0
 dump_sock(carState)
-              
+one_deg_per_sec = np.ones((15,1)) / 15
+
 bit_mask = [128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8]
 #bit_clear = [ 1,  1,  1, 1, 1, 1, 1,  1,  1,  1, 1, 1, 1, 1] #,   1,  1,  1, 1, 1, 1, 1,   0,  0,  0, 0, 0, 0, 0]
 
@@ -179,14 +180,13 @@ while 1:
                                     cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm8, 
                                      cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm8,
                                      cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm8], bit_mask) // bit_mask
-      #camera_flags *= bit_clear
-
+      
       left_10 = cs.camLeft.parm10 if cs.camLeft.parm10 >= 0 else cs.camLeft.parm10 + 128
       far_left_10 = cs.camFarLeft.parm10 if cs.camFarLeft.parm10 >= 0 else cs.camFarLeft.parm10 + 128
       right_10 = cs.camRight.parm10 if cs.camRight.parm10 <= 0 else cs.camRight.parm10 - 128
       far_right_10 = cs.camFarRight.parm10 if cs.camFarRight.parm10 <= 0 else cs.camFarRight.parm10 - 128
       
-      unscaled_input_array = [np.concatenate(([cs.vEgo, adjusted_angle, cs.lateralAccel, cs.steeringTorqueEps / angle_factor, cs.yawRateCAN, cs.longAccel, 0 , 0 , cs.steeringRate / angle_factor, cs.steeringTorque, cs.torqueRequest],  camera_flags, 
+      unscaled_input_array = [np.concatenate(([cs.vEgo, adjusted_angle, cs.lateralAccel, cs.steeringTorqueEps / angle_factor, cs.yawRateCAN, cs.longAccel, 0 , 0 , 0, 0, 0], camera_flags, 
                       [cs.camLeft.parm1, cs.camLeft.parm2, cs.camLeft.parm3, cs.camLeft.parm4,                    cs.camLeft.parm5,      cs.camLeft.parm7,  cs.camLeft.parm9, left_10, 
                       cs.camFarLeft.parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4,     cs.camFarLeft.parm5,   cs.camFarLeft.parm7,  cs.camFarLeft.parm9, far_left_10, 
                       cs.camRight.parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4,               cs.camRight.parm5,     cs.camRight.parm7,  cs.camRight.parm9, right_10, 
@@ -295,10 +295,22 @@ while 1:
       left_center = l_prob_smooth * left_center + (1 - l_prob_smooth) * calc_center
       right_center = r_prob_smooth * right_center + (1 - r_prob_smooth) * calc_center 
       
-      if abs(cs.steeringAngle) < 30:
-        angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer), angle - 0.075 * cs.vEgo, angle + 0.075 * cs.vEgo)
+      if abs(cs.steeringTorque) < 1200:
+        upper_limit = one_deg_per_sec * cs.vEgo * 1 #if abs(adjusted_angle) <= 3 else max(1, min(3, np.interp(adjusted_angle, [3, 10], [1, 3])))
+        lower_limit = -upper_limit
+        if cs.torqueRequest >= 1:
+          upper_limit = one_deg_per_sec * cs.steeringRate
+          lower_limit = angle + lower_limit
+        elif cs.torqueRequest <= -1:
+          lower_limit = one_deg_per_sec * cs.steeringRate
+          upper_limit = angle + upper_limit
+        else:
+          upper_limit = upper_limit + angle
+          lower_limit = lower_limit + angle
+        if l_prob + r_prob > 0:
+          angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer), lower_limit, upper_limit)
       else:
-        angle *= 0
+        angle = one_deg_per_sec * cs.steeringRate
 
       calc_center = (l_prob_smooth * left_center + r_prob_smooth * right_center) / (l_prob_smooth + r_prob_smooth + 0.05) 
 
@@ -309,9 +321,9 @@ while 1:
           angle_bias -= (0.000001 * cs.vEgo)
         
 
-      path_send.pathPlan.angleSteers = float(angle[5] + cs.steeringAngle)
-      path_send.pathPlan.mpcAngles = [float(x) for x in (angle_factor * (angle[:] + descaled_output[0][0,0:1]) - angle_offset - lateral_offset - angle_bias)]   #angle_steers.pop(output_list[-1]))]
-      #path_send.pathPlan.mpcAngles = [float(x) for x in (angle[:] + cs.steeringAngle - angle_bias)]   #angle_steers.pop(output_list[-1]))]
+      path_send.pathPlan.angleSteers = float(angle[5] + cs.steeringAngle  - angle_bias)
+      #path_send.pathPlan.mpcAngles = [float(x) for x in (angle_factor * (angle[:] + descaled_output[0][0,0:1]) - angle_offset - lateral_offset - angle_bias)]   #angle_steers.pop(output_list[-1]))]
+      path_send.pathPlan.mpcAngles = [float(x) for x in (angle + cs.steeringAngle  - angle_bias)]   #angle_steers.pop(output_list[-1]))]
       path_send.pathPlan.laneWidth = float(lane_width)
       path_send.pathPlan.angleOffset = float(angle_offset)
       path_send.pathPlan.lateralOffset = float(lateral_offset)      
@@ -335,6 +347,7 @@ while 1:
       if recv_frames % 30 == 0:
         #try:
         print(' sent: %d dropped: %d backlog: %d half_width: %0.1f center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  angle_offset:  %0.2f  angle_bias:  %0.2f  lateral_offset:  %0.2f  total_offset:  %0.2f  angle_factor:  %0.2f  effective_angle:  %0.2f' % (sent_frames, sent_frames - recv_frames, back_log, half_width, calc_center[-1], l_prob, r_prob, angle_offset, angle_bias, lateral_offset, lateral_offset + angle_offset, angle_factor, cs.steeringAngle + lateral_offset + angle_offset))
+        print(upper_limit, lower_limit)
 
     if frame_count >= 100 and back_log == 1:
       try:

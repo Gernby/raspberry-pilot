@@ -47,8 +47,10 @@ class kegman_conf():
         write_conf = True
       if self.conf['fingerprint'] == "-1":
         print("getting fingerprint!")
-        self.conf['fingerprint'] = str(self.get_fingerprint())
-        write_conf = True
+        fingerprint = self.get_fingerprint()
+        if not fingerprint is None:
+          self.conf['fingerprint'] = str(fingerprint)
+          write_conf = True
       if self.conf['polyDamp'] == "-1":
         self.conf['polyReact'] = str(round(CP.lateralTuning.pid.polyReactTime,3))
         self.conf['polyDamp'] = str(round(CP.lateralTuning.pid.polyDampTime,3))

@@ -157,6 +157,10 @@ one_deg_per_sec = np.ones((15,1)) / 15
 accel_counter = 0
 upper_limit = 0
 lower_limit = 0
+lr_prob_prev = 0
+lr_prob_prev_prev = 0
+center_rate_prev = 0
+calc_center_prev = 0
 
 bit_mask = [128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8]
 #bit_clear = [ 1,  1,  1, 1, 1, 1, 1,  1,  1,  1, 1, 1, 1, 1] #,   1,  1,  1, 1, 1, 1, 1,   0,  0,  0, 0, 0, 0, 0]
@@ -261,6 +265,7 @@ while 1:
         left_center = np.zeros((row_count,1))
         right_center = np.zeros((row_count,1))
         calc_center = np.zeros((row_count,1))
+        projected_center = np.zeros((row_count,1))
         left_probs = np.zeros((row_count,1))
         right_probs = np.zeros((row_count,1))
         angle = np.zeros((row_count,1))
@@ -273,10 +278,12 @@ while 1:
       l_prob = l_probs.pop(output_list[-1])
       r_prob = r_probs.pop(output_list[-1])
 
-      if l_prob < 0 and r_prob > 0 and descaled_output[0][-1:, 1:2] > -descaled_output[0][-1:, 2:3] * 1.2:
+      if l_prob < 0 and r_prob > 0 and descaled_output[0][-1:, 1:2] > -descaled_output[0][-1:, 2:3] * 1.5:
+        #pass
         #l_prob *= 0.2
         print("      Diverging Left", l_prob)
-      elif r_prob < 0 and l_prob > 0 and descaled_output[0][-1:, 1:2] * 1.2 < -descaled_output[0][-1:,2:3]:
+      elif r_prob < 0 and l_prob > 0 and descaled_output[0][-1:, 1:2] * 1.5 < -descaled_output[0][-1:,2:3]:
+        #pass
         #r_prob *= 0.2
         print("      Diverging Right", r_prob)
       elif abs(l_prob) > 0 and abs(r_prob) > 0:
@@ -296,15 +303,35 @@ while 1:
       lr_prob = (l_prob_smooth + r_prob_smooth) - l_prob_smooth * r_prob_smooth
       a_prob = 1 
 
-      left_probs[:,0] =    l_prob * np.clip(model_output[:,3], 0, 1) + (1 - l_prob) * left_probs[:,0]
-      right_probs[:,0] =   r_prob * np.clip(model_output[:,4], 0, 1) + (1 - r_prob) * right_probs[:,0]
-      left_center[:,0:]  =  l_prob *   (descaled_output[0][:,1:2] - half_width) + (1 - l_prob) * left_center[:, 0:]  
-      right_center[:,0:]  = r_prob *   (descaled_output[0][:,2:3] + half_width) + (1 - r_prob) * right_center[:, 0:] 
-      left_center = l_prob_smooth * left_center + (1 - l_prob_smooth) * calc_center
-      right_center = r_prob_smooth * right_center + (1 - r_prob_smooth) * calc_center 
+      left_probs[:,0] =    l_prob * np.clip(model_output[:,3], 0, 1) #+ (1 - l_prob) * left_probs[:,0]
+      right_probs[:,0] =   r_prob * np.clip(model_output[:,4], 0, 1) #+ (1 - r_prob) * right_probs[:,0]
+      left_center[:,0]  =  left_probs[:,0] * (descaled_output[0][:,1] - half_width) #+ (1 - l_prob) * left_center[:, 0:]  
+      right_center[:,0]  = right_probs[:,0] * (descaled_output[0][:,2] + half_width) #+ (1 - r_prob) * right_center[:, 0:] 
+
+      calc_center = (l_prob * left_center + r_prob * right_center) / (l_prob + r_prob + 0.0005) 
+
+      center_rate = calc_center - calc_center_prev
+      center_accel = center_rate - center_rate_prev
+      projected_center = calc_center + (2 * lr_prob * lr_prob_prev * center_rate) + (2 * lr_prob * lr_prob_prev * lr_prob_prev_prev * center_accel)
       
+      #if recv_frames % 30 == 0:
+      #  print(np.round(calc_center[::5,0], 1), np.round(center_rate[::5,0], 1), np.round(center_accel[::5,0],1),np.round(projected_center[::5,0], 1))
+
+      lr_prob_prev_prev = lr_prob_prev
+      lr_prob_prev = lr_prob
+      calc_center_prev = calc_center
+      center_rate_prev = center_rate
+
+
+      #left_probs[:,0] =    l_prob * np.clip(model_output[:,3], 0, 1) + (1 - l_prob) * left_probs[:,0]
+      #right_probs[:,0] =   r_prob * np.clip(model_output[:,4], 0, 1) + (1 - r_prob) * right_probs[:,0]
+      #left_center[:,0:]  =  l_prob *   (descaled_output[0][:,1:2] - half_width) + (1 - l_prob) * left_center[:, 0:]  
+      #right_center[:,0:]  = r_prob *   (descaled_output[0][:,2:3] + half_width) + (1 - r_prob) * right_center[:, 0:] 
+      #left_center = l_prob_smooth * left_center + (1 - l_prob_smooth) * calc_center
+      #right_center = r_prob_smooth * right_center + (1 - r_prob_smooth) * calc_center 
+
       if abs(cs.steeringTorque) < 1200 and abs(adjusted_angle) < 30:
-        upper_limit = one_deg_per_sec * cs.vEgo * (1 + 0.2 * abs(adjusted_angle) + accel_counter)
+        upper_limit = one_deg_per_sec * cs.vEgo * (1 + 0.2 * max(0, abs(adjusted_angle)-4) + accel_counter)
         lower_limit = -upper_limit
         if cs.torqueRequest >= 1:
           upper_limit = one_deg_per_sec * cs.steeringRate
@@ -324,8 +351,6 @@ while 1:
       else:
         angle = one_deg_per_sec * cs.steeringRate
 
-      calc_center = (l_prob_smooth * left_center + r_prob_smooth * right_center) / (l_prob_smooth + r_prob_smooth + 0.05) 
-
       if abs(cs.steeringRate) < 5 and abs(adjusted_angle) < 3 and cs.torqueRequest != 0:
         if calc_center[-1,0] < 0:
           angle_bias += (0.000001 * cs.vEgo)
@@ -341,7 +366,7 @@ while 1:
       path_send.pathPlan.lateralOffset = float(lateral_offset)      
       path_send.pathPlan.lPoly = [float(x) for x in (left_center[:,0] + half_width)]
       path_send.pathPlan.rPoly = [float(x) for x in (right_center[:,0] - half_width)]
-      path_send.pathPlan.cPoly = [float(x) for x in (calc_center[:,0])]
+      path_send.pathPlan.cPoly = [float(x) for x in (projected_center[:,0])]
       path_send.pathPlan.lProb = float(l_prob)
       path_send.pathPlan.rProb = float(r_prob)
       path_send.pathPlan.cProb = float(lr_prob)
@@ -350,7 +375,7 @@ while 1:
       if cs.vEgo >= 0:
         pathDataString += pathFormatString1 % tuple([float(x) for x in (left_center[:,0] + half_width)])
         pathDataString += pathFormatString2 % tuple([float(x) for x in (right_center[:,0] - half_width)])
-        pathDataString += pathFormatString3 % tuple([float(x) for x in calc_center[:,0]])
+        pathDataString += pathFormatString3 % tuple([float(x) for x in projected_center[:,0]])
         pathDataString += pathFormatString4 % (path_send.pathPlan.mpcAngles[3], path_send.pathPlan.mpcAngles[4], path_send.pathPlan.mpcAngles[5], path_send.pathPlan.mpcAngles[6], 
                           path_send.pathPlan.mpcAngles[10], path_send.pathPlan.lProb, path_send.pathPlan.rProb, path_send.pathPlan.cProb, path_send.pathPlan.laneWidth, 
                           path_send.pathPlan.angleSteers, path_send.pathPlan.rateSteers, angle_offset, angle_bias, lateral_offset, path_send.pathPlan.canTime - path_send.pathPlan.canTime, cs.canTime)
@@ -359,8 +384,8 @@ while 1:
       if recv_frames % 30 == 0:
         #try:
         print(' sent: %d dropped: %d backlog: %d half_width: %0.1f center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  angle_offset:  %0.2f  angle_bias:  %0.2f  lateral_offset:  %0.2f  total_offset:  %0.2f  angle_factor:  %0.2f  effective_angle:  %0.2f' % (sent_frames, sent_frames - recv_frames, back_log, half_width, calc_center[-1], l_prob, r_prob, angle_offset, angle_bias, lateral_offset, lateral_offset + angle_offset, angle_factor, cs.steeringAngle + lateral_offset + angle_offset))
-        #print(upper_limit, lower_limit)
-
+        #print(np.round(projected_center[:,0] - projected_center[0,0],1), np.round(projected_center[:,0] - calc_center[0,0],1))
+        
     if frame_count >= 100 and back_log == 1:
       try:
         r = requests.post(url_string, data=pathDataString + carStateDataString1 + carStateDataString2)

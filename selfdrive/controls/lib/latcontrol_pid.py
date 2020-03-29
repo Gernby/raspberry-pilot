@@ -99,7 +99,8 @@ class LatControlPID(object):
         self.react_mpc = (float(self.kegman.conf['reactMPC']))
         self.damp_mpc = (float(self.kegman.conf['dampMPC']))
         self.lateral_offset = (float(self.kegman.conf['lateralOffset']))
-        self.polyReact =  max(0.0, float(self.kegman.conf['polyReact']) * 0.1)
+        #self.polyReact =  max(0.0, float(self.kegman.conf['polyReact']) * 0.1)
+        self.polyReact =  1.0 + np.arange(15) * float(self.kegman.conf['polyReact']) / 15
         self.poly_smoothing = max(1.0, float(self.kegman.conf['polyDamp']) * 100.)
         self.poly_factor = max(0.0, float(self.kegman.conf['polyFactor']) * 0.001)
       except:
@@ -126,10 +127,11 @@ class LatControlPID(object):
       self.last_plan_time = path_plan.canTime
       self.avg_plan_age += 0.01 * (path_age - self.avg_plan_age)
 
-      self.c_prob = max(self.c_prob - 0.0333, min(self.c_prob + 0.0333, path_plan.cProb))
-      self.projected_lane_error = self.c_prob * self.poly_factor * (sum(path_plan.cPoly) + self.polyReact * 15 * (path_plan.cPoly[-1] - path_plan.cPoly[-2]))
+      self.c_prob = max(self.c_prob - 0.0333, path_plan.cProb)
+      self.projected_lane_error = self.c_prob * self.poly_factor * sum(np.array(path_plan.cPoly) * self.polyReact)
+      #self.projected_lane_error = self.c_prob * self.poly_factor * (sum(path_plan.cPoly) + self.polyReact * 15 * (path_plan.cPoly[-1] - path_plan.cPoly[-2]))
       if abs(self.projected_lane_error) < abs(self.prev_projected_lane_error) and (self.projected_lane_error > 0) == (self.prev_projected_lane_error > 0):
-        self.projected_lane_error *= gernterp(angle_steers, [0, 4], [0.25, 1.0])
+        self.projected_lane_error *= gernterp(angle_steers + path_plan.angleOffset + path_plan.lateralOffset, [0, 4], [0.25, 1.0])
       #self.damp_adjust = gernterp(abs(path_plan.cPoly[-1]), [0,50], [1., 0.5])
       self.prev_projected_lane_error = self.projected_lane_error
       self.angle_index = max(0., 100. * (self.react_mpc + path_age))
@@ -160,7 +162,7 @@ class LatControlPID(object):
     else:
       try:
 
-        self.damp_angle_steers += (angle_steers + angle_steers_rate * self.damp_time - self.damp_angle_steers) / max(1.0, self.damp_time * 100.)
+        self.damp_angle_steers += (angle_steers + angle_steers_rate * self.damp_time - self.damp_angle_steers) / max(1.0, 1 + self.damp_time * 100.)
         self.damp_angle_rate += (angle_steers_rate - self.damp_angle_rate) / max(1.0, self.damp_time * 100.)
         self.angle_steers_des = interp(self.angle_index, self.path_index, path_plan.mpcAngles)
         self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des) / max(1.0, self.damp_mpc * 100.)
@@ -176,7 +178,7 @@ class LatControlPID(object):
 
       if v_ego * self.projected_lane_error > self.path_error_comp and self.pid.p2 < 1 and self.pid.control < 1 or \
          v_ego * self.projected_lane_error < self.path_error_comp and self.pid.p2 > -1 and self.pid.control > -1:
-        self.path_error_comp += (v_ego * self.projected_lane_error - self.path_error_comp) / self.poly_smoothing
+        self.path_error_comp += (self.projected_lane_error - self.path_error_comp) / self.poly_smoothing
 
       if not steer_override and v_ego > 10.0:
         if abs(angle_steers) > (self.angle_ff_bp[0][1] / 2.0):

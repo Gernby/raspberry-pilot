@@ -129,6 +129,9 @@ void *safety_setter_thread(void *s) {
 bool usb_connect() {
   int err;
   unsigned char hw_query[1] = {0};
+  unsigned char serial_buf[16];
+  const char *serial;
+  int serial_sz = 0;
   ignition_last = 0;
 
   dev_handle = libusb_open_device_with_vid_pid(ctx, 0xbbaa, 0xddcc);
@@ -146,6 +149,16 @@ bool usb_connect() {
 
   // power off ESP
   libusb_control_transfer(dev_handle, 0xc0, 0xd9, 0, 0, NULL, 0, TIMEOUT);
+
+  // get panda serial
+  err = libusb_control_transfer(dev_handle, 0xc0, 0xd0, 0, 0, serial_buf, 16, TIMEOUT);
+
+  if (err > 0) {
+    serial = (const char *)serial_buf;
+    serial_sz = strnlen(serial, err);
+    write_db_value(NULL, "PandaDongleId", serial, serial_sz);
+    printf("panda serial: %.*s\n", serial_sz, serial);
+  }
 
   // power on charging, only the first time. Panda can also change mode and it causes a brief disconneciton
 //#ifndef __x86_64__

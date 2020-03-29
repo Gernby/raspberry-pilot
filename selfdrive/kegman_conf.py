@@ -78,10 +78,15 @@ class kegman_conf():
     from common.params import Params
     params = Params()
     fingerprints = ['4d00','3800','2d00','2e00']
-    this_car = str(params.get("DongleId"))
+    try:
+      this_car = str(params.get("PandaDongleId"))
+    except:
+      this_car = str(params.get("DongleId"))
+
     for i in range(len(fingerprints)):
       if fingerprints[i] in this_car:
         return i
+
 
 
   def read_config(self, CP=None, Reset=False):

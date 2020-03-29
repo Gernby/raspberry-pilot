@@ -56,7 +56,7 @@ def dashboard_thread(rate=100):
   frame_count = 0
   user_id = 'ddd3e089e7bbe0fc'
   params = Params()
-  user_id = params.get("DongleId")
+  user_id = params.get("PandaDongleId")
   user_id = user_id.decode()
 
   #tunePush.send_json(config)

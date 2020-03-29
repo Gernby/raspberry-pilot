@@ -6,6 +6,7 @@ history_rows = 5
 inputs = 71
 
 if os.path.exists(os.path.expanduser('./models/gpu-model-%s.hdf5' % model_version)):
+  os.environ["CUDA_VISIBLE_DEVICES"]="0"
   model_name = 'gpu-model-%s' % model_version
 else:
   os.environ["CUDA_VISIBLE_DEVICES"]="-1"

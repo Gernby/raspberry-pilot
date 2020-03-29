@@ -81,6 +81,7 @@ keys = {
   "LongitudinalControl": [TxType.PERSISTENT],
   "OpenpilotEnabledToggle": [TxType.PERSISTENT],
   "Passive": [TxType.PERSISTENT],
+  "PandaDongleId": [TxType.PERSISTENT],
   "RecordFront": [TxType.PERSISTENT],
   "ReleaseNotes": [TxType.PERSISTENT],
   "SafetyModelLock": [TxType.PERSISTENT],

@@ -13,14 +13,19 @@ import requests
 from selfdrive.kegman_conf import kegman_conf
 from selfdrive.services import service_list
 from enum import Enum
-from cereal import log
+from cereal import log, car
 from cffi import FFI
 from setproctitle import setproctitle
 from common.params import Params
 
 params = Params()
-user_id = str(params.get("DongleId"))
+user_id = str(params.get("PandaDongleId"))
+car_params = params.get("CarParams")
 lateral_params = params.get("LateralParams")
+
+if car_params is not None:
+  car_params = car.CarParams.from_bytes(car_params)
+  print(car_params)
 try:
   lateral_params = json.loads(lateral_params)
 except:
@@ -149,6 +154,9 @@ advanceSteer = 1
 back_log = 0
 dump_sock(carState)
 one_deg_per_sec = np.ones((15,1)) / 15
+accel_counter = 0
+upper_limit = 0
+lower_limit = 0
 
 bit_mask = [128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8]
 #bit_clear = [ 1,  1,  1, 1, 1, 1, 1,  1,  1,  1, 1, 1, 1, 1] #,   1,  1,  1, 1, 1, 1, 1,   0,  0,  0, 0, 0, 0, 0]
@@ -295,8 +303,8 @@ while 1:
       left_center = l_prob_smooth * left_center + (1 - l_prob_smooth) * calc_center
       right_center = r_prob_smooth * right_center + (1 - r_prob_smooth) * calc_center 
       
-      if abs(cs.steeringTorque) < 1200:
-        upper_limit = one_deg_per_sec * cs.vEgo * 1 #if abs(adjusted_angle) <= 3 else max(1, min(3, np.interp(adjusted_angle, [3, 10], [1, 3])))
+      if abs(cs.steeringTorque) < 1200 and abs(adjusted_angle) < 30:
+        upper_limit = one_deg_per_sec * cs.vEgo * (1 + 0.2 * abs(adjusted_angle) + accel_counter)
         lower_limit = -upper_limit
         if cs.torqueRequest >= 1:
           upper_limit = one_deg_per_sec * cs.steeringRate
@@ -308,7 +316,11 @@ while 1:
           upper_limit = upper_limit + angle
           lower_limit = lower_limit + angle
         if l_prob + r_prob > 0:
+          accel_counter = max(0, min(10, accel_counter - 1))
           angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer), lower_limit, upper_limit)
+        else:
+          accel_counter = max(0, min(10, accel_counter + 1))
+          angle *= 0.9
       else:
         angle = one_deg_per_sec * cs.steeringRate
 
@@ -347,7 +359,7 @@ while 1:
       if recv_frames % 30 == 0:
         #try:
         print(' sent: %d dropped: %d backlog: %d half_width: %0.1f center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  angle_offset:  %0.2f  angle_bias:  %0.2f  lateral_offset:  %0.2f  total_offset:  %0.2f  angle_factor:  %0.2f  effective_angle:  %0.2f' % (sent_frames, sent_frames - recv_frames, back_log, half_width, calc_center[-1], l_prob, r_prob, angle_offset, angle_bias, lateral_offset, lateral_offset + angle_offset, angle_factor, cs.steeringAngle + lateral_offset + angle_offset))
-        print(upper_limit, lower_limit)
+        #print(upper_limit, lower_limit)
 
     if frame_count >= 100 and back_log == 1:
       try:

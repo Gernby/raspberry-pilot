@@ -16,7 +16,7 @@ elif sys.argv[1] == '1':
   destination = "192.168.1.180"
 
 params = Params()
-user_id = params.get("DongleId")
+user_id = params.get("PandaDongleId")
 context = zmq.Context()
 steerPush = context.socket(zmq.PUSH)
 steerPush.connect("tcp://" + destination + ":8594")

@@ -17,11 +17,16 @@ from cereal import log, car
 from cffi import FFI
 from setproctitle import setproctitle
 from common.params import Params
+import sys
+sys.stderr = open('../laterald.txt', 'w')
 
 params = Params()
 user_id = str(params.get("PandaDongleId"))
 car_params = params.get("CarParams")
 lateral_params = params.get("LateralParams")
+use_bias = 1
+use_lateral_offset = 1
+use_angle_offset = 1
 
 if car_params is not None:
   car_params = car.CarParams.from_bytes(car_params)
@@ -179,13 +184,13 @@ while 1:
 
       if cs.vEgo > 10 and abs(cs.steeringRate) < 5:
         if cs.lateralAccel > 0 and adjusted_angle < 0:
-          lateral_offset += (0.000001 * cs.vEgo)
+          lateral_offset += (0.00001 * cs.vEgo)
         elif cs.lateralAccel < 0 and adjusted_angle > 0:
-          lateral_offset -= (0.000001 * cs.vEgo)
+          lateral_offset -= (0.00001 * cs.vEgo)
         elif cs.yawRateCAN > 0 and adjusted_angle - lateral_offset < 0:
-          angle_offset += (0.000001 * cs.vEgo)
+          angle_offset += (0.00001 * cs.vEgo)
         elif cs.yawRateCAN < 0 and adjusted_angle - lateral_offset > 0:
-          angle_offset -= (0.000001 * cs.vEgo)
+          angle_offset -= (0.00001 * cs.vEgo)
       adjusted_angle /= angle_factor
 
       camera_flags = np.bitwise_and([cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm8, 
@@ -331,7 +336,7 @@ while 1:
       #right_center = r_prob_smooth * right_center + (1 - r_prob_smooth) * calc_center 
 
       if abs(cs.steeringTorque) < 1200 and abs(adjusted_angle) < 30:
-        upper_limit = one_deg_per_sec * cs.vEgo * (1 + 0.2 * max(0, abs(adjusted_angle)-4) + accel_counter)
+        upper_limit = one_deg_per_sec * cs.vEgo * (2 + 0.2 * max(0, abs(adjusted_angle)-4) + accel_counter)
         lower_limit = -upper_limit
         if cs.torqueRequest >= 1:
           upper_limit = one_deg_per_sec * cs.steeringRate
@@ -353,10 +358,13 @@ while 1:
 
       if abs(cs.steeringRate) < 5 and abs(adjusted_angle) < 3 and cs.torqueRequest != 0:
         if calc_center[-1,0] < 0:
-          angle_bias += (0.000001 * cs.vEgo)
+          angle_bias += (0.00001 * cs.vEgo)
         elif calc_center[-1,0] > 0:
-          angle_bias -= (0.000001 * cs.vEgo)
+          angle_bias -= (0.00001 * cs.vEgo)
         
+      angle_bias *= use_bias
+      angle_offset *= use_angle_offset
+      lateral_offset *= use_lateral_offset
 
       path_send.pathPlan.angleSteers = float(angle[5] + cs.steeringAngle  - angle_bias)
       #path_send.pathPlan.mpcAngles = [float(x) for x in (angle_factor * (angle[:] + descaled_output[0][0,0:1]) - angle_offset - lateral_offset - angle_bias)]   #angle_steers.pop(output_list[-1]))]
@@ -386,7 +394,7 @@ while 1:
         print(' sent: %d dropped: %d backlog: %d half_width: %0.1f center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  angle_offset:  %0.2f  angle_bias:  %0.2f  lateral_offset:  %0.2f  total_offset:  %0.2f  angle_factor:  %0.2f  effective_angle:  %0.2f' % (sent_frames, sent_frames - recv_frames, back_log, half_width, calc_center[-1], l_prob, r_prob, angle_offset, angle_bias, lateral_offset, lateral_offset + angle_offset, angle_factor, cs.steeringAngle + lateral_offset + angle_offset))
         #print(np.round(projected_center[:,0] - projected_center[0,0],1), np.round(projected_center[:,0] - calc_center[0,0],1))
         
-    if frame_count >= 100 and back_log == 1:
+    if frame_count >= 100 and back_log == 2:
       try:
         r = requests.post(url_string, data=pathDataString + carStateDataString1 + carStateDataString2)
         #print(influxLineString)
@@ -406,13 +414,17 @@ while 1:
 
     # TODO: replace kegman_conf with params!
     if recv_frames % 100 == 0 and back_log == 2:
-      try:
-        kegman = kegman_conf()  
-        advanceSteer = max(0, float(kegman.conf['advanceSteer']))
-        angle_factor = float(kegman.conf['angleFactor'])
-        #print("advanceSteer = ", advanceSteer)
-      except:
-        pass
+      #try:
+      kegman = kegman_conf()  
+      advanceSteer = max(0, float(kegman.conf['advanceSteer']))
+      angle_factor = float(kegman.conf['angleFactor'])
+      use_bias = float(kegman.conf['angleBias'])
+      use_angle_offset = float(kegman.conf['angleOffset'])
+      use_lateral_offset = float(kegman.conf['lateralOffset'])
+      #print(use_bias, use_angle_offset, use_lateral_offset)
+      #print("advanceSteer = ", advanceSteer)
+      #except:
+      #  pass
     
     if recv_frames % 1000 == 2 and back_log == 2:
       params.put("LateralParams", json.dumps({'angle_offset': angle_offset, 'angle_bias': angle_bias, 'lateral_offset': lateral_offset}))

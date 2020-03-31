@@ -82,12 +82,12 @@ class LatControlPID(object):
     try:
       lateral_params = self.params.get("LateralGain")
       lateral_params = json.loads(lateral_params)
-      self.angle_ff_gain = max(1.0, float(lateral_params['angle_ff_gain']))
+      self.angle_ff_gain = max(20.0, float(lateral_params['angle_ff_gain']))
     except:
-      self.angle_ff_gain = 1.0
+      self.angle_ff_gain = 20.0
 
   def live_tune(self, CP):
-    if False and self.frame % 3600 == 0:
+    if self.frame % 3600 == 0:
       self.params.put("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
     if self.frame % 300 == 0:
       try:
@@ -128,7 +128,7 @@ class LatControlPID(object):
       self.avg_plan_age += 0.01 * (path_age - self.avg_plan_age)
 
       self.c_prob = max(self.c_prob - 0.0333, path_plan.cProb)
-      self.projected_lane_error = self.c_prob * self.poly_factor * sum(np.array(path_plan.cPoly) * self.polyReact)
+      self.projected_lane_error = self.c_prob * self.poly_factor * sum(np.array(path_plan.cPoly) * self.polyReact) 
       #self.projected_lane_error = self.c_prob * self.poly_factor * (sum(path_plan.cPoly) + self.polyReact * 15 * (path_plan.cPoly[-1] - path_plan.cPoly[-2]))
       if abs(self.projected_lane_error) < abs(self.prev_projected_lane_error) and (self.projected_lane_error > 0) == (self.prev_projected_lane_error > 0):
         self.projected_lane_error *= gernterp(angle_steers + path_plan.angleOffset + path_plan.lateralOffset, [0, 4], [0.25, 1.0])
@@ -174,11 +174,12 @@ class LatControlPID(object):
       angle_feedforward = float(self.damp_angle_steers_des + path_plan.angleOffset + path_plan.lateralOffset)
       self.angle_ff_ratio = float(gernterp(abs(angle_feedforward), self.angle_ff_bp[0], self.angle_ff_bp[1]))
       rate_feedforward = (1.0 - self.angle_ff_ratio) * self.rate_ff_gain * self.damp_rate_steers_des
-      steer_feedforward = float(v_ego)**2 * (rate_feedforward + angle_feedforward * self.angle_ff_ratio * self.angle_ff_gain)
+      steer_feedforward = float(v_ego) * (rate_feedforward + angle_feedforward * self.angle_ff_ratio * self.angle_ff_gain)
 
-      if v_ego * self.projected_lane_error > self.path_error_comp and self.pid.p2 < 1 and self.pid.control < 1 or \
-         v_ego * self.projected_lane_error < self.path_error_comp and self.pid.p2 > -1 and self.pid.control > -1:
-        self.path_error_comp += (self.projected_lane_error - self.path_error_comp) / self.poly_smoothing
+      lane_compensation = self.projected_lane_error * max(0.01, min(1, 1 / (0.001 + abs(angle_steers_rate))))
+      if lane_compensation > self.path_error_comp and self.pid.p2 < 1 and self.pid.control < 1 or \
+         lane_compensation < self.path_error_comp and self.pid.p2 > -1 and self.pid.control > -1:
+        self.path_error_comp += (lane_compensation - self.path_error_comp) / self.poly_smoothing
 
       if not steer_override and v_ego > 10.0:
         if abs(angle_steers) > (self.angle_ff_bp[0][1] / 2.0):

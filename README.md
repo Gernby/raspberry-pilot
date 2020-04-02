@@ -32,7 +32,10 @@
 11. Connect the USB A end of the USB A-to-C cable to the power supply and the USB C end into the power port on the Pi
 12. Wait for the Pi to boot and wait several more seconds after the login is presented to finish the first boot
 13. Log into the Pi using "ubuntu" for the username and the password
-14. You will be forced to change the password. Enter "ubuntu" as the "Current UNIX password" when prompted and then enter your new password twice to change it. From this point forward, you may continue using the keyboard and monitor to work on the Pi or you may return to your primary computer and log into the Pi using `ssh`.
+14. You will be forced to change the password. Enter "ubuntu" as the "Current UNIX password" when prompted and then enter your new password twice to change it.
+15. As a test, run `ssh localhost` to make sure your Pi is allowing logins via `ssh`. If you do not wait at least 20 seconds after the startup screen clears, you may interrupt the configuration of the `ssh` server. If you cannot log into localhost via `ssh`, you will need to flash the SD card again and start over. Better to do it now and save hours of rework.
+
+From this point forward, you may continue using the keyboard and monitor to work on the Pi or you may return to your primary computer and log into the Pi using `ssh`.
 
 ## Software installation
 (Note: You must have hardline Ethernet connectivity at this point to proceed)

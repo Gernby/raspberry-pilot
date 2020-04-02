@@ -102,4 +102,4 @@ From this point forward, you may continue using the keyboard and monitor to work
 
 The ACC functionality is 100% stock; it remains engaged after a press of the gas and it disengages immediately upon a press of the brakes
 
-This fork is configured to steer 100% of the time by default. Lateral control (self-steering) operates separately from the ACC activation and does not disengage with a press of the gas or brakes. Press the LKAS button on the steering wheel to toggle lateral control.
+This fork has the option to steer 100% of the time. After your first drive, log in and edit the kegman.json file. Locate the parameter called `lkasMode`. This parameter is set to `0` by default. Leave it set to `0` if you want the car to steer by itself only when you have the ACC (radar cruise) engaged. Change the value to `1` if you want the car to steer by itself at all times, regardless of whether or not the ACC is set.

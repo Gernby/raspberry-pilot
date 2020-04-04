@@ -139,6 +139,12 @@ except:
   input_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_inputs_A.scaler' % (scaler_type, Inputs)))
   output_scaler = joblib.load(os.path.expanduser('./models/GRU_%s_%d_outputs_A.scaler' % (scaler_type, Outputs)))
 
+try:
+  r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')
+except:
+  pass
+#r = requests.post(url_string, data='create database carDB')
+
 scaler_padding = None 
 scaled_camera_array = []
 scaled_vehicle_array = []
@@ -150,8 +156,8 @@ r_probs = {}
 l_offset = {}
 r_offset = {}
 angle_steers = {}
-l_prob_smooth = 0.
-r_prob_smooth = 0.
+l_prob = 0.
+r_prob = 0.
 
 path_send = log.Event.new_message()
 path_send.init('pathPlan')
@@ -303,16 +309,16 @@ while 1:
    
       l_prob = abs(l_prob)
       r_prob = abs(r_prob)
-      l_prob_smooth = l_prob  #max(0.05, l_prob_smooth - 0.1, min(l_prob_smooth + 0.1, l_prob))
-      r_prob_smooth = r_prob  #max(0.05, r_prob_smooth - 0.1, min(r_prob_smooth + 0.1, r_prob))
-      lr_prob = (l_prob_smooth + r_prob_smooth) - l_prob_smooth * r_prob_smooth
+      lr_prob = (l_prob + r_prob) - l_prob * r_prob
       a_prob = 1 
 
-      left_probs[:,0] =    l_prob * np.clip(model_output[:,3], 0, 1) #+ (1 - l_prob) * left_probs[:,0]
-      right_probs[:,0] =   r_prob * np.clip(model_output[:,4], 0, 1) #+ (1 - r_prob) * right_probs[:,0]
-      left_center[:,0]  =  left_probs[:,0] * (descaled_output[0][:,1] - half_width) #+ (1 - l_prob) * left_center[:, 0:]  
-      right_center[:,0]  = right_probs[:,0] * (descaled_output[0][:,2] + half_width) #+ (1 - r_prob) * right_center[:, 0:] 
-
+      left_probs[:,0] =     l_prob * np.clip(model_output[:,3], 0, 1) + (1 - l_prob) * left_probs[:,0]
+      right_probs[:,0] =    r_prob * np.clip(model_output[:,4], 0, 1) + (1 - r_prob) * right_probs[:,0]
+      left_center[:,0:]  =  l_prob *   (descaled_output[0][:,1:2] - half_width) + (1 - l_prob) * left_center[:, 0:]
+      right_center[:,0:]  = r_prob *   (descaled_output[0][:,2:3] + half_width) + (1 - r_prob) * right_center[:, 0:] 
+      left_center =         l_prob * left_center + (1 - l_prob) * calc_center
+      right_center =        r_prob * right_center + (1 - r_prob) * calc_center 
+      
       calc_center = (l_prob * left_center + r_prob * right_center) / (l_prob + r_prob + 0.0005) 
 
       center_rate = calc_center - calc_center_prev
@@ -326,14 +332,6 @@ while 1:
       lr_prob_prev = lr_prob
       calc_center_prev = calc_center
       center_rate_prev = center_rate
-
-
-      #left_probs[:,0] =    l_prob * np.clip(model_output[:,3], 0, 1) + (1 - l_prob) * left_probs[:,0]
-      #right_probs[:,0] =   r_prob * np.clip(model_output[:,4], 0, 1) + (1 - r_prob) * right_probs[:,0]
-      #left_center[:,0:]  =  l_prob *   (descaled_output[0][:,1:2] - half_width) + (1 - l_prob) * left_center[:, 0:]  
-      #right_center[:,0:]  = r_prob *   (descaled_output[0][:,2:3] + half_width) + (1 - r_prob) * right_center[:, 0:] 
-      #left_center = l_prob_smooth * left_center + (1 - l_prob_smooth) * calc_center
-      #right_center = r_prob_smooth * right_center + (1 - r_prob_smooth) * calc_center 
 
       if abs(cs.steeringTorque) < 1200 and abs(adjusted_angle) < 30:
         upper_limit = one_deg_per_sec * cs.vEgo * (2 + 0.2 * max(0, abs(adjusted_angle)-4) + accel_counter)
@@ -404,8 +402,11 @@ while 1:
         try:
           r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')
         except:
-          r = requests.post(url_string, data='create database carDB')
-        print(r)
+          try:
+            r = requests.post(url_string, data='create database carDB')
+          except:
+            print('What the flock?!')
+        #print(r)
       # Send data to influxdb (after converting to Python3.7)
       carStateDataString2 = ''
       carStateDataString1 = ''
@@ -414,7 +415,7 @@ while 1:
 
     # TODO: replace kegman_conf with params!
     if recv_frames % 100 == 0 and back_log == 2:
-      #try:
+    #try:
       kegman = kegman_conf()  
       advanceSteer = max(0, float(kegman.conf['advanceSteer']))
       angle_factor = float(kegman.conf['angleFactor'])

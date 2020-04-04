@@ -18,7 +18,8 @@ from setproctitle import setproctitle
 
 ThermalStatus = log.ThermalData.ThermalStatus
 State = log.ControlsState.OpenpilotState
-
+#import sys
+#sys.stderr = open('../controlsd.txt', 'w')
 
 def isActive(state):
   """Check if the actuators are enabled"""

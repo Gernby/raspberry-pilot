@@ -161,7 +161,7 @@ class LatControlPID(object):
       self.pid.reset()
     else:
       try:
-
+        pid_log.active = True
         self.damp_angle_steers += (angle_steers + angle_steers_rate * self.damp_time - self.damp_angle_steers) / max(1.0, 1 + self.damp_time * 100.)
         self.damp_angle_rate += (angle_steers_rate - self.damp_angle_rate) / max(1.0, self.damp_time * 100.)
         self.angle_steers_des = interp(self.angle_index, self.path_index, path_plan.mpcAngles)
@@ -176,9 +176,9 @@ class LatControlPID(object):
       rate_feedforward = (1.0 - self.angle_ff_ratio) * self.rate_ff_gain * self.damp_rate_steers_des
       steer_feedforward = float(v_ego) * (rate_feedforward + angle_feedforward * self.angle_ff_ratio * self.angle_ff_gain)
 
-      lane_compensation = self.projected_lane_error * max(0.01, min(1, 1 / (0.001 + abs(angle_steers_rate))))
-      if lane_compensation > self.path_error_comp and self.pid.p2 < 1 and self.pid.control < 1 or \
-         lane_compensation < self.path_error_comp and self.pid.p2 > -1 and self.pid.control > -1:
+      lane_compensation = self.projected_lane_error * max(0.1, min(1, 1 / (0.001 + abs(angle_steers_rate))))
+      if (lane_compensation > self.path_error_comp and self.pid.p2 < 1 and self.pid.control < 1) or \
+         (lane_compensation < self.path_error_comp and self.pid.p2 > -1 and self.pid.control > -1):
         self.path_error_comp += (lane_compensation - self.path_error_comp) / self.poly_smoothing
 
       if not steer_override and v_ego > 10.0:
@@ -192,7 +192,6 @@ class LatControlPID(object):
       output_steer = self.pid.update(self.damp_angle_steers_des, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override,
                                     add_error=float(self.path_error_comp), feedforward=steer_feedforward, speed=v_ego, deadzone=deadzone)
 
-    pid_log.active = True
     pid_log.p = float(self.pid.p)
     pid_log.i = float(self.pid.i)
     pid_log.f = float(self.pid.f)
@@ -203,11 +202,11 @@ class LatControlPID(object):
     pid_log.steerAngle = float(self.damp_angle_steers)
     pid_log.steerAngleDes = float(self.damp_angle_steers_des)
 
-    if abs(self.projected_lane_error - self.path_error_comp) < abs(self.projected_lane_error) and pid_log.p * pid_log.p2 < 0:
-      output_steer -= pid_log.p
-      pid_log.p *= max(0, min(1, 1 - abs(2 * pid_log.p2)))
-      output_steer += pid_log.p
-      pid_log.output = float(output_steer)
+    #if pid_log.active and abs(lane_compensation - self.path_error_comp) < abs(lane_compensation) and pid_log.p * pid_log.p2 < 0:
+    #  output_steer -= pid_log.p
+    #  pid_log.p *= max(0, min(1, 1 - abs(2 * pid_log.p2)))
+    #  output_steer += pid_log.p
+    #  pid_log.output = float(output_steer)
 
     #self.prev_angle_steers = angle_steers
     #self.prev_override = steer_override

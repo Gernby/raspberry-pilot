@@ -1,0 +1,13 @@
+{
+    "name": "node-red-project",
+    "description": "A Node-RED Project",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+        "node-red-contrib-influxdb": "~0.4.0",
+        "node-red-contrib-uibuilder": "~2.0.7",
+        "node-red-contrib-zeromq": "0.0.6",
+        "node-red-contrib-zmq": "~0.7.1",
+        "node-red-dashboard": "~2.20.0"
+    }
+}

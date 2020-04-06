@@ -346,10 +346,10 @@ while 1:
           upper_limit = upper_limit + angle
           lower_limit = lower_limit + angle
         if l_prob + r_prob > 0:
-          accel_counter = max(0, min(10, accel_counter - 1))
+          accel_counter = max(0, min(2, accel_counter - 1))
           angle = np.clip((descaled_output[0][:,0:1] - descaled_output[0][0,0:1]) * (1 + advanceSteer), lower_limit, upper_limit)
         else:
-          accel_counter = max(0, min(10, accel_counter + 1))
+          accel_counter = max(0, min(2, accel_counter + 1))
           angle *= 0.9
       else:
         angle = one_deg_per_sec * cs.steeringRate
@@ -365,8 +365,8 @@ while 1:
       lateral_offset *= use_lateral_offset
 
       path_send.pathPlan.angleSteers = float(angle[5] + cs.steeringAngle  - angle_bias)
-      #path_send.pathPlan.mpcAngles = [float(x) for x in (angle_factor * (angle[:] + descaled_output[0][0,0:1]) - angle_offset - lateral_offset - angle_bias)]   #angle_steers.pop(output_list[-1]))]
-      path_send.pathPlan.mpcAngles = [float(x) for x in (angle + cs.steeringAngle  - angle_bias)]   #angle_steers.pop(output_list[-1]))]
+      path_send.pathPlan.mpcAngles = [float(x) for x in (angle_factor * (angle[:] + descaled_output[0][0,0:1]) - angle_offset - lateral_offset - angle_bias)]   #angle_steers.pop(output_list[-1]))]
+      #path_send.pathPlan.mpcAngles = [float(x) for x in (angle + cs.steeringAngle  - angle_bias)]   #angle_steers.pop(output_list[-1]))]
       path_send.pathPlan.laneWidth = float(lane_width)
       path_send.pathPlan.angleOffset = float(angle_offset)
       path_send.pathPlan.lateralOffset = float(lateral_offset)      

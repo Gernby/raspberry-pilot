@@ -26,9 +26,15 @@ static int nooutput_tx_lin_hook(int lin_num, uint8_t *data, int len) {
 }
 
 static int default_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
-  UNUSED(bus_num);
+  int bus_fwd = -1;
   UNUSED(to_fwd);
-  return -1;
+  if(bus_num == 1){
+    bus_fwd = 2;
+  }
+  if(bus_num == 2){
+    bus_fwd = 1;
+  }
+  return bus_fwd;
 }
 
 const safety_hooks nooutput_hooks = {

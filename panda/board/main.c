@@ -120,7 +120,7 @@ void set_safety_mode(uint16_t mode, int16_t param) {
           if(hw_type == HW_TYPE_BLACK_PANDA){
             current_board->set_can_mode(CAN_MODE_NORMAL);
           }
-          can_silent = ALL_CAN_SILENT;
+          can_silent = ALL_CAN_LIVE;
           break;
         case SAFETY_ELM327:
           set_intercept_relay(false);
@@ -620,8 +620,8 @@ void TIM3_IRQHandler(void) {
     #ifdef EON
     if (heartbeat_counter >= (current_board->check_ignition() ? EON_HEARTBEAT_IGNITION_CNT_ON : EON_HEARTBEAT_IGNITION_CNT_OFF)) {
       puts("EON hasn't sent a heartbeat for 0x"); puth(heartbeat_counter); puts(" seconds. Safety is set to NOOUTPUT mode.\n");
-      if(current_safety_mode != SAFETY_HONDA_BOSCH){
-        set_safety_mode(SAFETY_HONDA_BOSCH, SAFETY_HONDA_BOSCH);
+      if(current_safety_mode != SAFETY_ALLOUTPUT){
+        set_safety_mode(SAFETY_ALLOUTPUT, 17);
       }
     }
     #endif
@@ -697,7 +697,7 @@ int main(void) {
   // default to silent mode to prevent issues with Ford
   // hardcode a specific safety mode if you want to force the panda to be in a specific mode
   //int err = safety_set_mode(SAFETY_NOOUTPUT, 0);
-  int err = safety_set_mode(SAFETY_HONDA_BOSCH, SAFETY_HONDA_BOSCH);
+  int err = safety_set_mode(SAFETY_ALLOUTPUT, 17);
   if (err == -1) {
     puts("Failed to set safety mode\n");
     while (true) {

@@ -176,7 +176,7 @@ class LatControlPID(object):
       rate_feedforward = (1.0 - self.angle_ff_ratio) * self.rate_ff_gain * self.damp_rate_steers_des
       steer_feedforward = float(v_ego) * (rate_feedforward + angle_feedforward * self.angle_ff_ratio * self.angle_ff_gain)
 
-      lane_compensation = self.projected_lane_error * max(0.1, min(1, 1 / (0.001 + abs(angle_steers_rate))))
+      lane_compensation = self.projected_lane_error * max(0.5, min(1, 1 / (0.001 + abs(angle_steers_rate))))
       if (lane_compensation > self.path_error_comp and self.pid.p2 < 1 and self.pid.control < 1) or \
          (lane_compensation < self.path_error_comp and self.pid.p2 > -1 and self.pid.control > -1):
         self.path_error_comp += (lane_compensation - self.path_error_comp) / self.poly_smoothing
@@ -188,8 +188,9 @@ class LatControlPID(object):
           self.previous_integral = self.pid.i
 
       deadzone = 0.0
+      p_scale = 1.0
 
-      output_steer = self.pid.update(self.damp_angle_steers_des, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override,
+      output_steer = self.pid.update(self.damp_angle_steers_des, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override, p_scale=p_scale,
                                     add_error=float(self.path_error_comp), feedforward=steer_feedforward, speed=v_ego, deadzone=deadzone)
 
     pid_log.p = float(self.pid.p)

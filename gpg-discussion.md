@@ -41,27 +41,18 @@ Once you have generated your key pair, run the following command in your home di
 
 `gpg --export -a`
 
-Copy and paste the output into a PR to add the output to the end of the file named for your car type, such as `Honda Bosch`. You must include the break lines surrounding the key data. 
+Copy and paste the output into a PR to add the output to the end of the file named for your car type, such as `Honda Bosch`. You must include the break lines surrounding the key data. Here is a portion of an example exported key. There are numerous lines cut from the middle for brevity. 
 
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 
 mQINBE34z9wBEACT31iv9i8Jx/6MhywWmytSGWojS7aJwGiH/wlHQcjeleGnW8HF
-Z8R73ICgvpcWM2mfx0R/YIzRIbbT+E2PJ+iTw0BTGU7irRKrdLXReH130K3bDg05
-+DaYFf0qY/t/e4WDXRVnr8L28hRQ4/9SnvgNcUBzd0IDOUiicZvhkIm6TikL+xSr
-5Gcn/PaJFS1VpbWklXaLfvci9l4fINL3vMyLiV/75b1laSP5LPEvbfd7W9T6HeCX
-63epTHmGBmB4ycGqkwOgq6NxxaLHxRWlfylRXRWpI/9B66x8vOUd70jjjyqG+mhQ
 +1+qfydeSW3R6Dr2vzDyDrBXbdVMTL2VFXqNG03FYcv191H7zJgPlJGyaO4IZxj+
 +O8LaoJuFqAr8/+NX4K4UfWPvcrJ2i+eUkbkDJHo4GQK712/DtSLAA+YGeIF9HAn
 zKvaMkZDMwY8z3gBSE/jMV2IcONvpUUOFPQgTmCvlJZAFTPeLTDv+HX8GfhmjAJY
 <...>
 3qp6L7jc6X3U+bn2m7u2cgEVbuAnSaKGoMSMnsd71Ltf1b6/DwvZz/HBttEgcgSm
 PleHUVyBD4LDrcjTDK7zdEMw7b/cPBnu6CmTcogFEqvB4n9Yodo+4ij7AndUTz4J
-j1p8vFlnHvhRg82MDfGUPJ+ujBjbYXROs+WAmaCQ8TgjZ3dAFNFrOqAbYu6QlY2x
-fu7vj+ruc6ArdmBrOlsJFmNsxFRJfgdUug5JFIUN77GbjisHjWem8cY3szuyEke8
-H2pi803CAuVtkaoNmNDHsEBieft34Zo0V+A/q2wkix3S9vyRjOKqhGrW30qxnV6Z
-FexueWuO3qOQ0ZU5/TIH0kft2n45/RexeBq/Ip52zE1vEvTkQmBCfCGZmqTu+9Ro
-8qsjecxVNxyVPlwhlimryiQ+dPaJYaOSfiwEEMh2MyV5c6t6qN9n6jFdiCLOlmmH
 ZFA8xDodsofQEmlv+I/xyEZ7na6nxbpZVuPC3B0JFtY=
 =sUYl
 -----END PGP PUBLIC KEY BLOCK-----

@@ -51,24 +51,23 @@ From this point forward, you may continue using the keyboard and monitor to work
 5. `bash start_install.sh <your WiFi name> <your WiFi password>` (Note that this step adds WiFi support to the Pi and connects to your home WiFi as part of the install)
 6. Wait 30 minutes
 7. Log out of the Pi and log back in as the "ubuntu" user
-8. `cd raspberry-pilot`
-9. `bash finish_install.sh`
-10. Wait about 2.5 hours
-11. If the process completes successfully, reboot the Pi and log back in as the "ubuntu" user
-12. Run the command `top -u ubuntu`
-13. Look for `controlsd`, `boardd`, and `laterald` in the rightmost column of the list.
-14. If you see all three, let Gernby know you're ready for the model. He will email it to you.
-15. When you receive the model, download the attachment from your email and copy it to `~/raspilot/models` (note that the 's' at the end is critical). The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
-16. Reboot the Pi, and log back in
-17. Run `top -u ubuntu` again
-18. Look for `controlsd`, `boardd`, `laterald`, and `transcoderd` this time
-19. If all four processes are present, you are ready to flash your Panda
-20. If you cannot hit your home WiFi from the car, turn on the hotspot on your phone and connect the Pi to your hotspot WiFi by running the following command:
+8. `bash finish_install.sh`
+9. Wait about 2.5 hours
+10. If the process completes successfully, reboot the Pi and log back in as the "ubuntu" user
+11. Run the command `top -u ubuntu`
+12. Look for `controlsd`, `boardd`, and `laterald` in the rightmost column of the list.
+13. If you see all three, let Gernby know you're ready for the model. He will email it to you.
+14. When you receive the model, download the attachment from your email and copy it to `~/raspilot/models` (note that the 's' at the end is critical). The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
+15. Reboot the Pi, and log back in
+16. Run `top -u ubuntu` again
+17. Look for `controlsd`, `boardd`, `laterald`, and `transcoderd` this time
+18. If all four processes are present, you are ready to flash your Panda
+19. If you cannot hit your home WiFi from the car, turn on the hotspot on your phone and connect the Pi to your hotspot WiFi by running the following command:
 
 `nmcli d wifi connect <your hotspot wifi name> password <your hotspot wifi password>`
 
-21. Run `ifconfig` to get the IP address that the Pi was assigned by your home WiFi or cellular hotspot -- whichever one you're planning to use in the car
-22. Shut down the Pi (run the `sudo halt` command)
+20. Run `ifconfig` to get the IP address that the Pi was assigned by your home WiFi or cellular hotspot -- whichever one you're planning to use in the car
+21. Shut down the Pi (run the `sudo halt` command)
 
 ## Flashing the Panda
 (Note 1: The Pi and the Panda need to be powered separately for this step)

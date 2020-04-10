@@ -1,6 +1,5 @@
-//#define EON
+#define EON
 //#define PANDA
-#define GERNBY
 
 // ********************* Includes *********************
 #include "config.h"
@@ -25,7 +24,7 @@
 
 #include "gpio.h"
 
-#ifndef GERNBY
+#ifndef EON
 #include "drivers/spi.h"
 #endif
 
@@ -79,7 +78,7 @@ void started_interrupt_handler(uint8_t interrupt_line) {
     // jenky debounce
     delay(100000);
 
-    #ifdef GERNBY
+    #ifdef EON
       // set power savings mode here if on EON build
       int power_save_state = POWER_SAVE_STATUS_DISABLED; //current_board->check_ignition() ? POWER_SAVE_STATUS_DISABLED : POWER_SAVE_STATUS_ENABLED;
       set_power_save_state(power_save_state);
@@ -121,7 +120,7 @@ void set_safety_mode(uint16_t mode, int16_t param) {
           if(hw_type == HW_TYPE_BLACK_PANDA){
             current_board->set_can_mode(CAN_MODE_NORMAL);
           }
-          can_silent = ALL_CAN_LIVE;
+          can_silent = ALL_CAN_SILENT;
           break;
         case SAFETY_ELM327:
           set_intercept_relay(false);
@@ -364,8 +363,8 @@ int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp, bool hardwired) 
     case 0xdc:
       // Blocked over WiFi.
       // Allow NOOUTPUT and ELM security mode to be set over wifi.
-      if (hardwired || (setup->b.wValue.w == SAFETY_NOOUTPUT) || (setup->b.wValue.w == SAFETY_ELM327)) {
-        set_safety_mode(SAFETY_HONDA_BOSCH, (uint16_t) SAFETY_HONDA_BOSCH);
+      if (hardwired || (setup->b.wValue.w == SAFETY_ALLOUTPUT) || (setup->b.wValue.w == SAFETY_ELM327)) {
+        set_safety_mode(SAFETY_ALLOUTPUT, (uint16_t) 17U);
         //set_safety_mode(setup->b.wValue.w, (uint16_t) setup->b.wIndex.w);
       }
       break;
@@ -533,7 +532,7 @@ int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp, bool hardwired) 
   return resp_len;
 }
 
-#ifndef GERNBY
+#ifndef EON
 int spi_cb_rx(uint8_t *data, int len, uint8_t *data_out) {
   // data[0]  = endpoint
   // data[2]  = length
@@ -618,7 +617,7 @@ void TIM3_IRQHandler(void) {
     }
 
     // check heartbeat counter if we are running EON code. If the heartbeat has been gone for a while, go to NOOUTPUT safety mode.
-    #ifdef GERNBY
+    #ifdef EON
     if (heartbeat_counter >= (current_board->check_ignition() ? EON_HEARTBEAT_IGNITION_CNT_ON : EON_HEARTBEAT_IGNITION_CNT_OFF)) {
       puts("EON hasn't sent a heartbeat for 0x"); puth(heartbeat_counter); puts(" seconds. Safety is set to NOOUTPUT mode.\n");
       if(current_safety_mode != SAFETY_ALLOUTPUT){
@@ -708,11 +707,11 @@ int main(void) {
   can_silent = ALL_CAN_LIVE;
   can_init_all();
 
-#ifndef GERNBY
+#ifndef EON
   spi_init();
 #endif
 
-#ifdef GERNBY
+#ifdef EON
   // have to save power
   if (hw_type == HW_TYPE_WHITE_PANDA) {
     current_board->set_esp_gps_mode(ESP_GPS_DISABLED);

@@ -77,12 +77,12 @@ void *safety_setter_thread(void *s) {
   //}
   //printf("got CarVin %s", value_vin);
 
-  pthread_mutex_lock(&usb_lock);
+  //pthread_mutex_lock(&usb_lock);
 
   // VIN query done, stop listening to OBDII
-  libusb_control_transfer(dev_handle, 0x40, 0xdc, (uint16_t)(cereal::CarParams::SafetyModel::HONDA_BOSCH), 0, NULL, 0, TIMEOUT);
+  //libusb_control_transfer(dev_handle, 0x40, 0xdc, (uint16_t)(cereal::CarParams::SafetyModel::HONDA_BOSCH), 0, NULL, 0, TIMEOUT);
 
-  pthread_mutex_unlock(&usb_lock);
+  //pthread_mutex_unlock(&usb_lock);
 
   char *value;
   size_t value_sz = 0;
@@ -118,7 +118,7 @@ void *safety_setter_thread(void *s) {
   // set if long_control is allowed by openpilot. Hardcoded to True for now
   libusb_control_transfer(dev_handle, 0x40, 0xdf, 1, 0, NULL, 0, TIMEOUT);
 
-  libusb_control_transfer(dev_handle, 0x40, 0xdc, (uint16_t)(cereal::CarParams::SafetyModel::HONDA_BOSCH), safety_param, NULL, 0, TIMEOUT);
+  libusb_control_transfer(dev_handle, 0x40, 0xdc, (uint16_t)safety_model, safety_param, NULL, 0, TIMEOUT);
 
   pthread_mutex_unlock(&usb_lock);
 
@@ -333,9 +333,9 @@ void can_health(void *s) {
     assert((result == 0) || (result == ERR_NO_VALUE));
 
     // diagnostic only is the default, needed for VIN query
-    pthread_mutex_lock(&usb_lock);
-    libusb_control_transfer(dev_handle, 0x40, 0xdc, (uint16_t)(cereal::CarParams::SafetyModel::ELM327), 0, NULL, 0, TIMEOUT);
-    pthread_mutex_unlock(&usb_lock);
+    //pthread_mutex_lock(&usb_lock);
+    //libusb_control_transfer(dev_handle, 0x40, 0xdc, (uint16_t)(cereal::CarParams::SafetyModel::ELM327), 0, NULL, 0, TIMEOUT);
+    //pthread_mutex_unlock(&usb_lock);
 
     if (safety_setter_thread_handle == -1) {
       err = pthread_create(&safety_setter_thread_handle, NULL, safety_setter_thread, NULL);
@@ -542,7 +542,7 @@ void *can_health_thread(void *crap) {
 
   // run at 2hz
   while (!do_exit) {
-    //can_health(publisher);
+    can_health(publisher);
     usleep(500*1000);
   }
   return NULL;
@@ -669,9 +669,9 @@ void *pigeon_thread(void *crap) {
       pigeon_init();
     }
 
-    pthread_mutex_lock(&usb_lock);	
-    libusb_control_transfer(dev_handle, 0x40, 0xdc, (uint16_t)(cereal::CarParams::SafetyModel::HONDA_BOSCH), 0, NULL, 0, TIMEOUT);	
-    pthread_mutex_unlock(&usb_lock);
+    //pthread_mutex_lock(&usb_lock);	
+    //libusb_control_transfer(dev_handle, 0x40, 0xdc, (uint16_t)(cereal::CarParams::SafetyModel::HONDA_BOSCH), 0, NULL, 0, TIMEOUT);	
+    //pthread_mutex_unlock(&usb_lock);
 
     int alen = 0;
     while (alen < 0xfc0) {

@@ -156,7 +156,7 @@ void white_usb_power_mode_tick(uint64_t tcnt){
   // on EON or BOOTSTUB, no state machine
 #if !defined(BOOTSTUB) && !defined(EON)
   #define CURRENT_THRESHOLD 0xF00U
-  #define CLICKS 5U // 5 seconds to switch modes
+  #define CLICKS 45U // 5 seconds to switch modes
 
   uint32_t current = adc_get(ADCCHAN_CURRENT);
 

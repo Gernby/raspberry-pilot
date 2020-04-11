@@ -1,4 +1,4 @@
-#define EON
+//#define EON
 //#define PANDA
 
 // ********************* Includes *********************
@@ -80,12 +80,12 @@ void started_interrupt_handler(uint8_t interrupt_line) {
 
     #ifdef EON
       // set power savings mode here if on EON build
-      int power_save_state = POWER_SAVE_STATUS_DISABLED; //current_board->check_ignition() ? POWER_SAVE_STATUS_DISABLED : POWER_SAVE_STATUS_ENABLED;
+      int power_save_state = current_board->check_ignition() ? POWER_SAVE_STATUS_DISABLED : POWER_SAVE_STATUS_ENABLED;
       set_power_save_state(power_save_state);
       // set CDP usb power mode everytime that the car starts to make sure EON is charging
-      //if (current_board->check_ignition()) {
-      current_board->set_usb_power_mode(USB_POWER_CDP);
-      //}
+      if (current_board->check_ignition()) {
+        current_board->set_usb_power_mode(USB_POWER_CDP);
+      }
     #endif
   }
   EXTI->PR = (1U << interrupt_line);
@@ -364,8 +364,7 @@ int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp, bool hardwired) 
       // Blocked over WiFi.
       // Allow NOOUTPUT and ELM security mode to be set over wifi.
       if (hardwired || (setup->b.wValue.w == SAFETY_NOOUTPUT) || (setup->b.wValue.w == SAFETY_ELM327)) {
-        set_safety_mode(SAFETY_HONDA_BOSCH, (uint16_t) SAFETY_HONDA_BOSCH);
-        //set_safety_mode(setup->b.wValue.w, (uint16_t) setup->b.wIndex.w);
+        set_safety_mode(setup->b.wValue.w, (uint16_t) setup->b.wIndex.w);
       }
       break;
     // **** 0xdd: enable can forwarding
@@ -578,7 +577,6 @@ void __attribute__ ((noinline)) enable_fpu(void) {
 
 uint64_t tcnt = 0;
 
-
 // go into NOOUTPUT when the EON does not send a heartbeat for this amount of seconds.
 #define EON_HEARTBEAT_IGNITION_CNT_ON 5U
 #define EON_HEARTBEAT_IGNITION_CNT_OFF 2U
@@ -620,8 +618,8 @@ void TIM3_IRQHandler(void) {
     #ifdef EON
     if (heartbeat_counter >= (current_board->check_ignition() ? EON_HEARTBEAT_IGNITION_CNT_ON : EON_HEARTBEAT_IGNITION_CNT_OFF)) {
       puts("EON hasn't sent a heartbeat for 0x"); puth(heartbeat_counter); puts(" seconds. Safety is set to NOOUTPUT mode.\n");
-      if(current_safety_mode != SAFETY_HONDA_BOSCH){
-        set_safety_mode(SAFETY_HONDA_BOSCH, SAFETY_HONDA_BOSCH);
+      if(current_safety_mode != SAFETY_NOOUTPUT){
+        set_safety_mode(SAFETY_NOOUTPUT, 0U);
       }
     }
     #endif
@@ -696,15 +694,14 @@ int main(void) {
 
   // default to silent mode to prevent issues with Ford
   // hardcode a specific safety mode if you want to force the panda to be in a specific mode
-  //int err = safety_set_mode(SAFETY_NOOUTPUT, 0);
-  int err = safety_set_mode(SAFETY_HONDA_BOSCH, SAFETY_HONDA_BOSCH);
+  int err = safety_set_mode(SAFETY_NOOUTPUT, 0);
   if (err == -1) {
     puts("Failed to set safety mode\n");
     while (true) {
       // if SAFETY_NOOUTPUT isn't succesfully set, we can't continue
     }
   }
-  can_silent = ALL_CAN_LIVE;
+  can_silent = ALL_CAN_SILENT;
   can_init_all();
 
 #ifndef EON

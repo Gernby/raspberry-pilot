@@ -154,7 +154,7 @@ class Panda(object):
     self._handle.close()
     self._handle = None
 
-  def connect(self, claim=True, wait=False, print_devices=False):
+  def connect(self, claim=True, wait=False):
     if self._handle != None:
       self.close()
 
@@ -170,12 +170,10 @@ class Panda(object):
       while 1:
         try:
           for device in context.getDeviceList(skip_on_error=True):
-            if print_devices: print(device)
+            #print(device)
             if device.getVendorID() == 0xbbaa and device.getProductID() in [0xddcc, 0xddee]:
               try:
                 this_serial = device.getSerialNumber()
-                with open("/data/params/d/DongleId", "w") as f:
-                  f.write(this_serial)
               except Exception:
                 continue
               if self._serial is None or this_serial == self._serial:
@@ -217,14 +215,14 @@ class Panda(object):
     self.close()
     time.sleep(1.0)
     success = False
-    # wait up to 30 seconds
-    for i in range(0, 30):
+    # wait up to 15 seconds
+    for i in range(0, 15):
       try:
-        self.connect(print_devices=(i==0))
+        self.connect()
         success = True
         break
       except Exception:
-        print("*****   The panda should be flashing %s.  Please unplug the cable from the Panda for 10 seconds, then plug it back in before this timer expires: %d" % (self.flashing_color, 30 - i))
+        print("reconnecting is taking %d seconds..." % (i+1))
         try:
           dfu = PandaDFU(PandaDFU.st_serial_to_dfu_serial(self._serial))
           dfu.recover()
@@ -233,7 +231,6 @@ class Panda(object):
         time.sleep(1.0)
     if not success:
       raise Exception("reconnect failed")
-    self.flashing_color = "red slowly"
 
   @staticmethod
   def flash_static(handle, code):
@@ -264,7 +261,6 @@ class Panda(object):
       pass
 
   def flash(self, fn=None, code=None, reconnect=True):
-    self.flashing_color = "green rapidly"
     print("flash: main version is " + self.get_version())
     if not self.bootstub:
       self.reset(enter_bootstub=True)

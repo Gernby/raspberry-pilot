@@ -4,6 +4,7 @@ import time
 import os
 import sys
 import json
+from cereal import log, car
 import selfdrive.messaging as messaging
 from selfdrive.services import service_list
 from common.params import Params
@@ -43,6 +44,7 @@ def dashboard_thread(rate=100):
   canData = None #messaging.sub_sock(8602)
   pathPlan = messaging.sub_sock(service_list['pathPlan'].port,addr=op_address)
   tuneSub = None #messaging.sub_sock("tcp://" + server_address + ":8596")
+  heartBeatSub = messaging.sub_sock(8602, addr=server_address, conflate=True)
   steerPush = context.socket(zmq.PUSH)
   steerPush.connect("tcp://" + server_address + ":8593")
   #tunePush = context.socket(zmq.PUSH)
@@ -52,6 +54,7 @@ def dashboard_thread(rate=100):
   if pathPlan != None: poller.register(pathPlan, zmq.POLLIN)
   if carState != None: poller.register(carState, zmq.POLLIN)
   if gpsData != None: poller.register(gpsData, zmq.POLLIN)
+  if heartBeatSub != None: poller.register(heartBeatSub, zmq.POLLIN)
 
   frame_count = 0
   user_id = 'ddd3e089e7bbe0fc'
@@ -84,55 +87,62 @@ def dashboard_thread(rate=100):
   active = False
   stock_cam_frame_prev = 0
   cs = None
+  lastHeartBeat = 0
 
   messaging.drain_sock(carState, True)
 
   while 1:
+    do_send = time.time() - lastHeartBeat < 60
+
     for socket, event in poller.poll(3000):
       if socket is gpsData:
         _gps = messaging.drain_sock(socket)
         #print(_gps[-1].ubloxRaw)
         
       if socket is carState:
-        _carState = messaging.drain_sock(socket)
-        for _cs in _carState:
-          #_controlsState = messaging.recv_one(controlsState)
-          #cs = _controlsState.controlsState
-          receiveTime = int(_cs.carState.canTime)
-          cs = _cs.carState
-          vEgo = cs.vEgo
-          if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
-            stock_cam_frame_prev = cs.camLeft.frame
-            carStateDataString2 += (carStateDataFormatString2 % (angle_offset, angle_bias, cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
-                                                              cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
-                                                              cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, cs.camLeft.frame, cs.camFarRight.frame, \
-                                                              vEgo, cs.wheelSpeeds.fl, cs.wheelSpeeds.fr, cs.wheelSpeeds.rl, cs.wheelSpeeds.rr, cs.leftBlinker, cs.rightBlinker, cs.lkMode, cs.cruiseState.enabled, \
-                                                              cs.camLeft.frame, cs.camLeft.parm1, cs.camLeft.parm2, cs.camLeft.parm3, cs.camLeft.parm4, cs.camLeft.parm5, cs.camLeft.parm6, cs.camLeft.parm7, cs.camLeft.parm8, cs.camLeft.parm9, cs.camLeft.parm10, cs.camLeft.parm11, cs.camLeft.parm13, \
-                                                              cs.camRight.frame, cs.camRight.parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4, cs.camRight.parm5, cs.camRight.parm6, cs.camRight.parm7, cs.camRight.parm8, cs.camRight.parm9, cs.camRight.parm10, cs.camRight.parm11, cs.camRight.parm13, \
-                                                              cs.camFarLeft.frame, cs.camFarLeft.parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4, cs.camFarLeft.parm5, cs.camFarLeft.parm6, cs.camFarLeft.parm7, cs.camFarLeft.parm8, cs.camFarLeft.parm9, cs.camFarLeft.parm10, cs.camFarLeft.parm11, cs.camFarLeft.parm13, \
-                                                              cs.camFarRight.frame, cs.camFarRight.parm1, cs.camFarRight.parm2, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm6, cs.camFarRight.parm7, cs.camFarRight.parm8, cs.camFarRight.parm9, cs.camFarRight.parm10, cs.camFarRight.parm11, cs.camFarRight.parm13, receiveTime))
-          elif cs.vEgo > 0:
-            carStateDataString1 += (carStateDataFormatString1 % (cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
-                                                              cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
-                                                              cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, cs.camLeft.frame, cs.camFarRight.frame, cs.canTime))
-          #else:
-          #  print(cs.canTime)
+        for _cs in carState.recv_multipart():
+          cs = log.Event.from_bytes(_cs).carState
+          #_carState = messaging.drain_sock(socket)
+          if do_send:
+            #for _cs in _carState:
+              #_controlsState = messaging.recv_one(controlsState)
+              #cs = _controlsState.controlsState
+            receiveTime = int(cs.canTime)
+            #cs = _cs.carState
+            vEgo = cs.vEgo
+            if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
+              stock_cam_frame_prev = cs.camLeft.frame
+              carStateDataString2 += (carStateDataFormatString2 % (angle_offset, angle_bias, cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
+                                                                cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
+                                                                cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, cs.camLeft.frame, cs.camFarRight.frame, \
+                                                                vEgo, cs.wheelSpeeds.fl, cs.wheelSpeeds.fr, cs.wheelSpeeds.rl, cs.wheelSpeeds.rr, cs.leftBlinker, cs.rightBlinker, cs.lkMode, cs.cruiseState.enabled, \
+                                                                cs.camLeft.frame, cs.camLeft.parm1, cs.camLeft.parm2, cs.camLeft.parm3, cs.camLeft.parm4, cs.camLeft.parm5, cs.camLeft.parm6, cs.camLeft.parm7, cs.camLeft.parm8, cs.camLeft.parm9, cs.camLeft.parm10, cs.camLeft.parm11, cs.camLeft.parm13, \
+                                                                cs.camRight.frame, cs.camRight.parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4, cs.camRight.parm5, cs.camRight.parm6, cs.camRight.parm7, cs.camRight.parm8, cs.camRight.parm9, cs.camRight.parm10, cs.camRight.parm11, cs.camRight.parm13, \
+                                                                cs.camFarLeft.frame, cs.camFarLeft.parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4, cs.camFarLeft.parm5, cs.camFarLeft.parm6, cs.camFarLeft.parm7, cs.camFarLeft.parm8, cs.camFarLeft.parm9, cs.camFarLeft.parm10, cs.camFarLeft.parm11, cs.camFarLeft.parm13, \
+                                                                cs.camFarRight.frame, cs.camFarRight.parm1, cs.camFarRight.parm2, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm6, cs.camFarRight.parm7, cs.camFarRight.parm8, cs.camFarRight.parm9, cs.camFarRight.parm10, cs.camFarRight.parm11, cs.camFarRight.parm13, receiveTime))
+            elif cs.vEgo > 0:
+              carStateDataString1 += (carStateDataFormatString1 % (cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
+                                                                cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
+                                                                cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, cs.camLeft.frame, cs.camFarRight.frame, cs.canTime))
+            #else:
+            #  print(cs.canTime)
 
-          frame_count += 1
+            frame_count += 1
 
       if socket is pathPlan:
         _pathPlan = messaging.drain_sock(socket)
-        for _pp in _pathPlan:
-          pp = _pp.pathPlan
-          angle_offset = pp.angleOffset
-          angle_bias = pp.lateralOffset
-          if vEgo >= 0 and not cs is None:
-            format_count = 6 * len(pp.lPoly)
-            pathDataString += polyDataString[:format_count] % tuple(float(x) for x in pp.lPoly)
-            pathDataString += polyDataString[:format_count] % tuple(float(x) for x in pp.rPoly)
-            pathDataString += polyDataString[:format_count] % tuple(float(x) for x in pp.cPoly)
-            pathDataString +=  (pathDataFormatString % (pp.mpcAngles[3], pp.mpcAngles[4], pp.mpcAngles[5], pp.mpcAngles[6], pp.mpcAngles[10], pp.lProb, pp.rProb, pp.cProb, pp.laneWidth, pp.angleSteers, pp.rateSteers, pp.angleOffset, pp.lateralOffset, cs.canTime - pp.canTime, cs.canTime))
-        frame += 1
+        if do_send:
+          for _pp in _pathPlan:
+            pp = _pp.pathPlan
+            angle_offset = pp.angleOffset
+            angle_bias = pp.lateralOffset
+            if vEgo >= 0 and not cs is None:
+              format_count = 6 * len(pp.lPoly)
+              pathDataString += polyDataString[:format_count] % tuple(float(x) for x in pp.lPoly)
+              pathDataString += polyDataString[:format_count] % tuple(float(x) for x in pp.rPoly)
+              pathDataString += polyDataString[:format_count] % tuple(float(x) for x in pp.cPoly)
+              pathDataString +=  (pathDataFormatString % (pp.mpcAngles[3], pp.mpcAngles[4], pp.mpcAngles[5], pp.mpcAngles[6], pp.mpcAngles[10], pp.lProb, pp.rProb, pp.cProb, pp.laneWidth, pp.angleSteers, pp.rateSteers, pp.angleOffset, pp.lateralOffset, cs.canTime - pp.canTime, cs.canTime))
+          frame += 1
 
       if socket is tuneSub:
         config = json.loads(tuneSub.recv_multipart()[1])
@@ -144,11 +154,18 @@ def dashboard_thread(rate=100):
       if socket is canData:
         canString = canData.recv_string()
         #print(canString)
-        if vEgo > 0 and active: canInsertString += canFormatString + str(cs.canTime) + "\n~" + canString + "!"
-        frame += 1
+        if do_send:
+          if vEgo > 0 and active: canInsertString += canFormatString + str(cs.canTime) + "\n~" + canString + "!"
+          frame += 1
+      
+      if socket is heartBeatSub:
+        do_send = True
+        print("         Heartbeat!")
+        messaging.recv_one(heartBeatSub)
+        lastHeartBeat = time.time()
 
     #print(frame_count)
-    if frame_count >= 200:
+    if frame_count >= 200 and do_send:
       if kegman_valid:
         try:
           if os.path.isfile(os.path.expanduser('~/kegman.json')):

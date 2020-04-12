@@ -143,6 +143,8 @@ struct CarState {
   camFarLeft @33 :CameraPacket;
   camFarRight @34 :CameraPacket;
   econMode @47 :Bool;
+  modelData @48 :List(Float32);
+  adjustedAngle @49 :Float32;
 
   # lock info
   doorOpen @24 :Bool;

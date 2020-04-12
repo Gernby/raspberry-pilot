@@ -728,7 +728,7 @@ class CarInterface(CarInterfaceBase):
 
 
     # cast to reader so it can't be modified
-    return ret.as_reader()
+    return ret
 
   # pass in a car.CarControl
   # to be called @ 100hz

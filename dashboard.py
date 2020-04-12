@@ -112,8 +112,8 @@ while 1:
       pp = log.Event.from_bytes(pathPlan.recv()).pathPlan
       if vEgo >= 0 and not cs is None:
         send_data0 = tuple(float(x) for x in tuple(pp.lPoly)[::2])
-        send_data1 = tuple(float(x) for x in tuple(pp.lPoly)[::2])
-        send_data2 = tuple(float(x) for x in tuple(pp.lPoly)[::2])
+        send_data1 = tuple(float(x) for x in tuple(pp.rPoly)[::2])
+        send_data2 = tuple(float(x) for x in tuple(pp.cPoly)[::2])
         send_data3 = (pp.mpcAngles[3], pp.mpcAngles[4], pp.mpcAngles[5], pp.mpcAngles[6], pp.mpcAngles[10], pp.lProb, pp.rProb, pp.cProb, pp.laneWidth, pp.angleSteers, pp.rateSteers, pp.angleOffset, pp.lateralOffset, pp.canTime - pp.canTime, cs.canTime)
 
         localPathDataString.append("".join([localPathFormatString1 % send_data0, localPathFormatString2 % send_data1, localPathFormatString3 % send_data2, localPathFormatString4 % send_data3]))

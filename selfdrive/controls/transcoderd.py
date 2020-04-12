@@ -20,13 +20,13 @@ setproctitle('transcoderd')
 
 INPUTS = 48
 OUTPUTS = 5
-MODEL_VERSION = '015'
+MODEL_VERSION = '016'
 HISTORY_ROWS = 10
 
 output_scaler = joblib.load(os.path.expanduser('models/GRU_MinMax_tanh_%d_outputs_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
 model = load_model(os.path.expanduser('models/cpu-model-%s.hdf5' % MODEL_VERSION))
 model_input = np.zeros((HISTORY_ROWS, INPUTS))
-
+model.summary()
 def dump_sock(sock, wait_for_one=False):
   if wait_for_one:
     sock.recv()
@@ -160,7 +160,7 @@ while 1:
 
   center_rate = calc_center - calc_center_prev
   center_accel = center_rate - center_rate_prev
-  projected_center = calc_center + (2 * lr_prob * lr_prob_prev * center_rate) + (2 * lr_prob * lr_prob_prev * lr_prob_prev_prev * center_accel)
+  projected_center = calc_center #+ (1 * lr_prob * lr_prob_prev * center_rate) # + (2 * lr_prob * lr_prob_prev * lr_prob_prev_prev * center_accel)
   
   #if recv_frames % 30 == 0:
   #  print(np.round(calc_center[::5,0], 1), np.round(center_rate[::5,0], 1), np.round(center_accel[::5,0],1),np.round(projected_center[::5,0], 1))

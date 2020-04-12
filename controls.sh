@@ -1,10 +1,10 @@
 #!/bin/bash
 export PYTHONPATH="$PWD"
-pkill -f boardd
-nice -4 ~/raspilot/selfdrive/boardd/boardd &
 pkill -f controlsd
-nice -2 python ~/raspilot/selfdrive/controls/controlsd.py & 
+python ~/raspilot/selfdrive/controls/controlsd.py & 
+pkill -f boardd
+~/raspilot/selfdrive/boardd/boardd &
 pkill -f dashboard
-nice -3 python ~/raspilot/dashboard.py &
-sleep 8
+python ~/raspilot/dashboard.py &
+sleep 10
 bash ~/raspilot/fix_niceness.sh

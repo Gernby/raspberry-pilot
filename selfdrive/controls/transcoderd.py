@@ -27,7 +27,6 @@ output_scaler = joblib.load(os.path.expanduser('models/GRU_MinMax_tanh_%d_output
 model = load_model(os.path.expanduser('models/cpu-model-%s.hdf5' % MODEL_VERSION))
 model_input = np.zeros((HISTORY_ROWS, INPUTS))
 
-
 def dump_sock(sock, wait_for_one=False):
   if wait_for_one:
     sock.recv()

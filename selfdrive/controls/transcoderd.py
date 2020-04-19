@@ -124,41 +124,31 @@ while 1:
   #scaler_padding[0] = np.asarray(model_output)
   descaled_output = output_scaler.inverse_transform(np.asarray(model_output))
 
-  l_prob = cs.camLeft.parm4 / 127
-  r_prob = cs.camRight.parm4 / 127
+  l_prob = min(1, max(0, cs.camLeft.parm4 / 127))
+  r_prob = min(1, max(0, cs.camRight.parm4 / 127))
 
-  if l_prob < 0 and r_prob > 0 and descaled_output[-1:, 3:4] > -descaled_output[-1:, 4:5] * 1.5:
-    #pass
+  if cs.camLeft.solid > 0 and cs.camRight.solid <= 0 and descaled_output[-1:, 3:4] > -descaled_output[-1:, 4:5] * 1.5:
     l_prob *= 0.2
     print("      Diverging Left", l_prob)
-  elif r_prob < 0 and l_prob > 0 and descaled_output[-1:, 3:4] * 1.5 < -descaled_output[-1:,4:5]:
-    #pass
+  elif cs.camLeft.solid <= 0 and cs.camRight.solid > 0 and descaled_output[-1:, 3:4] * 1.5 < -descaled_output[-1:,4:5]:
     r_prob *= 0.2
     print("      Diverging Right", r_prob)
   elif abs(l_prob) > 0 and abs(r_prob) > 0:
     if lane_width > 0:
-      lane_width += 0.01 * (min(700, max(570, cs.camLeft.parm2 -  cs.camRight.parm2) - lane_width))
+      lane_width += 0.01 * (min(1100, max(570, cs.camLeft.parm2 -  cs.camRight.parm2) - lane_width))
     else:
-      lane_width = min(700, max(570, cs.camLeft.parm2 -  cs.camRight.parm2) - lane_width)
+      lane_width = min(1100, max(570, cs.camLeft.parm2 -  cs.camRight.parm2) - lane_width)
       half_width = lane_width / 2
     half_width = min(half_width + 1, max(half_width - 1, lane_width * 0.48))
   else:
     half_width = min(half_width + 1, max(half_width - 1, lane_width * 0.47))
 
-  l_prob = abs(l_prob)
-  r_prob = abs(r_prob)
   lr_prob = (l_prob + r_prob) - l_prob * r_prob
-  a_prob = 1 
 
+  calc_center = max(0.1, lr_prob) * ((l_prob * (descaled_output[:,3:4] - half_width) + r_prob * (descaled_output[:,4:5] + half_width + lr_prob * descaled_output[:,2:3])) / (l_prob + r_prob + lr_prob + 0.00005)) + min(0.9, 1 - lr_prob) * calc_center
 
-  left_center[:,0:]  =  l_prob *   (descaled_output[:,3:4] - half_width) + (1 - l_prob) * descaled_output[:,2:3] #calc_center[:, 0:]  
-  right_center[:,0:]  = r_prob *   (descaled_output[:,4:5] + half_width) + (1 - r_prob) * descaled_output[:,2:3] #calc_center[:, 0:] 
-  calc_center = lr_prob * (left_center * 0.5 + right_center * 0.5) + (1-lr_prob) * calc_center
-
-  #left_center =         l_prob * left_center + (1 - l_prob) * descaled_output[:,2:3]
-  #right_center =        r_prob * right_center + (1 - r_prob) * descaled_output[:,2:3]
-  #calc_center = (l_prob * left_center + r_prob * right_center) / (l_prob + r_prob + 0.00005)  
-
+  calc_center_prev = calc_center
+  lr_prob_prev = lr_prob
 
   if abs(cs.steeringTorque) < 1200 and abs(cs.adjustedAngle) < 30:
     upper_limit = one_deg_per_sec * cs.vEgo * max(0.2, lr_prob) * (2 + 0.1 * max(0, abs(cs.adjustedAngle)-4) + accel_counter)
@@ -188,20 +178,15 @@ while 1:
       angle_bias -= (0.00001 * cs.vEgo)
     
   total_offset = cs.adjustedAngle - cs.steeringAngle
-  #lateral_offset *= use_lateral_offset
-
+  
   path_send.pathPlan.angleSteers = float(angle[5] + cs.steeringAngle  - angle_bias)
   path_send.pathPlan.mpcAngles = [float(x) for x in (angle_factor * (angle[:] + descaled_output[0,0:1]) - total_offset - angle_bias)]   #angle_steers.pop(output_list[-1]))]
   #path_send.pathPlan.mpcAngles = [float(x) for x in (angle + cs.steeringAngle  - angle_bias)]   #angle_steers.pop(output_list[-1]))]
   path_send.pathPlan.laneWidth = float(lane_width)
   path_send.pathPlan.angleOffset = total_offset
-  #path_send.pathPlan.lateralOffset = float(lateral_offset)      
-  path_send.pathPlan.lPoly = [float(x) for x in (left_center[:,0] + half_width)]
-  path_send.pathPlan.rPoly = [float(x) for x in (right_center[:,0] - half_width)]
+  path_send.pathPlan.lPoly = [float(x) for x in (l_prob * descaled_output[:,3] + (1-l_prob) * (calc_center[:,0] + half_width))]
+  path_send.pathPlan.rPoly = [float(x) for x in (r_prob * descaled_output[:,4] + (1-r_prob) * (calc_center[:,0] - half_width))]
   path_send.pathPlan.cPoly = [float(x) for x in (calc_center[:,0])]
-  #path_send.pathPlan.lPoly = [float(x) for x in (projected_center[:15] + 0.5 * descaled_output[3,1])]
-  #path_send.pathPlan.rPoly = [float(x) for x in (projected_center[:15] - 0.5 * descaled_output[3,1])]
-  #path_send.pathPlan.cPoly = [float(x) for x in (projected_center[:15])]
   path_send.pathPlan.lProb = float(l_prob)
   path_send.pathPlan.rProb = float(r_prob)
   path_send.pathPlan.cProb = float(lr_prob)

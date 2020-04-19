@@ -75,6 +75,8 @@ cs = None
 lastHeartBeat = 0
 
 messaging.drain_sock(carState, True)
+messaging.drain_sock(pathPlan, False)
+messaging.drain_sock(carState, False)
 
 while 1:
   do_send_live = time.time() - lastHeartBeat < 60
@@ -111,13 +113,14 @@ while 1:
     if socket is pathPlan:
       pp = log.Event.from_bytes(pathPlan.recv()).pathPlan
       if vEgo >= 0 and not cs is None:
-        send_data0 = tuple(float(x) for x in tuple(pp.lPoly)[::2])
-        send_data1 = tuple(float(x) for x in tuple(pp.rPoly)[::2])
-        send_data2 = tuple(float(x) for x in tuple(pp.cPoly)[::2])
+        send_data0 = tuple(float(x) for x in tuple(pp.lPoly)[:])
+        send_data1 = tuple(float(x) for x in tuple(pp.rPoly)[:])
+        send_data2 = tuple(float(x) for x in tuple(pp.cPoly)[:])
         send_data3 = (pp.mpcAngles[3], pp.mpcAngles[4], pp.mpcAngles[5], pp.mpcAngles[6], pp.mpcAngles[10], pp.lProb, pp.rProb, pp.cProb, pp.laneWidth, pp.angleSteers, pp.rateSteers, pp.angleOffset, pp.lateralOffset, pp.canTime - pp.canTime, cs.canTime)
 
         localPathDataString.append("".join([localPathFormatString1 % send_data0, localPathFormatString2 % send_data1, localPathFormatString3 % send_data2, localPathFormatString4 % send_data3]))
         if do_send_live:
+          print('sending live stream!')
           serverPathDataString.append("".join([serverPolyDataFormatString % send_data0, serverPolyDataFormatString % send_data1, serverPolyDataFormatString % send_data2,serverPathDataFormatString % send_data3]))
 
     if socket is tuneSub:
@@ -134,14 +137,15 @@ while 1:
       lastHeartBeat = time.time()
 
   if len(localCarStateDataString2) >= 15:
+    frame += 1
     insertString = "".join(["".join(localCarStateDataString2), "".join(localCarStateDataString1), "".join(localPathDataString)])
     r = requests.post('http://127.0.0.1:8086/write?db=carDB&u=liveOP&p=liveOP&precision=ms', data=insertString)
     localCarStateDataString1 = []
     localCarStateDataString2 = []
     localPathDataString = []
-    print(len(insertString), r)
+    if frame % 3 == 0: print(len(insertString), r)
 
-  elif len(serverCarStateDataString2) >= 15:
+  elif len(localCarStateDataString2) >= 5 and len(serverCarStateDataString2) >= 15:
     if do_send_live:
       insertString = [serverCarStateFormatString2, "~", "".join(serverCarStateDataString2), "!", serverCarStateFormatString1, "~", "".join(serverCarStateDataString1), "!"]
       insertString.append(serverPathFormatString, "~", "".join(serverPathDataString), "!")

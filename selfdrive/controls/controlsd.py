@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+          #!/usr/bin/env python3
 import capnp
 from cereal import car, log
 from common.numpy_fast import clip
@@ -45,13 +45,16 @@ def wait_for_can(logcan):
   while len(messaging.recv_one(logcan).can) == 0:
     pass
 
-def data_sample(CI, CC, can_sock, carstate, lac_log, lateral):
+def data_sample(CI, CC, can_sock, carstate, lac_log, lateral, path_plan):
   """Receive data from sockets and create events for battery, temperature and disk space"""
 
   # TODO: Update carstate twice per cycle to prevent dropping frames, but only update controls once
   can_strs = [can_sock.recv()]
   CS = CI.update(CC, can_strs, lac_log)
 
+  if len(path_plan.cPoly) > 0:
+    CS.centerOffset = min(CS.centerOffset + 1, max(CS.centerOffset - 1, path_plan.cPoly[4]))
+  
   lateral.update(CS)
 
   events = list(CS.events)
@@ -276,7 +279,7 @@ def controlsd_thread(gctx=None):
     start_time = 0 # time.time()  #sec_since_boot()
 
     # Sample data and compute car events
-    CS, events = data_sample(CI, CC, can_sock, carstate, lac_log, lateral)
+    CS, events = data_sample(CI, CC, can_sock, carstate, lac_log, lateral, sm['pathPlan'])
 
     state, soft_disable_timer, v_cruise_kph, v_cruise_kph_last = \
         state_transition(sm.frame, CS, CP, state, events, soft_disable_timer, v_cruise_kph, AM)

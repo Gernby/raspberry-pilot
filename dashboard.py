@@ -136,16 +136,16 @@ while 1:
       messaging.recv_one(heartBeatSub)
       lastHeartBeat = time.time()
 
-  if len(localCarStateDataString2) >= 15:
+  if len(localCarStateDataString2) >= 5:
     frame += 1
     insertString = "".join(["".join(localCarStateDataString2), "".join(localCarStateDataString1), "".join(localPathDataString)])
     r = requests.post('http://127.0.0.1:8086/write?db=carDB&u=liveOP&p=liveOP&precision=ms', data=insertString)
     localCarStateDataString1 = []
     localCarStateDataString2 = []
     localPathDataString = []
-    if frame % 3 == 0: print(len(insertString), r)
+    if frame % 9 == 0: print(len(insertString), r)
 
-  elif len(localCarStateDataString2) >= 5 and len(serverCarStateDataString2) >= 15:
+  elif len(localCarStateDataString2) > 2 and len(serverCarStateDataString2) >= 5:
     if do_send_live:
       insertString = [serverCarStateFormatString2, "~", "".join(serverCarStateDataString2), "!", serverCarStateFormatString1, "~", "".join(serverCarStateDataString1), "!"]
       insertString.append(serverPathFormatString, "~", "".join(serverPathDataString), "!")

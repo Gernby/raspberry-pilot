@@ -151,16 +151,17 @@ while 1:
   a_prob = 1 
 
 
-  left_center[:,0:]  =  l_prob *   (descaled_output[:,3:4] - half_width) + (1 - l_prob) * calc_center[:, 0:]  
-  right_center[:,0:]  = r_prob *   (descaled_output[:,4:5] + half_width) + (1 - r_prob) * calc_center[:, 0:] 
-  left_center =         l_prob * left_center + (1 - l_prob) * descaled_output[:,2:3]
-  right_center =        r_prob * right_center + (1 - r_prob) * descaled_output[:,2:3]
-  
-  calc_center = (l_prob * left_center + r_prob * right_center) / (l_prob + r_prob + 0.00005)  
+  left_center[:,0:]  =  l_prob *   (descaled_output[:,3:4] - half_width) + (1 - l_prob) * descaled_output[:,2:3] #calc_center[:, 0:]  
+  right_center[:,0:]  = r_prob *   (descaled_output[:,4:5] + half_width) + (1 - r_prob) * descaled_output[:,2:3] #calc_center[:, 0:] 
+  calc_center = lr_prob * (left_center * 0.5 + right_center * 0.5) + (1-lr_prob) * calc_center
+
+  #left_center =         l_prob * left_center + (1 - l_prob) * descaled_output[:,2:3]
+  #right_center =        r_prob * right_center + (1 - r_prob) * descaled_output[:,2:3]
+  #calc_center = (l_prob * left_center + r_prob * right_center) / (l_prob + r_prob + 0.00005)  
 
 
   if abs(cs.steeringTorque) < 1200 and abs(cs.adjustedAngle) < 30:
-    upper_limit = one_deg_per_sec * cs.vEgo * max(0.2, lr_prob) # * (1 + 0.1 * max(0, abs(cs.adjustedAngle)-4) + accel_counter)
+    upper_limit = one_deg_per_sec * cs.vEgo * max(0.2, lr_prob) * (2 + 0.1 * max(0, abs(cs.adjustedAngle)-4) + accel_counter)
     lower_limit = -upper_limit
     if cs.torqueRequest >= 1:
       upper_limit = one_deg_per_sec * cs.steeringRate

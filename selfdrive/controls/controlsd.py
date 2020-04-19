@@ -53,7 +53,7 @@ def data_sample(CI, CC, can_sock, carstate, lac_log, lateral, path_plan):
   CS = CI.update(CC, can_strs, lac_log)
 
   if len(path_plan.cPoly) > 0:
-    CS.centerOffset = min(CS.centerOffset + 1, max(CS.centerOffset - 1, path_plan.cPoly[4]))
+    CS.centerOffset = min(CS.centerOffset + 1, max(CS.centerOffset - 1, path_plan.cPoly[2]))
   
   lateral.update(CS)
 

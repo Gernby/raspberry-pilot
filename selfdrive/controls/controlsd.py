@@ -52,10 +52,7 @@ def data_sample(CI, CC, can_sock, carstate, lac_log, lateral, path_plan):
   can_strs = [can_sock.recv()]
   CS = CI.update(CC, can_strs, lac_log)
 
-  if len(path_plan.cPoly) > 0:
-    CS.centerOffset = path_plan.cPoly[0]
-  
-  lateral.update(CS)
+  lateral.update(CS, path_plan.cPoly)
 
   events = list(CS.events)
 

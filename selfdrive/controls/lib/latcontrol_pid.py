@@ -97,8 +97,6 @@ class LatControlPID(object):
         self.damp_time = (float(self.kegman.conf['dampTime']))
         self.react_mpc = (float(self.kegman.conf['reactMPC']))
         self.damp_mpc = (float(self.kegman.conf['dampMPC']))
-        #self.lateral_offset = (float(self.kegman.conf['lateralOffset']))
-        #self.polyReact =  max(0.0, float(self.kegman.conf['polyReact']) * 0.1)
         self.polyReact =  1.0 + np.arange(15) * float(self.kegman.conf['polyReact']) / 15
         self.poly_smoothing = max(1.0, float(self.kegman.conf['polyDamp']) * 100.)
         self.poly_factor = max(0.0, float(self.kegman.conf['polyFactor']) * 0.001)

@@ -75,11 +75,10 @@ class kegman_conf():
     if write_conf:
       self.write_config(self.config)
 
-
   def get_fingerprint(self):
     from common.params import Params
     params = Params()
-    fingerprints = ['4d00','3800','2d00','2e00']
+    fingerprints = ['4973','060f','6f6d','2e00','6512','a2b8']
     try:
       this_car = str(params.get("PandaDongleId"))
     except:
@@ -88,8 +87,6 @@ class kegman_conf():
     for i in range(len(fingerprints)):
       if fingerprints[i] in this_car:
         return i
-
-
 
   def read_config(self, CP=None, Reset=False):
     self.element_updated = False

@@ -15,7 +15,7 @@ from common.params import Params
 BIT_MASK = [  6, 8, 6, 8, 6, 8, 6, 8]
 INPUTS = 52
 OUTPUTS = 3
-MODEL_VERSION = '020'
+MODEL_VERSION = '021'
 HISTORY_ROWS = 5
 
 def pub_sock(port, addr="*"):

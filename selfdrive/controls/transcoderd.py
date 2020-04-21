@@ -20,7 +20,7 @@ setproctitle('transcoderd')
 
 INPUTS = 52
 OUTPUTS = 5
-MODEL_VERSION = '021'
+MODEL_VERSION = '022'
 HISTORY_ROWS = 5
 OUTPUT_ROWS = 15
 
@@ -60,7 +60,7 @@ def sub_sock(port, poller=None, addr="127.0.0.1", conflate=False, timeout=None):
   return sock
 
 gernPath = pub_sock(service_list['pathPlan'].port)
-gernModelInputs = sub_sock(service_list['model'].port, conflate=False)
+gernModelInputs = sub_sock(service_list['model'].port, conflate=True)
 
 frame_count = 1
 dashboard_count = 0
@@ -158,10 +158,10 @@ while 1:
   left_center = descaled_output[:,1:2]
   right_center = descaled_output[:,2:3]
   #calc_center = (l_prob * descaled_output[:,1:2] + r_prob * descaled_output[:,2:3]) / (l_prob + r_prob + 0.0005)
-  calc_center = descaled_output[:,4:5] * lr_prob + (1-lr_prob) * calc_center
+  calc_center = descaled_output[:,4:5] #* lr_prob + (1-lr_prob) * calc_center
 
   if abs(cs.steeringTorque) < 1200 and abs(cs.adjustedAngle) < 30:
-    upper_limit = one_deg_per_sec * cs.vEgo #* max(0.2, lr_prob) * (max(1, min(5, abs(cs.steeringRate))) + accel_counter)
+    upper_limit = one_deg_per_sec * cs.vEgo * (max(2, min(5, abs(cs.steeringRate))) + accel_counter)
     lower_limit = -upper_limit
     if cs.torqueRequest >= 1:
       upper_limit = one_deg_per_sec * cs.steeringRate
@@ -174,7 +174,7 @@ while 1:
       lower_limit = lower_limit + angle
     if l_prob + r_prob > 0:
       accel_counter = max(0, min(2, accel_counter - 1))
-      angle = np.clip((descaled_output[:,0:1] - descaled_output[0,0:1]) * (1 + advanceSteer), lower_limit, upper_limit)
+      angle = np.clip((descaled_output[:,3:4] - descaled_output[0,3:4]) * (1 + advanceSteer), lower_limit, upper_limit)
       #angle = np.clip((descaled_output[:,3:4] - descaled_output[0,3:4]) * (1 + advanceSteer), lower_limit, upper_limit)
     else:
       accel_counter = max(0, min(2, accel_counter + 1))

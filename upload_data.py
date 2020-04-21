@@ -13,10 +13,10 @@ if len(sys.argv) < 2 or sys.argv[1] == 0:
   min_time = 0  #(time.time() - 72 * 60 * 60) * 1000
 elif sys.argv[1] == '1':
   min_time = 0
-  destination = "192.168.1.180"
+  destination = "192.168.1.3"
 
 params = Params()
-user_id = params.get("PandaDongleId")
+user_id =  str(params.get("PandaDongleId"))
 context = zmq.Context()
 steerPush = context.socket(zmq.PUSH)
 steerPush.connect("tcp://" + destination + ":8594")
@@ -33,10 +33,13 @@ for cols in ["angle_offset,lateral_offset,wheel_speed_fl,wheel_speed_fr,wheel_sp
     exec_query = '&q=select %s time > %dms fill(previous) limit %s ' % (cols, min_time, min(max_limit, limit))
     r = requests.get('http://localhost:8086/query?db=carDB&u=liveOP&p=liveOP&epoch=ms&precision=ms%s' % exec_query)
 
+    result = json.loads(r.content)
+    result.update({"user_id": user_id.replace("'","")})
+    steerPush.send_string(json.dumps(result))
+    #print(result)
     try:
-      result = json.loads(r.content)
+      #r2 = requests.put('http://192.168.1.212:1880/raspilot?user=%s' % user_id, data=r.content)
       if len(result['results']) > 0:
-        steerPush.send_multipart((user_id, r.content))
         print(len(r.content))
         limit -= max_limit
         recordcount += len(result['results'][0]['series'][0]['values'])

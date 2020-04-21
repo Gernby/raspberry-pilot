@@ -86,6 +86,10 @@ lr_prob_prev_prev = 0
 center_rate_prev = 0
 calc_center_prev = 0
 angle_factor = 1.0
+
+execution_time_avg = 0.0
+time_factor = 1.0
+
 fingerprint = np.array([[0,0,0,0,0,0,0]])
 kegman = kegman_conf()  
 if int(kegman.conf['fingerprint']) >= 0: 
@@ -99,6 +103,7 @@ print(np.round(descaled_output,2))
 frame = 0
 dump_sock(gernModelInputs, True)
 diverging = False
+
 while 1:
   cs = car.CarState.from_bytes(gernModelInputs.recv())
   
@@ -106,10 +111,13 @@ while 1:
 
   all_inputs = [[model_input[:,:6]], [model_input[:,6:9]], [model_input[-1:,9:11]], [model_input[-1:,11:12]], [model_input[-1:,12:20]], [fingerprint], [model_input[:,20:28]], [model_input[:,-24:-12]], [model_input[:,-12:]]]
 
+  start_time = time.time()  
   model_output = model.predict_on_batch(all_inputs)
+  execution_time_avg += max(0.0001, time_factor) * ((time.time() - start_time) - execution_time_avg)
+  time_factor *= 0.96
 
   if frame % 30 == 0:
-    print(fingerprint, frame, time.time())
+    print(fingerprint, frame, start_time, execution_time_avg)
   
   frame += 1
 
@@ -153,7 +161,7 @@ while 1:
   calc_center = descaled_output[:,4:5] * lr_prob + (1-lr_prob) * calc_center
 
   if abs(cs.steeringTorque) < 1200 and abs(cs.adjustedAngle) < 30:
-    upper_limit = one_deg_per_sec * cs.vEgo * max(0.2, lr_prob) * (max(2, min(5, abs(cs.steeringRate))) + accel_counter)
+    upper_limit = one_deg_per_sec * cs.vEgo #* max(0.2, lr_prob) * (max(1, min(5, abs(cs.steeringRate))) + accel_counter)
     lower_limit = -upper_limit
     if cs.torqueRequest >= 1:
       upper_limit = one_deg_per_sec * cs.steeringRate
@@ -166,7 +174,8 @@ while 1:
       lower_limit = lower_limit + angle
     if l_prob + r_prob > 0:
       accel_counter = max(0, min(2, accel_counter - 1))
-      angle = np.clip((descaled_output[:,3:4] - descaled_output[0,3:4]) * (1 + advanceSteer), lower_limit, upper_limit)
+      angle = np.clip((descaled_output[:,0:1] - descaled_output[0,0:1]) * (1 + advanceSteer), lower_limit, upper_limit)
+      #angle = np.clip((descaled_output[:,3:4] - descaled_output[0,3:4]) * (1 + advanceSteer), lower_limit, upper_limit)
     else:
       accel_counter = max(0, min(2, accel_counter + 1))
       angle *= 0.9
@@ -182,7 +191,9 @@ while 1:
   total_offset = cs.adjustedAngle - cs.steeringAngle
 
   path_send.pathPlan.angleSteers = float(angle[5] + cs.steeringAngle  - angle_bias)
-  path_send.pathPlan.mpcAngles = [float(x) for x in (angle_factor * (angle[:] + descaled_output[0,3:4]) - total_offset - angle_bias)]   #angle_steers.pop(output_list[-1]))]
+  #path_send.pathPlan.mpcAngles = [float(x) for x in (angle_factor * (angle[:] + descaled_output[0,3:4]) - total_offset - angle_bias)]   #angle_steers.pop(output_list[-1]))]
+  path_send.pathPlan.mpcAngles = [float(x) for x in (angle + cs.steeringAngle - angle_bias)]   #angle_steers.pop(output_list[-1]))]
+  #path_send.pathPlan.mpcAngles = [float(x) for x in (angle_factor * (angle + descaled_output[0,0:1]) - total_offset - angle_bias)]   #angle_steers.pop(output_list[-1]))]
   path_send.pathPlan.laneWidth = float(lane_width)
   path_send.pathPlan.angleOffset = total_offset
   path_send.pathPlan.lPoly = [float(x) for x in (left_center[:,0] + half_width)]

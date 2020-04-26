@@ -124,7 +124,7 @@ class LatControlPID(object):
       self.last_plan_time = path_plan.canTime
       self.avg_plan_age += 0.01 * (path_age - self.avg_plan_age)
 
-      self.c_prob = max(self.c_prob - 0.0333, min(self.c_prob + 0.0333, path_plan.cProb))
+      self.c_prob = path_plan.cProb  #max(self.c_prob - 0.0333, min(self.c_prob + 0.0333, path_plan.cProb))
       self.projected_lane_error = self.c_prob * self.poly_factor * sum(np.array(path_plan.cPoly) * self.polyReact) 
       #self.projected_lane_error = self.c_prob * self.poly_factor * (sum(path_plan.cPoly) + self.polyReact * 15 * (path_plan.cPoly[-1] - path_plan.cPoly[-2]))
       if abs(self.projected_lane_error) < abs(self.prev_projected_lane_error) and (self.projected_lane_error > 0) == (self.prev_projected_lane_error > 0):
@@ -184,8 +184,12 @@ class LatControlPID(object):
         else:
           self.previous_integral = self.pid.i
 
-      deadzone = 0.0
-      p_scale = 1.0
+      deadzone = 0.0 
+
+      if path_plan.cProb == 0 or (angle_feedforward > 0) == (self.pid.p > 0) or (path_plan.cPoly[-1] > 0) == (self.pid.p > 0):
+        p_scale = 1.0 
+      else:
+        p_scale = max(0.2, min(1.0, 1 / abs(angle_feedforward)))
 
       #output_steer = self.pid.update(self.damp_angle_steers_des + float(self.path_error_comp), self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override, p_scale=p_scale,
       #                              add_error=0, feedforward=steer_feedforward, speed=v_ego, deadzone=deadzone)

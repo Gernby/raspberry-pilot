@@ -224,6 +224,7 @@ void usb_cb_ep2_out(void *usbdata, int len, bool hardwired) {
 
 // send on CAN
 void usb_cb_ep3_out(void *usbdata, int len, bool hardwired) {
+  heartbeat_counter = 0U;
   UNUSED(hardwired);
   int dpkt = 0;
   uint32_t *d32 = (uint32_t *)usbdata;

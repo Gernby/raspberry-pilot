@@ -48,11 +48,10 @@ def wait_for_can(logcan):
 def data_sample(CI, CC, can_sock, carstate, lac_log, lateral, path_plan):
   """Receive data from sockets and create events for battery, temperature and disk space"""
 
-  # TODO: Update carstate twice per cycle to prevent dropping frames, but only update controls once
   can_strs = [can_sock.recv()]
   CS = CI.update(CC, can_strs, lac_log)
 
-  lateral.update(CS, path_plan.cPoly)
+  lateral.update(CS, path_plan)
 
   events = list(CS.events)
 
@@ -113,7 +112,7 @@ def state_transition(frame, CS, CP, state, events, soft_disable_timer, v_cruise_
 
     elif get_events(events, [ET.SOFT_DISABLE]):
       state = State.softDisabling
-      soft_disable_timer = 300   # 3s
+      soft_disable_timer = 600   # 6s
       for e in get_events(events, [ET.SOFT_DISABLE]):
         AM.add(frame, e, enabled)
 
@@ -215,7 +214,7 @@ def data_send(sm, CS, CI, CP, state, events, actuators, carstate, carcontrol, ca
     cs_send.carState = CS
     cs_send.carState.events = events
     cs_prev.append(cs_send.to_bytes())
-    if CS.camLeft.frame != last_frame and CS.camLeft.frame == CS.camFarLeft.frame:
+    if CS.camLeft.frame != last_frame: # and CS.camLeft.frame == CS.camFarLeft.frame:
       carstate.send_multipart(cs_prev)
       cs_prev.clear()
 
@@ -237,14 +236,14 @@ def controlsd_thread(gctx=None):
   carparams = messaging.pub_sock(service_list['carParams'].port)
 
   sm = messaging.SubMaster(['pathPlan'])
-  logcan = messaging.sub_sock(service_list['can'].port)
-  wait_for_can(logcan)
-  CI, CP = get_car(logcan, sendcan, False)
-  logcan.close()
+  can_sock = messaging.sub_sock(service_list['can'].port)
+  wait_for_can(can_sock)
+  CI, CP = get_car(can_sock, sendcan, False)
+  #logcan.close()
 
   # TODO: Use the logcan socket from above, but that will currenly break the tests
-  can_timeout = None #if os.environ.get('NO_CAN_TIMEOUT', False) else 100
-  can_sock = messaging.sub_sock(service_list['can'].port, timeout=can_timeout)
+  #can_timeout = None #if os.environ.get('NO_CAN_TIMEOUT', False) else 100
+  #can_sock = messaging.sub_sock(service_list['can'].port, timeout=can_timeout)
 
   # Write CarParams for radard and boardd safety mode
   params.put("CarParams", CP.to_bytes())
@@ -254,7 +253,7 @@ def controlsd_thread(gctx=None):
   AM = AlertManager()
 
   startup_alert = get_startup_alert(True, True)
-  AM.add(sm.frame, startup_alert, False)
+  AM.add(sm.frame, startup_alert, False)    
 
   LaC = LatControlPID(CP)
   lateral = Lateral()

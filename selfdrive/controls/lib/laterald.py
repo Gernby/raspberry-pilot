@@ -12,10 +12,11 @@ from selfdrive.services import service_list
 from cereal import log, car
 from common.params import Params
 
-BIT_MASK = [  6, 8, 6, 8, 6, 8, 6, 8]
-INPUTS = 52
-OUTPUTS = 3
-MODEL_VERSION = '022'
+BIT_MASK = [128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8]
+
+INPUTS = 69
+OUTPUTS = 6
+MODEL_VERSION = '024'
 HISTORY_ROWS = 5
 
 def pub_sock(port, addr="*"):
@@ -60,7 +61,7 @@ class Lateral(object):
       self.lateral_offset = 0.
     self.angle_factor = 1.0
 
-  def update(self, cs, c_poly=[]):
+  def update(self, cs, path_plan):
     self.frame_count += 1
     adjusted_angle = cs.steeringAngle + self.angle_offset + self.lateral_offset
 
@@ -75,8 +76,11 @@ class Lateral(object):
         self.angle_offset -= (0.00001 * cs.vEgo)
     adjusted_angle /= self.angle_factor
 
-    camera_flags = np.bitwise_and([cs.camLeft.parm6, cs.camLeft.parm8, cs.camFarLeft.parm6, cs.camFarLeft.parm8, 
-                                    cs.camRight.parm6, cs.camRight.parm8, cs.camFarRight.parm6, cs.camFarRight.parm8], BIT_MASK)
+    camera_flags = np.bitwise_and([cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm8, 
+                                   cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm8, 
+                                   cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm8, 
+                                   cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm8], BIT_MASK)
+
     camera_flags = np.minimum(1, camera_flags)
 
     left_10 = cs.camLeft.parm10 if cs.camLeft.parm10 >= 0 else cs.camLeft.parm10 + 128
@@ -84,25 +88,20 @@ class Lateral(object):
     right_10 = cs.camRight.parm10 if cs.camRight.parm10 <= 0 else cs.camRight.parm10 - 128
     far_right_10 = cs.camFarRight.parm10 if cs.camFarRight.parm10 <= 0 else cs.camFarRight.parm10 - 128
 
-    cs.centerOffset = float(self.centerOffset)
-
-    unscaled_input_array = [np.concatenate(([cs.vEgo, adjusted_angle, cs.lateralAccel, cs.steeringTorqueEps / self.angle_factor, cs.yawRateCAN, cs.longAccel, 0 * cs.steeringRate, 0 * cs.steeringTorque, 0 * cs.torqueRequest, 0 , 0, cs.centerOffset], camera_flags, 
-                                    [cs.camFarLeft.parm2, cs.camLeft.parm2, cs.camRight.parm2, cs.camFarRight.parm2, far_left_10, left_10, right_10, far_right_10,
-                                    cs.camLeft.parm1, cs.camLeft.parm3, cs.camLeft.parm4,                    cs.camLeft.parm5,      cs.camLeft.parm7,  cs.camLeft.parm9, 
-                                    cs.camFarLeft.parm1, cs.camFarLeft.parm3, cs.camFarLeft.parm4,     cs.camFarLeft.parm5,   cs.camFarLeft.parm7,  cs.camFarLeft.parm9, 
-                                    cs.camRight.parm1, cs.camRight.parm3, cs.camRight.parm4,               cs.camRight.parm5,     cs.camRight.parm7,  cs.camRight.parm9, 
-                                    cs.camFarRight.parm1, cs.camFarRight.parm3, cs.camFarRight.parm4,cs.camFarRight.parm5,  cs.camFarRight.parm7,  cs.camFarRight.parm9]),axis=0)] 
+    unscaled_input_array = [np.concatenate(([cs.vEgo, adjusted_angle, cs.lateralAccel, cs.steeringTorqueEps / self.angle_factor, cs.yawRateCAN, cs.longAccel, 0 , 0, path_plan.laneWidth], 
+                           [left_10,      cs.camLeft.parm2,     cs.camLeft.parm1,     cs.camLeft.parm3,     cs.camLeft.parm4,     cs.camLeft.parm5,     cs.camLeft.parm7,     cs.camLeft.parm9],     camera_flags[:7],
+                           [far_left_10,  cs.camFarLeft.parm2,  cs.camFarLeft.parm1,  cs.camFarLeft.parm3,  cs.camFarLeft.parm4,  cs.camFarLeft.parm5,  cs.camFarLeft.parm7,  cs.camFarLeft.parm9],  camera_flags[7:14],
+                           [right_10,     cs.camRight.parm2,    cs.camRight.parm1,    cs.camRight.parm3,    cs.camRight.parm4,    cs.camRight.parm5,    cs.camRight.parm7,    cs.camRight.parm9]  ,  camera_flags[14:21],
+                           [far_right_10, cs.camFarRight.parm2, cs.camFarRight.parm1, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm7, cs.camFarRight.parm9], camera_flags[21:]),axis=0)] 
 
     scaled_data = self.input_scaler.transform(unscaled_input_array)
-    self.scaled_vehicle_array.append(scaled_data[:,:11])
+    self.scaled_vehicle_array.append(scaled_data[:,:9])
 
     cs.adjustedAngle = adjusted_angle
 
     if cs.camLeft.frame != self.stock_cam_frame_prev and cs.camLeft.frame == cs.camFarLeft.frame:
-      if len(c_poly) > 0:
-        self.centerOffset = min(self.centerOffset + 50, max(self.centerOffset - 50, c_poly[3]))
 
-      self.scaled_camera_array.append(scaled_data[:,11:])
+      self.scaled_camera_array.append(scaled_data[:,9:])
       if len(self.scaled_camera_array) > HISTORY_ROWS:
         scaled_array = np.concatenate((self.scaled_vehicle_array[-HISTORY_ROWS:], self.scaled_camera_array[-HISTORY_ROWS:]), axis = 2)
         self.scaled_camera_array.pop(0)

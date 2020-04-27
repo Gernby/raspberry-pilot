@@ -80,6 +80,7 @@ projected_center = np.zeros((OUTPUT_ROWS,1))
 left_probs = np.zeros((OUTPUT_ROWS,1))
 right_probs = np.zeros((OUTPUT_ROWS,1))
 clipped_angle = np.zeros((OUTPUT_ROWS,1))
+requested_angle = clipped_angle
 center_limit = np.reshape(0.5 * np.arange(OUTPUT_ROWS) + 10,(OUTPUT_ROWS,1))
 accel_counter = 0   
 upper_limit = 0

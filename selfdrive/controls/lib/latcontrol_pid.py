@@ -191,9 +191,10 @@ class LatControlPID(object):
       else:
         p_scale = max(0.2, min(1.0, 1 / abs(angle_feedforward)))
 
+      requested_angle = max(self.damp_angle_steers_des - 0.05, min(self.damp_angle_steers_des + 0.05, path_plan.angleSteers))
       #output_steer = self.pid.update(self.damp_angle_steers_des + float(self.path_error_comp), self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override, p_scale=p_scale,
       #                              add_error=0, feedforward=steer_feedforward, speed=v_ego, deadzone=deadzone)
-      output_steer = self.pid.update(self.damp_angle_steers_des, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override, p_scale=p_scale,
+      output_steer = self.pid.update(requested_angle, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override, p_scale=p_scale,
                                     add_error=float(self.path_error_comp), feedforward=steer_feedforward, speed=v_ego, deadzone=deadzone)
 
     pid_log.p = float(self.pid.p)

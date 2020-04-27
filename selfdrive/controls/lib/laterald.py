@@ -16,7 +16,7 @@ BIT_MASK = [128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4,
 
 INPUTS = 69
 OUTPUTS = 6
-MODEL_VERSION = '025'
+MODEL_VERSION = '026'
 HISTORY_ROWS = 3
 
 def pub_sock(port, addr="*"):
@@ -88,11 +88,11 @@ class Lateral(object):
     right_10 = cs.camRight.parm10 if cs.camRight.parm10 <= 0 else cs.camRight.parm10 - 128
     far_right_10 = cs.camFarRight.parm10 if cs.camFarRight.parm10 <= 0 else cs.camFarRight.parm10 - 128
 
-    unscaled_input_array = [np.concatenate(([cs.vEgo, adjusted_angle, cs.lateralAccel, cs.steeringTorqueEps / self.angle_factor, cs.yawRateCAN, cs.longAccel, 0 , 0, path_plan.laneWidth], 
-                           [left_10,      cs.camLeft.parm2,     cs.camLeft.parm1,     cs.camLeft.parm3,     cs.camLeft.parm4,     cs.camLeft.parm5,     cs.camLeft.parm7,     cs.camLeft.parm9],     camera_flags[:7],
-                           [far_left_10,  cs.camFarLeft.parm2,  cs.camFarLeft.parm1,  cs.camFarLeft.parm3,  cs.camFarLeft.parm4,  cs.camFarLeft.parm5,  cs.camFarLeft.parm7,  cs.camFarLeft.parm9],  camera_flags[7:14],
-                           [right_10,     cs.camRight.parm2,    cs.camRight.parm1,    cs.camRight.parm3,    cs.camRight.parm4,    cs.camRight.parm5,    cs.camRight.parm7,    cs.camRight.parm9]  ,  camera_flags[14:21],
-                           [far_right_10, cs.camFarRight.parm2, cs.camFarRight.parm1, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm7, cs.camFarRight.parm9], camera_flags[21:]),axis=0)] 
+    unscaled_input_array = [np.concatenate(([cs.vEgo, adjusted_angle, cs.lateralAccel, cs.steeringTorqueEps / self.angle_factor, cs.yawRateCAN, cs.longAccel, 0 , 0, max(600, path_plan.laneWidth)], 
+                           [left_10,      max(0, cs.camLeft.parm2),     cs.camLeft.parm1,     cs.camLeft.parm3,     cs.camLeft.parm4,     cs.camLeft.parm5,     cs.camLeft.parm7,     cs.camLeft.parm9],     camera_flags[:7],
+                           [far_left_10,  max(0, cs.camFarLeft.parm2),  cs.camFarLeft.parm1,  cs.camFarLeft.parm3,  cs.camFarLeft.parm4,  cs.camFarLeft.parm5,  cs.camFarLeft.parm7,  cs.camFarLeft.parm9],  camera_flags[7:14],
+                           [right_10,     min(0, cs.camRight.parm2),    cs.camRight.parm1,    cs.camRight.parm3,    cs.camRight.parm4,    cs.camRight.parm5,    cs.camRight.parm7,    cs.camRight.parm9]  ,  camera_flags[14:21],
+                           [far_right_10, min(0, cs.camFarRight.parm2), cs.camFarRight.parm1, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm7, cs.camFarRight.parm9], camera_flags[21:]),axis=0)] 
 
     scaled_data = self.input_scaler.transform(unscaled_input_array)
     self.scaled_vehicle_array.append(scaled_data[:,:9])

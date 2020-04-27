@@ -20,7 +20,7 @@ setproctitle('transcoderd')
 
 INPUTS = 69
 OUTPUTS = 6
-MODEL_VERSION = '025'
+MODEL_VERSION = '026'
 HISTORY_ROWS = 3
 OUTPUT_ROWS = 15
 BATCH_SIZE = 1
@@ -160,7 +160,7 @@ while 1:
         print("      Diverging Right", r_prob)
 
   max_width_step = 0.05 * cs.vEgo * l_prob * r_prob
-  lane_width = max(570, lane_width - max_width_step * 2, min(1200, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
+  lane_width = max(570, lane_width - max_width_step * 2, min(1200, lane_width + max_width_step, max(0, cs.camLeft.parm2) - min(0, cs.camRight.parm2)))
   
   #if False and l_prob > 0 and r_prob > 0 and not diverging:
   #  if lane_width > 0:

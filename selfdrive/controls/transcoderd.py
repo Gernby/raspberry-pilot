@@ -20,10 +20,10 @@ setproctitle('transcoderd')
 
 INPUTS = 69
 OUTPUTS = 6
-MODEL_VERSION = '026'
+MODEL_VERSION = '027'
 HISTORY_ROWS = 3
 OUTPUT_ROWS = 15
-BATCH_SIZE = 1
+BATCH_SIZE = 15
 
 output_scaler = joblib.load(os.path.expanduser('models/GRU_MinMax_tanh_%d_outputs_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
 model = load_model(os.path.expanduser('models/cpu-model-%s.hdf5' % MODEL_VERSION))
@@ -110,7 +110,7 @@ if False:
   for n in range(100):
     for i in range(len(all_inputs)):
       all_inputs[i][:-1] = all_inputs[i][1:]
-      all_inputs[i][-1:] = new_inputs[i] + (n / 200)
+      all_inputs[i][-1:] = new_inputs[i]
     previous_output = model_output
     model_output = model.predict_on_batch(all_inputs)
     #model_output = model.predict(all_inputs)

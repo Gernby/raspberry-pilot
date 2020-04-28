@@ -16,7 +16,7 @@ BIT_MASK = [128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4,
 
 INPUTS = 69
 OUTPUTS = 6
-MODEL_VERSION = '026'
+MODEL_VERSION = '027'
 HISTORY_ROWS = 3
 
 def pub_sock(port, addr="*"):

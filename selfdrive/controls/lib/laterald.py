@@ -16,8 +16,8 @@ BIT_MASK = [128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4, 2, 8, 128, 64, 32, 8, 4,
 
 INPUTS = 69
 OUTPUTS = 6
-MODEL_VERSION = '027'
-HISTORY_ROWS = 3
+MODEL_VERSION = '029'
+HISTORY_ROWS = 5
 
 def pub_sock(port, addr="*"):
   context = zmq.Context.instance()

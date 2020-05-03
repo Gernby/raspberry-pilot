@@ -1,13 +1,13 @@
 {
-  "dampMPC": "0.16",
+  "dampMPC": "0.13",
   "dampTime": "0.0",
-  "advanceSteer": "0.0", 
-  "polyDamp": "0.24",
-  "polyFactor": "0.01",
+  "advanceSteer": "0.5", 
+  "polyDamp": "0.0",
+  "polyFactor": "7.0",
   "polyReact": "0.0",
   "reactMPC": "0.25",
   "angleFactor": "1.0",
-  "tuneRev": "0.1.23",
+  "tuneRev": "0.1.24",
   "angleOffset": "1",
   "lateralOffset": "1",
   "angleBias": "1"

@@ -203,7 +203,7 @@ class CarController():
           print('  doing the regular SPAM RESUME')
           can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, idx, CS.CP.carFingerprint, CS.CP.isPandaBlack))
       elif CS.v_ego == 0:
-        print('  not quite "stopped" yet, but lead distance is %f' % CS.lead_distance)
+        #print('  not quite "stopped" yet, but lead distance is %f' % CS.lead_distance)
         self.stopped_lead_distance = CS.lead_distance
         self.prev_lead_distance = CS.lead_distance
       else:

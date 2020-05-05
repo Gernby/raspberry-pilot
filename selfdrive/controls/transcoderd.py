@@ -20,14 +20,16 @@ setproctitle('transcoderd')
 
 INPUTS = 69
 OUTPUTS = 6
-MODEL_VERSION = '029'
+MODEL_VERSION = '032'
+MODEL_SUB_VERSION = '-9'
 
 HISTORY_ROWS = 5
 OUTPUT_ROWS = 15
 BATCH_SIZE = 3
+WINDOW_SIZE = 9
 
 output_scaler = joblib.load(os.path.expanduser('models/GRU_MinMax_tanh_%d_outputs_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
-model = load_model(os.path.expanduser('models/cpu-model-%s.hdf5' % MODEL_VERSION))
+model = load_model(os.path.expanduser('models/cpu-model-%s%s.hdf5' % (MODEL_VERSION, MODEL_SUB_VERSION)))
 model_input = np.zeros((BATCH_SIZE,HISTORY_ROWS, INPUTS))
 print(model.summary())
 
@@ -181,9 +183,9 @@ while 1:
       else:
         width_trim += 1
 
-    if abs(cs.steeringTorque) < 1200 and abs(cs.adjustedAngle) < 30:
+    if abs(cs.steeringTorque) < 2200 and abs(cs.adjustedAngle) < 30:
       clipped_angle[:-1] = clipped_angle[1:]
-      upper_limit = one_deg_per_sec * cs.vEgo * (max(2, min(5, abs(cs.steeringRate))) + accel_counter)
+      upper_limit = one_deg_per_sec * cs.vEgo * (max(1, min(2, abs(cs.steeringRate))) + accel_counter)
       lower_limit = -upper_limit
       if cs.torqueRequest >= 1:
         upper_limit = one_deg_per_sec * cs.steeringRate
@@ -197,6 +199,7 @@ while 1:
       if l_prob + r_prob > 0:
         accel_counter = max(0, min(2, accel_counter - 1))
         model_angle = (descaled_output[:,0:1] - descaled_output[0,0:1]) * (1 + advanceSteer)
+        #model_angle = (descaled_output[:,0:1]) * (1 + advanceSteer)
         clipped_angle = np.clip(model_angle, lower_limit, upper_limit)
         requested_angle = np.clip(model_angle, clipped_angle - 0.5, clipped_angle + 0.5)
       else:
@@ -217,6 +220,8 @@ while 1:
 
     path_send.pathPlan.angleSteers = float(requested_angle[5] + cs.steeringAngle - angle_bias)
     path_send.pathPlan.mpcAngles = [float(x) for x in (requested_angle + cs.steeringAngle - angle_bias)]  
+    #path_send.pathPlan.angleSteers = float(requested_angle[5] - total_offset - angle_bias)
+    #path_send.pathPlan.mpcAngles = [float(x) for x in (requested_angle - total_offset - angle_bias)]  
     path_send.pathPlan.laneWidth = float(lane_width + width_trim)
     path_send.pathPlan.angleOffset = total_offset
     path_send.pathPlan.lPoly = [float(x) for x in (left_center[:,0] + 0.5 * lane_width)]

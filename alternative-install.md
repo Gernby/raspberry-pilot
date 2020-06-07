@@ -52,12 +52,16 @@ wifis:
 #         ca-certificate: /etc/my_ca.pem
 ```
 13. Save and exit the file.
-14. Safely unmount the microSD card. Do not proceed until you know you have safely unmounted.
-15. Remove the SD card adatper from the laptop and remove the microSD card from the SD card adapter.
-16. Insert the microSD card into the Pi into the slot on the "bottom" of the Pi with the contacts oriented "up" towards the bottom of the Pi mainboard.
-17. Plug the Pi into power and wait 2 minutes. The Pi needs to boot, finalize some initial configuration, and log into the WiFi.
-18. Log into your WiFi router and locate the Pi in your connected client list.
-19. Use the ssh command or putty to connect to the Pi's IP address.
+14. Download the gpg signing key for grafana:
+
+`wget https://packages.grafana.com/gpg.key`
+
+15. Safely unmount the microSD card. Do not proceed until you know you have safely unmounted.
+16. Remove the SD card adatper from the laptop and remove the microSD card from the SD card adapter.
+17. Insert the microSD card into the Pi into the slot on the "bottom" of the Pi with the contacts oriented "up" towards the bottom of the Pi mainboard.
+18. Plug the Pi into power and wait 2 minutes. The Pi needs to boot, finalize some initial configuration, and log into the WiFi.
+19. Log into your WiFi router and locate the Pi in your connected client list.
+20. Use the ssh command or putty to connect to the Pi's IP address.
 
 ## Software installation
 1. Log into the Pi using "ubuntu" as the user and password.

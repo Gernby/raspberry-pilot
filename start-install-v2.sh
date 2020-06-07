@@ -122,7 +122,7 @@ ansible localhost -v -m pip -a "executable=/usr/bin/pip3 name=pipenv extra_args=
 
 echo "Cloning the repository..."
 
-ansible localhost -v -m git -a "clone=yes repo=https://github.com/Gernby/raspberry-pilot.git version=boy-racer dest=/home/ubuntu/raspberry-pilot"
+ansible localhost -v -m git -a "clone=yes repo=https://github.com/Gernby/raspberry-pilot.git version=next-breakthrough dest=/home/ubuntu/raspberry-pilot"
 #git clone https://github.com/Gernby/raspberry-pilot.git -b fingerprints /home/ubuntu/raspberry-pilot
 
 echo "Copy the finish_install script to homedir..."

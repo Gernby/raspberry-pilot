@@ -49,7 +49,7 @@ From this point forward, you may continue using the keyboard and monitor to work
 3. `cd raspberry-pilot`
 4. `git checkout <branch name>`
 5. `bash start_install.sh <your WiFi name> <your WiFi password>` (Note that this step adds WiFi support to the Pi and connects to your home WiFi as part of the install)
-6. Wait 30 minutes (Note: <temp> sudo apt install docker.io)
+6. Wait 30 minutes (Note: TEMP: sudo apt install docker.io)
 7. Log out of the Pi and log back in as the "ubuntu" user
 8. `bash finish_install.sh`
 9. Wait about 2.5 hours

@@ -26,22 +26,37 @@ for cols in ["angle_offset,lateral_offset,wheel_speed_fl,wheel_speed_fr,wheel_sp
              "v_ego,angle_steers,angle_rate,driver_torque,request,angle_rate_eps,yaw_rate_can,angle_steers_eps,long_accel,p2,p,i,f,damp_angle_steers,damp_angle_steers_des,ff_rate,ff_angle,left_frame,far_right_frame from carState where"]:
   next_time = time.time()
   start_time = time.time()
-  limit = 9999999999
+  limit = 700000
   recordcount = 0
   max_limit = 5000
-  min_time = 0
+  min_time = start_time * 1000 - 21 * 24 * 60 * 60 * 1000
 
   while min(max_limit, limit) > 0 and recordcount % max_limit == 0:
-    print(time.time(), next_time, next_time - time.time())
-    time.sleep(max(0.1, next_time - time.time()))
-    next_time = next_time + 3
+    #sleep_time = next_time - time.time()
+    #print(time.time(), next_time, sleep_time)
+    #if sleep_time < 0: 
+    #  sleep_time = 5
+    #  next_time = time.time() + 8
+    #else:
+    #  next_time += 3
+    #time.sleep(sleep_time)
+    qry_start = time.time()
+
     exec_query = '&q=select %s time > %dms fill(previous) limit %s ' % (cols, min_time, min(max_limit, limit))
     r = requests.get('http://localhost:8086/query?db=carDB&u=liveOP&p=liveOP&epoch=ms&precision=ms%s' % exec_query)
+
+    send_start = time.time()
 
     try:
       result = json.loads(r.content)
       result.update({"user_id": user_id})
       steerPush.send_string(json.dumps(result))
+
+      send_end = time.time()
+
+      sleep_time = max(send_end - send_start, send_start - qry_start) - min(send_end - send_start, send_start - qry_start)
+      time.sleep(sleep_time)
+      print( send_start - qry_start, send_end - send_start, sleep_time)
       if len(result['results']) > 0:
         print(len(r.content))
         limit -= max_limit

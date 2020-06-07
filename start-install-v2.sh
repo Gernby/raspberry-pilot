@@ -24,6 +24,9 @@
 #sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
 #sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=1
 
+# Delete the boot-up warning about not being able to check for updates
+sudo rm /var/lib/ubuntu-release-upgrader/release-upgrade-available
+
 # Install Ansible to support the rest of the installation
 sudo apt-add-repository -y ppa:ansible/ansible
 sudo apt update

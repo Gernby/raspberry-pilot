@@ -53,7 +53,7 @@ wifis:
 ```
 13. Save and exit the file.
 14. Safely unmount the microSD card. Do not proceed until you know you have safely unmounted.
-15. Remove the SD card adatper from the laptop and remove the microSD card from the SD card adapter.
+15. Remove the SD card adapter from the laptop and remove the microSD card from the SD card adapter.
 16. Insert the microSD card into the Pi into the slot on the "bottom" of the Pi with the contacts oriented "up" towards the bottom of the Pi mainboard.
 17. Plug the Pi into power and wait 2 minutes. The Pi needs to boot, finalize some initial configuration, and log into the WiFi.
 18. Log into your WiFi router and locate the Pi in your connected client list.

@@ -65,7 +65,7 @@ wifis:
 
 ```
 cd ~  
-git clone https://github.com/Gernby/raspberry-pilot.git
+git clone -b gh-pages https://github.com/Gernby/raspberry-pilot.git
 cd raspberry-pilot
 cp start-install-v2.sh install-dependencies.yml /boot/firmware
 ```

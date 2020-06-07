@@ -1,0 +1,49 @@
+- hosts: localhost
+  connection: local
+  tasks:
+  - name: Group 1 build-essential, make, automake, python3.7-dev,python3-pip
+    apt:
+      name: ['build-essential', 'make', 'automake', 'python3.7-dev', 'python3-pip']
+
+  - name: Group 2 openjdk-8-jdk, autoconf, zip, unzip, libtool, swig, libpng-dev, zlib1g-dev, pkg-config
+    apt:
+      name: ['openjdk-8-jdk', 'autoconf', 'zip', 'unzip', 'libtool', 'swig', 'libpng-dev', 'zlib1g-dev', 'pkg-config']
+
+  - name: Group 3 libhdf5-dev, bzip2, clang, git, libarchive-dev
+    apt:
+      name: ['libhdf5-dev', 'bzip2', 'clang', 'git', 'libarchive-dev']
+
+  - name: Group 4 libffi-dev, libglib2.0-0, libssl-dev, libswscale-dev
+    apt:
+      name: ['libffi-dev', 'libglib2.0-0', 'libssl-dev', 'libswscale-dev']
+
+  - name: Group 5 libusb-1.0-0, libusb-1.0-0-dev, libzmq5-dev, ocl-icd-libopencl1, ocl-icd-opencl-dev
+    apt:
+      name: ['libusb-1.0-0', 'libusb-1.0-0-dev', 'libzmq5-dev', 'ocl-icd-libopencl1', 'ocl-icd-opencl-dev']
+
+  - name: Group 6 opencl-headers, wget, checkinstall
+    apt:
+      name: ['opencl-headers', 'wget', 'checkinstall']
+
+  - name: Group 7 libatlas-base-dev, libopenblas-base, libopenblas-dev, gcc, gofortran
+    apt:
+      name: ['libatlas-base-dev', 'libopenblas-base', 'libopenblas-dev', 'gcc', 'gfortran']
+
+  - name: Group 8 capnproto, autotools-dev, uuid-dev, libsodium-dev, valgrind
+    apt:
+      name: ['capnproto', 'autotools-dev', 'uuid-dev', 'libsodium-dev', 'valgrind']
+
+  - name: Group 9 libusb-dev, cmake, libnewlib-arm-none-eabi, libhdf5-serial-dev, hdf5-tools, smbclient
+    apt:
+      name: ['libusb-dev', 'cmake', 'libnewlib-arm-none-eabi', 'libhdf5-serial-dev', 'hdf5-tools', 'smbclient']
+
+  - name: Group 10 influxdb, apt-transport-https, software-properties-common, adduser, libfontconfig1
+    apt:
+      name: ['influxdb', 'apt-transport-https', 'software-properties-common', 'adduser', 'libfontconfig1']
+
+
+#      state: present
+
+# Packages no longer available
+# clang-3.8
+# libusb-1.0

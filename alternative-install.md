@@ -73,9 +73,9 @@ sudo cp start-install-v2.sh install-dependencies.yml /boot/firmware
 
 3. Ask in Discord for the name of the current branch to checkout.
 4. `git checkout <branch name>`
-5. `bash start_install.sh 
+5. `bash start_install.sh`
 6. Wait 30 minutes
-7. Log out of the Pi and log back in as the "ubuntu" user
+7. Log out of the Pi (reboot?) and log back in as the "ubuntu" user
 8. `bash finish_install.sh`
 9. Wait about 2.5 hours
 10. If the process completes successfully, reboot the Pi and log back in as the "ubuntu" user

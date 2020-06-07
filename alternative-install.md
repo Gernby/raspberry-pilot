@@ -1,4 +1,4 @@
-# Raspberry Pilot Installation Steps
+# Alternate Raspberry Pilot Installation Steps
 
 ## Requirements
 
@@ -11,11 +11,7 @@
 7. USB A-to-A cable or mini USB cable with a Panda Paw from the Comma.ai shop (for flashing the Panda from the Pi)
 8. A way to power the Pi in your car (high power 12v to USB adapter, USB port on laptop above, or 12v to 120/240v inverter)
 9. Minimum 32GB class 10 microSD card
-10. Micro-HDMI adapter (the Raspberry Pi 4 does not use the same HDMI connectors as any previous models)
-11. TV or monitor that accepts HDMI input
-12. USB keyboard
-13. Physical Ethernet connection for the initial installation inside your home
-14. Cellular hotspot (or standard WiFi you can reach from your car -- no cable company or retail WiFi)
+10. Cellular hotspot (or standard WiFi you can reach from your car -- no cable company or retail WiFi)
 
 ## MicroSD card preparation and first login
 
@@ -25,22 +21,47 @@
 4. Insert the microSD card into the microSD-to-SD card adapter and then into the computer you will use to burn the image
 5. Umount ("eject") the microSD card if the computer automatically mounted it but do not remove it from the slot
 6. Burn the decompressed image to the microSD card (process varies by Operating System)
-7. When finished, remove the SD card adapter from the computer and remove the microSD card from the adapter
-8. Insert the microSD card into the Rasperry Pi 4. The card inserts with the contacts facing the mainboard.
-9. Connect the keyboard, micro-HDMI adapter and the HDMI cable
-10. If you are near your Ethernet cable, plug it in. If not, don't worry -- you don't need it yet.
-11. Connect the USB A end of the USB A-to-C cable to the power supply and the USB C end into the power port on the Pi
-12. Wait for the Pi to boot and wait several more seconds after the login is presented to finish the first boot
-13. Log into the Pi using "ubuntu" for the username and the password
-14. You will be forced to change the password. Enter "ubuntu" as the "Current UNIX password" when prompted and then enter your new password twice to change it.
-15. As a test, run `ssh localhost` to make sure your Pi is allowing logins via `ssh`. If you do not wait at least 20 seconds after the startup screen clears, you may interrupt the configuration of the `ssh` server. If you cannot log into localhost via `ssh`, you will need to flash the SD card again and start over. Better to do it now and save hours of rework.
+7. Remove the SD card adapter from the slot and reinsert it. Wait several seconds for the system to detect and mount the card.
+8. Use your file manager to browse the partition on the card called "system-boot".
+9. Open the file called "user-data" for editing.
+10. Locate the "chpasswd:" section and change "expire:" from "true" to "false". Save and exit the file.
+11. Open the file called "network-config" for editing.
+12. Locate the end of the user instructions with "# Some additional examples are commented out below". Edit the remainder of the file to resemble this example:
 
-From this point forward, you may continue using the keyboard and monitor to work on the Pi or you may return to your primary computer and log into the Pi using `ssh`.
+```
+version: 2
+ethernets:
+  eth0:
+    dhcp4: true
+    optional:true
+wifis:
+  wlan0:
+    dhcp4: true
+    optional: true
+    access-points:
+      <replace with your home ssd>:
+        password: "<enter your home WiFi WPA2 password>"
+#     myotherlan:
+#       password: "correct horse battery staple"
+#     workssid:
+#       auth:
+#         key-management: eap
+#         method: peap
+#         identity: "me@example.com"
+#         password: "passw0rd"
+#         ca-certificate: /etc/my_ca.pem
+```
+13. Save and exit the file.
+14. Safely unmount the microSD card. Do not proceed until you know you have safely unmounted.
+15. Remove the SD card adatper from the laptop and remove the microSD card from the SD card adapter.
+16. Insert the microSD card into the Pi into the slot on the "bottom" of the Pi with the contacts oriented "up" towards the bottom of the Pi mainboard.
+17. Plug the Pi into power and wait 2 minutes. The Pi needs to boot, finalize some initial configuration, and log into the WiFi.
+18. Log into your WiFi router and locate the Pi in your connected client list.
+19. Use the ssh command or putty to connect to the Pi's IP address.
 
 ## Software installation
-(Note: You must have hardline Ethernet connectivity at this point to proceed)
-
-1. Log into the Pi as the "ubuntu" user using your new password if you are not still logged in from earlier steps. Clone the repository
+1. Log into the Pi using "ubuntu" as the user and password.
+2. Clone the repository
 
 `cd ~`  
 `git clone https://github.com/Gernby/raspberry-pilot.git`  
@@ -48,7 +69,7 @@ From this point forward, you may continue using the keyboard and monitor to work
 2. Ask in Discord for the name of the current branch to checkout.
 3. `cd raspberry-pilot`
 4. `git checkout <branch name>`
-5. `bash start_install.sh <your WiFi name> <your WiFi password>` (Note that this step adds WiFi support to the Pi and connects to your home WiFi as part of the install)
+5. `bash start_install.sh 
 6. Wait 30 minutes
 7. Log out of the Pi and log back in as the "ubuntu" user
 8. `bash finish_install.sh`
@@ -62,6 +83,9 @@ From this point forward, you may continue using the keyboard and monitor to work
 16. Run `top -u ubuntu` again
 17. Look for `controlsd`, `boardd`, `laterald`, and `transcoderd` this time
 18. If all four processes are present, you are ready to flash your Panda
+
+## Note: The following steps are required if you need to flash the Panda. The steps are under construction based on the new WiFi management features.
+
 19. If you cannot hit your home WiFi from the car, turn on the hotspot on your phone and connect the Pi to your hotspot WiFi by running the following command:
 
 `nmcli d wifi connect <your hotspot wifi name> password <your hotspot wifi password>`

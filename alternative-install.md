@@ -55,6 +55,7 @@ wifis:
 14. Download the gpg signing key for grafana:
 
 `wget https://packages.grafana.com/gpg.key`
+`mv gpg.key grafana.gpg.key`
 
 15. Safely unmount the microSD card. Do not proceed until you know you have safely unmounted.
 16. Remove the SD card adatper from the laptop and remove the microSD card from the SD card adapter.

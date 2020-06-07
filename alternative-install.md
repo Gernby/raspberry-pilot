@@ -13,7 +13,7 @@
 9. Minimum 32GB class 10 microSD card
 10. Cellular hotspot (or standard WiFi you can reach from your car -- no cable company or retail WiFi)
 
-## MicroSD card preparation and first login
+## MicroSD card preparation and first boot up
 
 1. Go to https://ubuntu.com/download/raspberry-pi on the laptop that will prepare the microSD card
 2. In the Raspberry Pi 4 column, locate the row for Ubuntu 18.04.4 LTS, and click "Download 64-bit" at the far right end

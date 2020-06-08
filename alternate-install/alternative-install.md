@@ -40,8 +40,8 @@ wifis:
     access-points:
       <replace with your home ssd>:
         password: "<enter your home WiFi WPA2 password>"
-#     myotherlan:
-#       password: "correct horse battery staple"
+      <replace with your cellular hotspot ssid>:
+        password: "<enter your hotspot WPA2 password"
 #     workssid:
 #       auth:
 #         key-management: eap

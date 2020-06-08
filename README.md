@@ -55,12 +55,12 @@ From this point forward, you may continue using the keyboard and monitor to work
 9. Wait about 2.5 hours
 10. If the process completes successfully, reboot the Pi and log back in as the "ubuntu" user
 11. Run the command `top -u ubuntu`
-12. Look for `controlsd`, `boardd`, and `laterald` in the rightmost column of the list.
+12. Look for `controlsd`, `boardd`, and `dashboard` in the rightmost column of the list.
 13. If you see all three, let Gernby know you're ready for the model. He will email it to you.
 14. When you receive the model, download the attachment from your email and copy it to `~/raspilot/models` (note that the 's' at the end is critical). The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
 15. Reboot the Pi, and log back in
 16. Run `top -u ubuntu` again
-17. Look for `controlsd`, `boardd`, `laterald`, and `transcoderd` this time
+17. Look for `controlsd`, `boardd`, `dashboard`, and `transcoderd` this time
 18. If all four processes are present, you are ready to flash your Panda
 19. If you cannot hit your home WiFi from the car, turn on the hotspot on your phone and connect the Pi to your hotspot WiFi by running the following command:
 

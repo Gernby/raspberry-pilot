@@ -33,6 +33,10 @@
 # cat /sys/class/thermal/thermal_zone0/temp
 # 42355 = 42.355 C
 
+# add grafana signing key and repository
+sudo apt-key add grafana.gpg.key
+sudo add-apt-repository "deb https://packages.grafana.com/oss/deb stable main"
+
 # update software from repository
 sudo apt update
 
@@ -63,8 +67,12 @@ sudo apt install -y clang-3.8 libatlas-base-dev libopenblas-base libopenblas-dev
 sudo apt install -y capnproto opencl-headers autotools-dev uuid-dev libsodium-dev valgrind
 sudo apt install -y libusb-dev cmake libnewlib-arm-none-eabi libhdf5-serial-dev hdf5-tools smbclient
 sudo apt install -y influxdb apt-transport-https software-properties-common adduser libfontconfig1
+
+# install and start grafana; reverse the comments below to perform a standard install of grafana
+# sudo apt install -y grafana
 wget https://dl.grafana.com/oss/release/grafana_6.6.2_arm64.deb
 sudo dpkg -i grafana_6.6.2_arm64.deb
+
 sudo /bin/systemctl daemon-reload
 sudo /bin/systemctl enable grafana-server
 sudo service influxdb start

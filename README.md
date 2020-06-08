@@ -25,22 +25,51 @@
 4. Insert the microSD card into the microSD-to-SD card adapter and then into the computer you will use to burn the image
 5. Umount ("eject") the microSD card if the computer automatically mounted it but do not remove it from the slot
 6. Burn the decompressed image to the microSD card (process varies by Operating System)
-7. When finished, remove the SD card adapter from the computer and remove the microSD card from the adapter
-8. Insert the microSD card into the Rasperry Pi 4. The card inserts with the contacts facing the mainboard.
-9. Connect the keyboard, micro-HDMI adapter and the HDMI cable
-10. If you are near your Ethernet cable, plug it in. If not, don't worry -- you don't need it yet.
-11. Connect the USB A end of the USB A-to-C cable to the power supply and the USB C end into the power port on the Pi
-12. Wait for the Pi to boot and wait several more seconds after the login is presented to finish the first boot
-13. Log into the Pi using "ubuntu" for the username and the password
-14. You will be forced to change the password. Enter "ubuntu" as the "Current UNIX password" when prompted and then enter your new password twice to change it.
-15. As a test, run `ssh localhost` to make sure your Pi is allowing logins via `ssh`. If you do not wait at least 20 seconds after the startup screen clears, you may interrupt the configuration of the `ssh` server. If you cannot log into localhost via `ssh`, you will need to flash the SD card again and start over. Better to do it now and save hours of rework.
+7. When finished, remove and reinsert the SD card adapter. Wait for the Operating System to detect and mount the microSD card.
+8. Use your file manager to browse the partition on the card called "system-boot".
+9. In Linux, run `sudo sed -i -e 's/expire: true/expire: false/' user-data` or in other Operating Systems, open the user-data file for editing and change `expire: true` to `expire: false`
+10. Open the file called `network-config` for editing.
+11. Locate the end of the user instructions with "# Some additional examples are commented out below". Edit the remainder of the file to resemble this example:
+
+```
+version: 2
+ethernets:
+  eth0:
+    dhcp4: true
+    optional:true
+wifis:
+  wlan0:
+    dhcp4: true
+    optional: true
+    access-points:
+      <replace with your home ssd>:
+        password: "<enter your home WiFi WPA2 password>"
+      <replace with your cellular hotspot ssid>:
+        password: "<enter your hotspot WPA2 password"
+#     workssid:
+#       auth:
+#         key-management: eap
+#         method: peap
+#         identity: "me@example.com"
+#         password: "passw0rd"
+#         ca-certificate: /etc/my_ca.pem
+```
+12. Save and exit the file.
+13. Safely unmount the microSD card. Do not proceed until you know you have safely unmounted.
+14. Remove the SD card adapter from the computer and remove the microSD card from the adapter
+15. Insert the microSD card into the Rasperry Pi 4 with the contacts facing "up" towards the bottom of the mainboard
+16. Connect the keyboard, micro-HDMI adapter and the HDMI cable
+17. Connect the USB A end of the USB A-to-C cable to the power supply and the USB C end into the power port on the Pi
+18. Wait for the Pi to boot and wait several more seconds after the login is presented to finish the first boot
+19. Log into the Pi using "ubuntu" for the username and the password
+20. Try to `ping 8.8.8.8`. If successful, continue to the next section. If not, reboot and log in again with ubuntu/ubuntu.
 
 From this point forward, you may continue using the keyboard and monitor to work on the Pi or you may return to your primary computer and log into the Pi using `ssh`.
 
 ## Software installation
-(Note: You must have hardline Ethernet connectivity at this point to proceed)
+(Note: You must have stable Internet connectivity at this point to proceed)
 
-1. Log into the Pi as the "ubuntu" user using your new password if you are not still logged in from earlier steps. Clone the repository
+1. Log into the Pi using "ubuntu" as the ID and password if you are not still logged in from earlier steps. Clone the repository
 
 `cd ~`  
 `git clone https://github.com/Gernby/raspberry-pilot.git`  
@@ -48,11 +77,11 @@ From this point forward, you may continue using the keyboard and monitor to work
 2. Ask in Discord for the name of the current branch to checkout.
 3. `cd raspberry-pilot`
 4. `git checkout <branch name>`
-5. `bash start_install.sh <your WiFi name> <your WiFi password>` (Note that this step adds WiFi support to the Pi and connects to your home WiFi as part of the install)
-6. Wait 30 minutes (Note: TEMP: sudo apt install docker.io)
-7. Log out of the Pi and log back in as the "ubuntu" user
-8. `bash finish_install.sh`
-9. Wait about 2.5 hours
+5. `bash start_install.sh`
+6. Wait 30 minutes
+7. Reboot the Pi and log back in as the "ubuntu" user
+8. Run `bash finish_install.sh`
+9. Wait about 90 minutes
 10. If the process completes successfully, reboot the Pi and log back in as the "ubuntu" user
 11. Run the command `top -u ubuntu`
 12. Look for `controlsd`, `boardd`, and `dashboard` in the rightmost column of the list.
@@ -62,12 +91,7 @@ From this point forward, you may continue using the keyboard and monitor to work
 16. Run `top -u ubuntu` again
 17. Look for `controlsd`, `boardd`, `dashboard`, and `transcoderd` this time
 18. If all four processes are present, you are ready to flash your Panda
-19. If you cannot hit your home WiFi from the car, turn on the hotspot on your phone and connect the Pi to your hotspot WiFi by running the following command:
-
-`nmcli d wifi connect <your hotspot wifi name> password <your hotspot wifi password>`
-
-20. Run `ifconfig` to get the IP address that the Pi was assigned by your home WiFi or cellular hotspot -- whichever one you're planning to use in the car
-21. Shut down the Pi (run the `sudo halt` command)
+19. If you can't hit your household WiFi from your car, edit /etc/netplan/50-cloud-init.yml to comment out the household WiFi defintion before heading out to the car.
 
 ## Flashing the Panda
 (Note 1: The Pi and the Panda need to be powered separately for this step)

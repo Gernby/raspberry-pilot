@@ -126,6 +126,6 @@ sudo cp start-install-v2.sh install-dependencies.yml /boot/firmware
 
 ## Notes
 
-The ACC functionality is 100% stock; it remains engaged after a press of the gas and it disengages immediately upon a press of the brakes
+The ACC (radar cruise) functionality is almost 100% stock; it remains engaged after a press of the gas and it disengages immediately upon a press of the brakes. However, if the ACC is on and the car comes to a "radar stop" due to traffic, the car will normally refuse to move again until you press the gas or Resume button on the ACC controls. Once your car indicates that it will no longer move on its own, Raspberry Pilot monitors the radar and simulates pressing the Resume button once the lead car starts moving again. This is different from OpenPilot, which constantly presses the Resume button while stopped thanks to radar.
 
 This fork has the option to steer 100% of the time. After your first drive, log in and edit the kegman.json file. Locate the parameter called `lkasMode`. This parameter is set to `0` by default. Leave it set to `0` if you want the car to steer by itself only when you have the ACC (radar cruise) engaged. Change the value to `1` if you want the car to steer by itself at all times, regardless of whether or not the ACC is set.

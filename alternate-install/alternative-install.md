@@ -76,7 +76,7 @@ sudo cp start-install-v2.sh install-dependencies.yml /boot/firmware
 6. Wait 30 minutes
 7. Log out of the Pi (reboot?) and log back in as the "ubuntu" user
 8. `bash finish_install.sh`
-9. Wait about 2.5 hours
+9. Wait about 1.5 hours
 10. If the process completes successfully, reboot the Pi and log back in as the "ubuntu" user
 11. Run the command `top -u ubuntu`
 12. Look for `controlsd`, `boardd`, and `laterald` in the rightmost column of the list.

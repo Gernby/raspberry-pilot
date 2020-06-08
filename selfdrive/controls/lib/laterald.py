@@ -41,40 +41,9 @@ class Lateral(object):
     self.advanceSteer = 1
     self.frame_count = 0
     self.centerOffset = 0
-    '''self.inner_angles = [0., 0.]
-
-    lateral_params = self.params.get("LateralParams")
-    try:
-      lateral_params = json.loads(lateral_params)
-    except:
-      lateral_params = {'angle_bias': 0, 'angle_offset': 0, 'lateral_offset': 0.}
-
-    if "angle_bias" in lateral_params:
-      self.angle_bias = float(lateral_params['angle_bias'])
-    else:
-      self.angle_bias = 0.
-    if "angle_offset" in lateral_params:
-      self.angle_offset = float(lateral_params['angle_offset'])
-    else:
-      self.angle_offset = 0.
-    if "lateral_offset" in lateral_params:
-      self.lateral_offset = float(lateral_params['lateral_offset'])
-    else:
-      self.lateral_offset = 0.
-    self.angle_factor = 1.0'''
 
   def update(self, cs, path_plan):
     self.frame_count += 1
-
-    '''try:
-      if cs.vEgo > 10 and abs(cs.steeringRate) < 5 :
-        if cs.yawRateCAN > 0 != cs.lateralAccel < 0:
-          if cs.steeringAngle + self.angle_offset < 0 and path_plan.cPoly[5] > 0:
-            self.angle_offset += (0.0001 * cs.vEgo)
-          elif cs.steeringAngle + self.angle_offset > 0 and path_plan.cPoly[5] < 0:
-            self.angle_offset -= (0.0001 * cs.vEgo)
-    except:
-      pass'''
 
     left_missing = 1 if cs.camLeft.parm4 == 0 else 0
     far_left_missing = 1 if cs.camFarLeft.parm4 == 0 else 0
@@ -108,13 +77,3 @@ class Lateral(object):
         self.gernModelInputs.send(cs.to_bytes())
         self.camera_array.pop(0)
         self.vehicle_array.pop(0)
-
-    '''# TODO: replace kegman_conf with params!
-    if self.frame_count % 100 == 0:
-    #try:
-      kegman = kegman_conf()  
-      self.advanceSteer = max(0, float(kegman.conf['advanceSteer']))
-      self.angle_factor = float(kegman.conf['angleFactor'])
-
-    if self.frame_count % 1000 == 2:
-      self.params.put("LateralParams", json.dumps({'angle_offset': self.angle_offset, 'angle_bias': self.angle_bias, 'lateral_offset': self.lateral_offset}))'''

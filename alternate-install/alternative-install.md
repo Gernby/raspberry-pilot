@@ -23,10 +23,9 @@
 6. Burn the decompressed image to the microSD card (process varies by Operating System)
 7. Remove the SD card adapter from the slot and reinsert it. Wait several seconds for the system to detect and mount the card.
 8. Use your file manager to browse the partition on the card called "system-boot".
-9. Open the file called "user-data" for editing.
-10. Locate the "chpasswd:" section and change "expire:" from "true" to "false". Save and exit the file.
-11. Open the file called "network-config" for editing.
-12. Locate the end of the user instructions with "# Some additional examples are commented out below". Edit the remainder of the file to resemble this example:
+9. `sudo sed -i -e 's/expire: true/expire: false/' user-data` or change `expire: true` to `expire: false` in the user-data file
+10. Open the file called "network-config" for editing.
+11. Locate the end of the user instructions with "# Some additional examples are commented out below". Edit the remainder of the file to resemble this example:
 
 ```
 version: 2

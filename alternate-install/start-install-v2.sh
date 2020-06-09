@@ -41,7 +41,7 @@ sudo apt install ansible -y
 echo "Installing Network Manager for better WiFi management.."
 ansible localhost -b -m apt -a "name=network-manager"
 echo "Starting Netork Manager.."
-ansible localhost -b -m service -a "name=NetworkManager started=yes"
+ansible localhost -b -m service -a "name=NetworkManager state=started"
 
 # Disable IPv6 on future reboots
 

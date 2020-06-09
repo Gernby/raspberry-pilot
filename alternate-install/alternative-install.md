@@ -67,6 +67,7 @@ cd ~
 git clone -b gh-pages https://github.com/Gernby/raspberry-pilot.git
 cd raspberry-pilot/alternate-install
 sudo cp start-install-v2.sh install-dependencies.yml /boot/firmware
+cd ..
 ```
 
 

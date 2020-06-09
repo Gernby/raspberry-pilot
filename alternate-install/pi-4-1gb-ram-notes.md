@@ -2,7 +2,7 @@
 
 This project specifies a Raspberry Pi 4 with 4 GB RAM as the minimum required hardware. Below are some notes for performing the install on a Pi 4 with 1 GB RAM.
 
-1. Complete the first phase of the install, reboot, and log in.
+1. Complete the first phase of the install (`start-install.sh`), reboot, and log in.
 2. Activate a temporary swap file using the following commands:
 
 ```

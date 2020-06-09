@@ -12,6 +12,8 @@ $ chmod 0600 3gb
 $ sudo chown root.root 3gb
 $ sudo mkswap 3gb
 $ sudo swapon 3gb
+$ sudo service grafana-server stop
+$ sudo service influxdb stop
 ```
 
 3. Run `free -h` and look at the last line to ensure the swap space has been activated.

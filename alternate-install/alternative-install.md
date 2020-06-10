@@ -10,7 +10,7 @@
 6. USB A-to-C cable
 7. USB A-to-A cable or mini USB cable with a Panda Paw from the Comma.ai shop (for flashing the Panda from the Pi)
 8. A way to power the Pi in your car (high power 12v to USB adapter, USB port on laptop above, or 12v to 120/240v inverter)
-9. Minimum 32GB class 10 microSD card
+9. Minimum 16GB class 10 microSD card
 10. Cellular hotspot (or standard WiFi you can reach from your car -- no cable company or retail WiFi)
 
 ## MicroSD card preparation and first boot up
@@ -73,10 +73,10 @@ cd ..
 
 3. Ask in Discord for the name of the current branch to checkout.
 4. `git checkout <branch name>`
-5. `bash start_install.sh`
+5. `sh start_install.sh`
 6. Wait 30 minutes
 7. Log out of the Pi (reboot?) and log back in as the "ubuntu" user
-8. `bash finish_install.sh`
+8. `sh finish_install.sh`
 9. Wait about 1.5 hours
 10. If the process completes successfully, reboot the Pi and log back in as the "ubuntu" user
 11. Run the command `top -u ubuntu`

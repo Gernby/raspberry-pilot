@@ -18,8 +18,6 @@ BIT_MASK = [1, 128, 64, 32, 8, 4, 2, 8,
             1, 128, 64, 32, 8, 4, 2, 8]
 
 INPUTS = 73
-OUTPUTS = 9
-MODEL_VERSION = '042'
 HISTORY_ROWS = 5
 
 def pub_sock(port, addr="*"):
@@ -45,32 +43,33 @@ class Lateral(object):
   def update(self, cs, path_plan):
     self.frame_count += 1
 
-    left_missing = 1 if cs.camLeft.parm4 == 0 else 0
-    far_left_missing = 1 if cs.camFarLeft.parm4 == 0 else 0
-    right_missing = 1 if cs.camRight.parm4 == 0 else 0
-    far_right_missing = 1 if cs.camFarRight.parm4 == 0 else 0
-    
-    camera_flags = np.bitwise_and([left_missing, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm6, cs.camLeft.parm8, 
-                                   far_left_missing, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm6, cs.camFarLeft.parm8, 
-                                   right_missing, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm6, cs.camRight.parm8, 
-                                   far_right_missing, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm8], BIT_MASK)
-
-    camera_flags = np.minimum(1, camera_flags)
-
-    left_10 = cs.camLeft.parm10 if cs.camLeft.parm10 >= 0 else cs.camLeft.parm10 + 128
-    far_left_10 = cs.camFarLeft.parm10 if cs.camFarLeft.parm10 >= 0 else cs.camFarLeft.parm10 + 128
-    right_10 = cs.camRight.parm10 if cs.camRight.parm10 <= 0 else cs.camRight.parm10 - 128
-    far_right_10 = cs.camFarRight.parm10 if cs.camFarRight.parm10 <= 0 else cs.camFarRight.parm10 - 128
-
     self.vehicle_array.append([cs.vEgo, cs.steeringAngle, cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN, cs.longAccel,  max(600, path_plan.laneWidth), 0 , 0])
 
     if cs.camLeft.frame != self.stock_cam_frame_prev and cs.camLeft.frame == cs.camFarLeft.frame:
 
-      self.camera_array.append(np.concatenate((camera_flags, 
-                                                [far_left_10,  max(0, cs.camFarLeft.parm2),  cs.camFarLeft.parm1,  cs.camFarLeft.parm3,  cs.camFarLeft.parm4,  cs.camFarLeft.parm5,  cs.camFarLeft.parm7,  cs.camFarLeft.parm9], 
-                                                [far_right_10, min(0, cs.camFarRight.parm2), cs.camFarRight.parm1, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm7, cs.camFarRight.parm9],
-                                                [left_10,       max(0, cs.camLeft.parm2),     cs.camLeft.parm1,     cs.camLeft.parm3,     cs.camLeft.parm4,     cs.camLeft.parm5,     cs.camLeft.parm7,     cs.camLeft.parm9],    
-                                                [right_10,     min(0, cs.camRight.parm2),    cs.camRight.parm1,    cs.camRight.parm3,    cs.camRight.parm4,    cs.camRight.parm5,    cs.camRight.parm7,    cs.camRight.parm9]),axis=0))
+      left_missing = 1 if cs.camLeft.parm4 == 0 else 0
+      far_left_missing = 1 if cs.camFarLeft.parm4 == 0 else 0
+      right_missing = 1 if cs.camRight.parm4 == 0 else 0
+      far_right_missing = 1 if cs.camFarRight.parm4 == 0 else 0
+      
+      camFarLeft1 = min(cs.camFarLeft.parm1, cs.camLeft.parm1)
+      camFarLeft7 = min(cs.camFarLeft.parm7, cs.camLeft.parm7)
+      camFarLeft9 = min(cs.camFarLeft.parm9, cs.camLeft.parm9)
+      camFarRight1 = max(cs.camFarRight.parm1, cs.camRight.parm1)
+      camFarRight7 = max(cs.camFarRight.parm7, cs.camRight.parm7)
+      camFarRight9 = max(cs.camFarRight.parm9, cs.camRight.parm9)
+
+      camera_flags = np.bitwise_and([left_missing,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm8, 
+                                    far_left_missing,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm8, 
+                                    right_missing,     cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm8, 
+                                    far_right_missing, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm8], BIT_MASK)
+
+      self.camera_array.append(np.concatenate((np.minimum(1, camera_flags), 
+                                                [cs.camFarLeft.parm10,  cs.camFarLeft.parm2,  camFarLeft1,          cs.camFarLeft.parm3,  cs.camFarLeft.parm4,  cs.camFarLeft.parm5,  camFarLeft7,          camFarLeft9], 
+                                                [cs.camFarRight.parm10, cs.camFarRight.parm2, camFarRight1,         cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, camFarRight7,         camFarRight9],
+                                                [cs.camLeft.parm10,     cs.camLeft.parm2,     cs.camLeft.parm1,     cs.camLeft.parm3,     cs.camLeft.parm4,     cs.camLeft.parm5,     cs.camLeft.parm7,     cs.camLeft.parm9],    
+                                                [cs.camRight.parm10,    cs.camRight.parm2,    cs.camRight.parm1,    cs.camRight.parm3,    cs.camRight.parm4,    cs.camRight.parm5,    cs.camRight.parm7,    cs.camRight.parm9]),axis=0))
+
       if len(self.camera_array) > HISTORY_ROWS:
         self.stock_cam_frame_prev = cs.camLeft.frame
         cs.modelData = [float(x) for x in list(np.asarray(np.concatenate((self.vehicle_array[-HISTORY_ROWS:], self.camera_array[-HISTORY_ROWS:]), axis = 1)).reshape(HISTORY_ROWS * INPUTS))]

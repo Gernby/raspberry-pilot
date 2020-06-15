@@ -21,12 +21,20 @@ setproctitle('transcoderd')
 INPUTS = 73
 OUTPUTS = 9
 MODEL_VERSION = 'F'
-MODEL_NAME = 'GRU_Complex_Angle_Standard_MixedConv_Center_4thOrder_Conv_mae_50_cFactor_0_Advance_0_Lag_15_Smooth_30_Batch_79_6_15_5_Hist_100_Future_0_0_0_Drop_2_Kernel_1_Strides_'
+if    os.path.exists(os.path.expanduser('models/GRU_Complex_Angle_Standard_MixedConv_Center_4thOrder_Conv_mae_50_cFactor_0_Advance_0_Lag_15_Smooth_30_Batch_79_6_15_5_Hist_100_Future_0_0_0_Drop_2_Kernel_1_Strides_Prod.hdf5')) and \
+  not os.path.exists(os.path.expanduser('models/GRU_Complex_Angle_Standard_Center_4thOrder_Conv_mae_50_cFactor_0_Advance_0_Lag_15_Smooth_30_Batch_79_6_15_5_Hist_100_Future_0_0_0_Drop_2_Kernel_1_Strides_Prod.hdf5')):
+  MODEL_NAME = 'GRU_Complex_Angle_Standard_MixedConv_Center_4thOrder_Conv_mae_50_cFactor_0_Advance_0_Lag_15_Smooth_30_Batch_79_6_15_5_Hist_100_Future_0_0_0_Drop_2_Kernel_1_Strides_'
+elif  os.path.exists(os.path.expanduser('models/GRU_Complex_Angle_Standard_Center_4thOrder_Conv_mae_50_cFactor_0_Advance_0_Lag_15_Smooth_30_Batch_79_6_15_5_Hist_100_Future_0_0_0_Drop_2_Kernel_1_Strides_Prod.hdf5')) and \
+  not os.path.exists(os.path.expanduser('models/GRU_Complex_Angle_Standard_MixedConv_Center_4thOrder_Conv_mae_50_cFactor_0_Advance_0_Lag_15_Smooth_30_Batch_79_6_15_5_Hist_100_Future_0_0_0_Drop_2_Kernel_1_Strides_Prod.hdf5')):
+  MODEL_NAME = 'GRU_Complex_Angle_Standard_Center_4thOrder_Conv_mae_50_cFactor_0_Advance_0_Lag_15_Smooth_30_Batch_79_6_15_5_Hist_100_Future_0_0_0_Drop_2_Kernel_1_Strides_'
+else:
+  blow_up
+
 HISTORY_ROWS = 5
 OUTPUT_ROWS = 15
 BATCH_SIZE = 1
-output_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_output_%s.scaler' % (OUTPUTS, MODEL_NAME)))
-output_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_output_%s.scaler' % (OUTPUTS, MODEL_NAME)))
+output_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_output_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
+output_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_output_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
 vehicle_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_vehicle_%s.scaler' % (7, MODEL_VERSION)))
 vehicle_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_vehicle_%s.scaler' % (7, MODEL_VERSION)))
 camera_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_camera_%s.scaler' % (32, MODEL_VERSION)))

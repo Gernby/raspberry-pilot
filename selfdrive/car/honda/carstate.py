@@ -401,7 +401,7 @@ class CarState():
     self.cruise_buttons = cp.vl["SCM_BUTTONS"]['CRUISE_BUTTONS']
 
     if cp.vl["SCM_FEEDBACK"]['LEFT_BLINKER'] or cp.vl["SCM_FEEDBACK"]['RIGHT_BLINKER']:
-      self.blinker_on = 150
+      self.blinker_on = 250
       self.left_blinker_on = cp.vl["SCM_FEEDBACK"]['LEFT_BLINKER']
       self.right_blinker_on = cp.vl["SCM_FEEDBACK"]['RIGHT_BLINKER']
     elif self.blinker_on == 0:

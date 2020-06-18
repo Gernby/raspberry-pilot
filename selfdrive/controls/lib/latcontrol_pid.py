@@ -124,29 +124,34 @@ class LatControlPID(object):
       self.previous_lane_error = 0.0
       self.path_error_comp = 0.0
       self.damp_angle_steers= 0.0
-      self.damp_rate_steers_des = 0.0
+      self.damp_rate_steers_des = 0.0 
       self.damp_angle_steers_des = 0.0
       pid_log.active = False
       self.pid.reset()
     else:
       try:
         pid_log.active = True
-        #angle_speed_ratio = 0 #max(0.0, min(1.0, 0.2 * abs(angle_steers_rate)))
-        #if self.frame % 5 == 0 and angle_speed_ratio < 1:
-        #  print("angle_speed_ratio = ", angle_speed_ratio)
-
-
-        self.path_error_comp += (self.projected_lane_error - self.path_error_comp) / self.poly_smoothing
-        self.damp_angle_steers += (angle_steers + angle_steers_rate * self.damp_time - self.damp_angle_steers) / max(1.0, 1 + self.damp_time * 100.)
-        #self.damp_angle_rate += (angle_steers_rate - self.damp_angle_rate) / max(1.0, self.damp_time * 100.)
-        steer_speed_ratio = self.polyReact * min(1, v_ego / 30)
-        self.angle_steers_des = steer_speed_ratio * interp(self.angle_index, self.path_index, path_plan.fastAngles) + (1 - steer_speed_ratio) * interp(self.angle_index, self.path_index, path_plan.slowAngles)
-        self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des) / max(1.0, self.damp_mpc * 100.)
-        #self.damp_rate_steers_des += ((path_plan.slowAngles[4] - path_plan.slowAngles[3]) - self.damp_rate_steers_des) / max(1.0, self.damp_mpc * 100.)
-        accel_limit = min(0.2, max(0.1, abs(angle_steers_rate) * 0.1, abs(angle_steers - path_plan.angleOffset) * 0.1))
-        self.angle_rate_des = float(min(self.angle_rate_des + accel_limit * v_ego, max(self.angle_rate_des - accel_limit * v_ego, self.damp_angle_steers_des + float(self.path_error_comp) - self.limited_damp_angle_steers_des)))
-        self.limited_damp_angle_steers_des += self.angle_rate_des
-        requested_angle = min(self.limited_damp_angle_steers_des + 0.2, max(self.limited_damp_angle_steers_des - 0.2, self.damp_angle_steers_des))
+        if blinker_on and steer_override:
+          self.path_error_comp *= 0.9
+          self.damp_angle_steers = angle_steers
+          self.angle_steers_des = angle_steers
+          self.damp_angle_steers_des = angle_steers
+          self.limited_damp_angle_steers_des = angle_steers
+          self.angle_rate_des = 0
+          requested_angle = angle_steers
+        else:
+          if not blinker_on: 
+            self.path_error_comp += (self.projected_lane_error - self.path_error_comp) / self.poly_smoothing
+          self.damp_angle_steers += (angle_steers + angle_steers_rate * self.damp_time - self.damp_angle_steers) / max(1.0, 1 + self.damp_time * 100.)
+          #self.damp_angle_rate += (angle_steers_rate - self.damp_angle_rate) / max(1.0, self.damp_time * 100.)
+          steer_speed_ratio = self.polyReact * min(1, v_ego / 30)
+          self.angle_steers_des = steer_speed_ratio * interp(self.angle_index, self.path_index, path_plan.fastAngles) + (1 - steer_speed_ratio) * interp(self.angle_index, self.path_index, path_plan.slowAngles)
+          self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des) / max(1.0, self.damp_mpc * 100.)
+          #self.damp_rate_steers_des += ((path_plan.slowAngles[4] - path_plan.slowAngles[3]) - self.damp_rate_steers_des) / max(1.0, self.damp_mpc * 100.)
+          accel_limit = min(0.2, max(0.1, abs(angle_steers_rate) * 0.1, abs(angle_steers - path_plan.angleOffset) * 0.1))
+          self.angle_rate_des = float(min(self.angle_rate_des + accel_limit * v_ego, max(self.angle_rate_des - accel_limit * v_ego, self.damp_angle_steers_des + float(self.path_error_comp) - self.limited_damp_angle_steers_des)))
+          self.limited_damp_angle_steers_des += self.angle_rate_des
+          requested_angle = min(self.limited_damp_angle_steers_des + 0.1, max(self.limited_damp_angle_steers_des - 0.1, self.damp_angle_steers_des))
 
         angle_feedforward = float(self.limited_damp_angle_steers_des - path_plan.angleOffset)
         self.angle_ff_ratio = float(gernterp(abs(angle_feedforward), self.angle_ff_bp[0], self.angle_ff_bp[1]))

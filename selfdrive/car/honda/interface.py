@@ -587,7 +587,7 @@ class CarInterface(CarInterfaceBase):
     #ret.camRight.parm2 += 512
     #if ret.camFarLeft.parm2 < 0:
     #  ret.camFarLeft.parm2 += 2048
-    #ret.camFarLeft.parm2 -= 1024
+    #ret.camFarLeft.parm2 -= 1024 
     #if ret.camFarRight.parm2 > 0:
     #  ret.camFarRight.parm2 -= 2048
     #ret.camFarRight.parm2 += 1024
@@ -598,6 +598,7 @@ class CarInterface(CarInterfaceBase):
     ret.econMode = bool(self.CS.econ_on)
     ret.leftBlinker = bool(self.CS.left_blinker_on)
     ret.rightBlinker = bool(self.CS.right_blinker_on)
+    ret.blinkers = bool(self.CS.blinker_on)
 
     ret.doorOpen = not self.CS.door_all_closed
     ret.seatbeltUnlatched = not self.CS.seatbelt

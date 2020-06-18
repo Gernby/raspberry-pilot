@@ -164,7 +164,7 @@ def state_control(frame, lkasMode, path_plan, CS, CP, state, events, AM, LaC, la
   active = isActive(state)
 
   # Steering PID loop and lateral MPC
-  actuators.steer, actuators.steerAngle, lac_log = LaC.update(CS.lkMode and (active or lkasMode), CS.vEgo, CS.steeringAngle, CS.steeringTorqueEps, CS.steeringPressed, CP, path_plan, CS.canTime, CS.leftBlinker or CS.rightBlinker)
+  actuators.steer, actuators.steerAngle, lac_log = LaC.update(CS.lkMode and (active or lkasMode), CS.vEgo, CS.steeringAngle, CS.steeringTorqueEps, CS.steeringPressed, CP, path_plan, CS.canTime, CS.blinkers)
     # parse warnings from car specific interface
   for e in get_events(events, [ET.WARNING]):
     extra_text = ""
@@ -235,10 +235,13 @@ def controlsd_thread(gctx=None):
   carevents = messaging.pub_sock(service_list['carEvents'].port)
   carparams = messaging.pub_sock(service_list['carParams'].port)
 
-  sm = messaging.SubMaster(['pathPlan'])
+  sm = messaging.SubMaster(['pathPlan','health'])
   can_sock = messaging.sub_sock(service_list['can'].port)
+  hw_type = messaging.recv_one(sm.sock['health']).health.hwType
+  is_panda_black = hw_type == log.HealthData.HwType.blackPanda  
+  print("panda black: ", is_panda_black)
   wait_for_can(can_sock)
-  CI, CP = get_car(can_sock, sendcan, False)
+  CI, CP = get_car(can_sock, sendcan, is_panda_black)
   #logcan.close()
 
   # TODO: Use the logcan socket from above, but that will currenly break the tests

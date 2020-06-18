@@ -146,6 +146,7 @@ struct CarState {
   modelData @48 :List(Float32);
   adjustedAngle @49 :Float32;
   centerOffset @50 :Float32;
+  blinkers @51 :Bool;
 
   # lock info
   doorOpen @24 :Bool;

@@ -40,11 +40,14 @@ class LatControlPID(object):
     self.limited_damp_angle_steers_des = 0.0
     self.old_plan_count = 0
     self.last_plan_time = 0
+    self.lane_change_adjustment = 0.
     self.angle_index = 0.
     self.avg_plan_age = 0.
     self.min_index = 0
     self.max_index = 0
+    self.prev_angle_steers = 0.
     self.c_prob = 0.
+    self.starting_angle = 0.
     self.projected_lane_error = 0.
     self.prev_projected_lane_error = 0.
     self.path_index = None #np.arange((30.))*100.0/15.0
@@ -75,6 +78,29 @@ class LatControlPID(object):
         self.poly_factor = max(0.0, float(self.kegman.conf['polyFactor']) * 0.001)
       except:
         print("   Kegman error")
+
+  def update_lane_state(self, angle_steers, driver_opposing_lane, blinker_on, path_plan):
+    if self.lane_changing > 0.0 and path_plan.cProb > 0:
+      if self.lane_changing > 2.75 or (not blinker_on and self.lane_changing < 1.0 and abs(path_plan.cPoly[10]) < 100 and min(abs(self.starting_angle - angle_steers), abs(self.angle_steers_des - angle_steers)) < 1.5):
+        self.lane_changing = 0.0
+      elif 2.25 <= self.lane_changing < 2.5 and abs(path_plan.lPoly[10] + path_plan.rPoly[10]) < abs(path_plan.cPoly[10]):
+        self.lane_changing = 2.5
+      elif 2.0 <= self.lane_changing < 2.25 and (path_plan.lPoly[10] + path_plan.rPoly[10]) * path_plan.cPoly[10] < 0:
+        self.lane_changing = 2.25
+      elif self.lane_changing < 2.0 and path_plan.laneWidth < 2.1 * abs(path_plan.lPoly[10] + path_plan.rPoly[10]):
+        self.lane_changing = 2.0
+      else:
+        self.lane_changing = max(self.lane_changing + 0.01, 0.005 * abs(path_plan.lPoly[10] + path_plan.rPoly[10]))
+      if blinker_on:
+        self.lane_change_adjustment = 0.0
+      else:
+        self.lane_change_adjustment = interp(self.lane_changing, [0.0, 1.0, 2.0, 2.25, 2.5, 2.75], [1.0, 0.0, 0.0, 0.1, .2, 1.0])
+      print("%0.2f lane_changing  %0.2f adjustment  %0.2f p_poly   %0.2f avg_poly" % (self.lane_changing, self.lane_change_adjustment, path_plan.cPoly[10], path_plan.lPoly[10] + path_plan.rPoly[10]))
+    elif driver_opposing_lane and path_plan.cProb > 0 and (blinker_on or abs(path_plan.cPoly[10]) > 100 or min(abs(self.starting_angle - angle_steers), abs(self.angle_steers_des - angle_steers)) > 1.5):
+      self.lane_changing = 0.01
+    else:
+      self.starting_angle = angle_steers
+      self.lane_change_adjustment = 1.0
 
   def reset(self):
     self.pid.reset()
@@ -118,8 +144,10 @@ class LatControlPID(object):
     self.frame += 1
     self.live_tune(CP)
 
-    if v_ego < 0.3:
+    if v_ego < 0.3 or not path_plan.paramsValid:
+
       output_steer = 0.0
+      self.lane_changing = 0.0
       self.previous_integral = 0.0
       self.previous_lane_error = 0.0
       self.path_error_comp = 0.0
@@ -131,7 +159,7 @@ class LatControlPID(object):
     else:
       try:
         pid_log.active = True
-        if blinker_on and steer_override:
+        if False and blinker_on and steer_override:
           self.path_error_comp *= 0.9
           self.damp_angle_steers = angle_steers
           self.angle_steers_des = angle_steers
@@ -140,7 +168,9 @@ class LatControlPID(object):
           self.angle_rate_des = 0
           requested_angle = angle_steers
         else:
-          if not blinker_on: 
+          if (steer_override and self.pid.saturated) or self.lane_changing > 0.0 or blinker_on:
+            self.path_error_comp *= 0.8
+          else:
             self.path_error_comp += (self.projected_lane_error - self.path_error_comp) / self.poly_smoothing
           self.damp_angle_steers += (angle_steers + angle_steers_rate * self.damp_time - self.damp_angle_steers) / max(1.0, 1 + self.damp_time * 100.)
           #self.damp_angle_rate += (angle_steers_rate - self.damp_angle_rate) / max(1.0, self.damp_time * 100.)
@@ -151,7 +181,7 @@ class LatControlPID(object):
           accel_limit = min(0.2, max(0.1, abs(angle_steers_rate) * 0.1, abs(angle_steers - path_plan.angleOffset) * 0.1))
           self.angle_rate_des = float(min(self.angle_rate_des + accel_limit * v_ego, max(self.angle_rate_des - accel_limit * v_ego, self.damp_angle_steers_des + float(self.path_error_comp) - self.limited_damp_angle_steers_des)))
           self.limited_damp_angle_steers_des += self.angle_rate_des
-          requested_angle = min(self.limited_damp_angle_steers_des + 0.1, max(self.limited_damp_angle_steers_des - 0.1, self.damp_angle_steers_des))
+          requested_angle = min(self.limited_damp_angle_steers_des + 0.2, max(self.limited_damp_angle_steers_des - 0.2, self.damp_angle_steers_des))
 
         angle_feedforward = float(self.limited_damp_angle_steers_des - path_plan.angleOffset)
         self.angle_ff_ratio = float(gernterp(abs(angle_feedforward), self.angle_ff_bp[0], self.angle_ff_bp[1]))
@@ -174,13 +204,24 @@ class LatControlPID(object):
         #requested_angle = max(self.damp_angle_steers_des - 0.05, min(self.damp_angle_steers_des + 0.05, path_plan.angleSteers))
         output_steer = self.pid.update(requested_angle, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override, p_scale=p_scale,
                                       add_error=0, feedforward=steer_feedforward, speed=v_ego, deadzone=deadzone)
+
+        driver_opposing_op = steer_override and (angle_steers - self.prev_angle_steers) * output_steer < 0
+        self.update_lane_state(angle_steers, driver_opposing_op, blinker_on, path_plan)
+        output_steer *= self.lane_change_adjustment
+
       except:
         output_steer = 0
         print("  angle error!")
         pass
 
-    output_factor = 1 if active else 0
-    
+    output_factor = self.lane_change_adjustment if active else 0
+    if self.lane_change_adjustment == 0:
+      self.damp_angle_steers_des = angle_steers
+      self.limit_damp_angle_steers_des = angle_steers
+      self.damp_angle_steers = angle_steers
+
+    self.prev_angle_steers = angle_steers
+    self.prev_override = steer_override
     pid_log.p = float(self.pid.p) * output_factor
     pid_log.i = float(self.pid.i) * output_factor
     pid_log.f = float(self.pid.f) * output_factor

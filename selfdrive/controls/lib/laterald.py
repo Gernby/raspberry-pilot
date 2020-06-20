@@ -43,7 +43,7 @@ class Lateral(object):
   def update(self, cs, path_plan):
     self.frame_count += 1
 
-    self.vehicle_array.append([cs.vEgo, cs.steeringAngle + path_plan.angleBias, cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN])
+    self.vehicle_array.append([cs.vEgo, cs.steeringAngle, cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN])
 
     if cs.camLeft.frame != self.stock_cam_frame_prev and cs.camLeft.frame == cs.camFarLeft.frame:
 
@@ -57,7 +57,7 @@ class Lateral(object):
                                     right_missing,     cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm8, 
                                     far_right_missing, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm8], BIT_MASK)
 
-      self.camera_array.append(np.concatenate(([cs.vEgo, cs.longAccel,  max(570, path_plan.laneWidth), cs.steeringAngle + path_plan.angleBias, cs.lateralAccel, cs.yawRateCAN, 0, 0], np.minimum(1, camera_flags), 
+      self.camera_array.append(np.concatenate(([cs.vEgo, cs.longAccel,  max(570, path_plan.laneWidth), cs.steeringAngle, cs.lateralAccel, cs.yawRateCAN, 0, 0], np.minimum(1, camera_flags), 
                                                 [cs.camFarLeft.parm10,  cs.camFarLeft.parm2,  cs.camFarLeft.parm1,  cs.camFarLeft.parm3,  cs.camFarLeft.parm4,  cs.camFarLeft.parm5,  cs.camFarLeft.parm7,  cs.camFarLeft.parm9], 
                                                 [cs.camFarRight.parm10, cs.camFarRight.parm2, cs.camFarRight.parm1, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm7, cs.camFarRight.parm9],
                                                 [cs.camLeft.parm10,     cs.camLeft.parm2,     cs.camLeft.parm1,     cs.camLeft.parm3,     cs.camLeft.parm4,     cs.camLeft.parm5,     cs.camLeft.parm7,     cs.camLeft.parm9],    

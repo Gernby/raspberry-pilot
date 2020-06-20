@@ -164,7 +164,7 @@ def state_control(frame, lkasMode, path_plan, CS, CP, state, events, AM, LaC, la
   active = isActive(state)
 
   # Steering PID loop and lateral MPC
-  actuators.steer, actuators.steerAngle, lac_log = LaC.update(CS.lkMode and (active or lkasMode), CS.vEgo, CS.steeringAngle, CS.steeringTorqueEps, CS.steeringPressed, CP, path_plan, CS.canTime, CS.blinkers)
+  actuators.steer, actuators.steerAngle, lac_log = LaC.update(path_plan.paramsValid and CS.lkMode and (active or lkasMode), CS.vEgo, CS.steeringAngle, CS.steeringTorqueEps, CS.steeringPressed, CP, path_plan, CS.canTime, CS.blinkers)
     # parse warnings from car specific interface
   for e in get_events(events, [ET.WARNING]):
     extra_text = ""

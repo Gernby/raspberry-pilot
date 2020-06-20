@@ -81,22 +81,22 @@ class LatControlPID(object):
 
   def update_lane_state(self, angle_steers, driver_opposing_lane, blinker_on, path_plan):
     if self.lane_changing > 0.0 and path_plan.cProb > 0:
-      if self.lane_changing > 2.75 or (not blinker_on and self.lane_changing < 1.0 and abs(path_plan.cPoly[10]) < 100 and min(abs(self.starting_angle - angle_steers), abs(self.angle_steers_des - angle_steers)) < 1.5):
+      if self.lane_changing > 2.75 or (not blinker_on and self.lane_changing < 1.0 and abs(path_plan.cPoly[5]) < 100 and min(abs(self.starting_angle - angle_steers), abs(self.angle_steers_des - angle_steers)) < 1.5):
         self.lane_changing = 0.0
-      elif 2.25 <= self.lane_changing < 2.5 and abs(path_plan.lPoly[10] + path_plan.rPoly[10]) < abs(path_plan.cPoly[10]):
+      elif 2.25 <= self.lane_changing < 2.5 and abs(path_plan.lPoly[5] + path_plan.rPoly[5]) < abs(path_plan.cPoly[5]):
         self.lane_changing = 2.5
-      elif 2.0 <= self.lane_changing < 2.25 and (path_plan.lPoly[10] + path_plan.rPoly[10]) * path_plan.cPoly[10] < 0:
+      elif 2.0 <= self.lane_changing < 2.25 and (path_plan.lPoly[5] + path_plan.rPoly[5]) * path_plan.cPoly[5] < 0:
         self.lane_changing = 2.25
-      elif self.lane_changing < 2.0 and path_plan.laneWidth < 2.1 * abs(path_plan.lPoly[10] + path_plan.rPoly[10]):
+      elif self.lane_changing < 2.0 and path_plan.laneWidth < 2.1 * abs(path_plan.lPoly[5] + path_plan.rPoly[5]):
         self.lane_changing = 2.0
       else:
-        self.lane_changing = max(self.lane_changing + 0.01, 0.005 * abs(path_plan.lPoly[10] + path_plan.rPoly[10]))
-      if blinker_on:
-        self.lane_change_adjustment = 0.0
-      else:
-        self.lane_change_adjustment = interp(self.lane_changing, [0.0, 1.0, 2.0, 2.25, 2.5, 2.75], [1.0, 0.0, 0.0, 0.1, .2, 1.0])
-      print("%0.2f lane_changing  %0.2f adjustment  %0.2f p_poly   %0.2f avg_poly" % (self.lane_changing, self.lane_change_adjustment, path_plan.cPoly[10], path_plan.lPoly[10] + path_plan.rPoly[10]))
-    elif driver_opposing_lane and path_plan.cProb > 0 and (blinker_on or abs(path_plan.cPoly[10]) > 100 or min(abs(self.starting_angle - angle_steers), abs(self.angle_steers_des - angle_steers)) > 1.5):
+        self.lane_changing = max(self.lane_changing + 0.01, 0.005 * abs(path_plan.lPoly[5] + path_plan.rPoly[5]))
+      #if blinker_on:
+      #  self.lane_change_adjustment = 0.0
+      #else:
+      self.lane_change_adjustment = interp(self.lane_changing, [0.0, 1.0, 2.0, 2.25, 2.5, 2.75], [1.0, 0.0, 0.0, 0.1, .2, 1.0])
+      print("%0.2f lane_changing  %0.2f adjustment  %0.2f p_poly   %0.2f avg_poly" % (self.lane_changing, self.lane_change_adjustment, path_plan.cPoly[5], path_plan.lPoly[5] + path_plan.rPoly[5]))
+    elif driver_opposing_lane and path_plan.cProb > 0 and (blinker_on or abs(path_plan.cPoly[5]) > 100 or min(abs(self.starting_angle - angle_steers), abs(self.angle_steers_des - angle_steers)) > 1.5):
       self.lane_changing = 0.01
     else:
       self.starting_angle = angle_steers
@@ -181,7 +181,8 @@ class LatControlPID(object):
           accel_limit = min(0.2, max(0.1, abs(angle_steers_rate) * 0.1, abs(angle_steers - path_plan.angleOffset) * 0.1))
           self.angle_rate_des = float(min(self.angle_rate_des + accel_limit * v_ego, max(self.angle_rate_des - accel_limit * v_ego, self.damp_angle_steers_des + float(self.path_error_comp) - self.limited_damp_angle_steers_des)))
           self.limited_damp_angle_steers_des += self.angle_rate_des
-          requested_angle = min(self.limited_damp_angle_steers_des + 0.2, max(self.limited_damp_angle_steers_des - 0.2, self.damp_angle_steers_des))
+          if self.lane_changing == 0:
+            requested_angle = min(self.limited_damp_angle_steers_des + 0.2, max(self.limited_damp_angle_steers_des - 0.2, self.damp_angle_steers_des))
 
         angle_feedforward = float(self.limited_damp_angle_steers_des - path_plan.angleOffset)
         self.angle_ff_ratio = float(gernterp(abs(angle_feedforward), self.angle_ff_bp[0], self.angle_ff_bp[1]))
@@ -215,10 +216,13 @@ class LatControlPID(object):
         pass
 
     output_factor = self.lane_change_adjustment if active else 0
-    if self.lane_change_adjustment == 0:
+    if self.lane_change_adjustment < 1 and self.lane_changing > 0:
       self.damp_angle_steers_des = angle_steers
       self.limit_damp_angle_steers_des = angle_steers
       self.damp_angle_steers = angle_steers
+      if output_steer > 0 and path_plan.cPoly[0] < 0:
+        output_factor = 1.0
+      print(self.lane_changing, output_steer)
 
     self.prev_angle_steers = angle_steers
     self.prev_override = steer_override

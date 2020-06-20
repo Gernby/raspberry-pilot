@@ -21,7 +21,7 @@ setproctitle('transcoderd')
 INPUTS = 77
 OUTPUTS = 9
 MODEL_VERSION = 'F'
-MODEL_NAME = 'GRU_Clean_Complex_Angle_DualRes_DualConv_4thOrder_mae_50_cFactor_0_Advance_0_Lag_15_Smooth_30_Batch_83_6_15_5_Hist_100_Future_0_0_0_Drop_1_2_Kernel_1_Stride_1_5_DilateProd'
+MODEL_NAME = 'GRU_Clean3_Complex_Angle_DualRes_DualConv_4thOrder_mae_50_cFactor_0_Advance_0_Lag_15_Smooth_30_Batch_83_6_15_5_Hist_100_Future_0_0_0_Drop_2_2_Kernel_1_Stride_2_7_DilateProd'
 
 HISTORY_ROWS = 5
 OUTPUT_ROWS = 15

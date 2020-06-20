@@ -94,7 +94,6 @@ while 1:
     if socket is carState:
       for _cs in carState.recv_multipart():
         cs = log.Event.from_bytes(_cs).carState
-        receiveTime = int(cs.canTime)
         vEgo = cs.vEgo
         if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
           stock_cam_frame_prev = cs.camLeft.frame
@@ -145,14 +144,20 @@ while 1:
       lastHeartBeat = time.time()
 
   if len(localCarStateDataString2) >= 15:
-    frame += 1
-    insertString = "".join(["".join(localCarStateDataString2), "".join(localCarStateDataString1), "".join(localPathDataString)])
-    r = requests.post(target_URL, data=insertString)
-    #time.sleep(0.5)
-    localCarStateDataString1 = []
-    localCarStateDataString2 = []
-    localPathDataString = []
-    if frame % 3 == 0: print(len(insertString), r)
+    try:
+      frame += 1
+      insertString = "".join(["".join(localCarStateDataString2), "".join(localCarStateDataString1), "".join(localPathDataString)])
+      r = requests.post(target_URL, data=insertString)
+      #time.sleep(0.5)
+      localCarStateDataString1 = []
+      localCarStateDataString2 = []
+      localPathDataString = []
+      if frame % 3 == 0: print(len(insertString), r)
+    except:
+      try:
+        r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')
+      except:
+        r = requests.post(target_URL, data='create database carDB')
     
   elif len(localCarStateDataString2) > 7 and len(serverCarStateDataString2) >= 15:
     if do_send_live:

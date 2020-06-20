@@ -24,9 +24,9 @@
 
 #include "gpio.h"
 
-//#ifndef EON
-//#include "drivers/spi.h"
-//#endif
+#ifndef EON
+#include "drivers/spi.h"
+#endif
 
 #include "power_saving.h"
 #include "safety.h"
@@ -78,16 +78,15 @@ void started_interrupt_handler(uint8_t interrupt_line) {
     // jenky debounce
     delay(100000);
 
-    //#ifdef EON
+    #ifdef EON
       // set power savings mode here if on EON build
       int power_save_state = current_board->check_ignition() ? POWER_SAVE_STATUS_DISABLED : POWER_SAVE_STATUS_ENABLED;
-      //int power_save_state = POWER_SAVE_STATUS_DISABLED; //current_board->check_ignition() ? POWER_SAVE_STATUS_DISABLED : POWER_SAVE_STATUS_ENABLED;
       set_power_save_state(power_save_state);
       // set CDP usb power mode everytime that the car starts to make sure EON is charging
       if (current_board->check_ignition()) {
         current_board->set_usb_power_mode(USB_POWER_CDP);
       }
-    //#endif
+    #endif
   }
   EXTI->PR = (1U << interrupt_line);
 }
@@ -224,7 +223,6 @@ void usb_cb_ep2_out(void *usbdata, int len, bool hardwired) {
 
 // send on CAN
 void usb_cb_ep3_out(void *usbdata, int len, bool hardwired) {
-  heartbeat_counter = 0U;
   UNUSED(hardwired);
   int dpkt = 0;
   uint32_t *d32 = (uint32_t *)usbdata;
@@ -365,10 +363,9 @@ int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp, bool hardwired) 
     case 0xdc:
       // Blocked over WiFi.
       // Allow NOOUTPUT and ELM security mode to be set over wifi.
-      //if (hardwired || (setup->b.wValue.w == SAFETY_HONDA_BOSCH) || (setup->b.wValue.w == SAFETY_NOOUTPUT) || (setup->b.wValue.w == SAFETY_ALLOUTPUT) || (setup->b.wValue.w == SAFETY_ELM327)) {
-      //set_safety_mode(SAFETY_HONDA_BOSCH, (uint16_t) 17);
-      set_safety_mode(setup->b.wValue.w, (uint16_t) setup->b.wIndex.w);
-      //}
+      if (hardwired || (setup->b.wValue.w == SAFETY_NOOUTPUT) || (setup->b.wValue.w == SAFETY_ELM327)) {
+        set_safety_mode(setup->b.wValue.w, (uint16_t) setup->b.wIndex.w);
+      }
       break;
     // **** 0xdd: enable can forwarding
     case 0xdd:
@@ -533,7 +530,7 @@ int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp, bool hardwired) 
   }
   return resp_len;
 }
-/*
+
 #ifndef EON
 int spi_cb_rx(uint8_t *data, int len, uint8_t *data_out) {
   // data[0]  = endpoint
@@ -565,7 +562,7 @@ int spi_cb_rx(uint8_t *data, int len, uint8_t *data_out) {
   return resp_len;
 }
 #endif
-*/
+
 // ***************************** main code *****************************
 
 // cppcheck-suppress unusedFunction ; used in headers not included in cppcheck
@@ -579,7 +576,6 @@ void __attribute__ ((noinline)) enable_fpu(void) {
 }
 
 uint64_t tcnt = 0;
-
 
 // go into NOOUTPUT when the EON does not send a heartbeat for this amount of seconds.
 #define EON_HEARTBEAT_IGNITION_CNT_ON 5U
@@ -619,14 +615,14 @@ void TIM3_IRQHandler(void) {
     }
 
     // check heartbeat counter if we are running EON code. If the heartbeat has been gone for a while, go to NOOUTPUT safety mode.
-    //#ifdef EON
+    #ifdef EON
     if (heartbeat_counter >= (current_board->check_ignition() ? EON_HEARTBEAT_IGNITION_CNT_ON : EON_HEARTBEAT_IGNITION_CNT_OFF)) {
       puts("EON hasn't sent a heartbeat for 0x"); puth(heartbeat_counter); puts(" seconds. Safety is set to NOOUTPUT mode.\n");
-      if(current_safety_mode != SAFETY_ALLOUTPUT){
-        set_safety_mode(SAFETY_ALLOUTPUT, 17);
+      if(current_safety_mode != SAFETY_NOOUTPUT){
+        set_safety_mode(SAFETY_NOOUTPUT, 0U);
       }
     }
-    //#endif
+    #endif
 
     // on to the next one
     tcnt += 1U;
@@ -698,31 +694,37 @@ int main(void) {
 
   // default to silent mode to prevent issues with Ford
   // hardcode a specific safety mode if you want to force the panda to be in a specific mode
-  //int err = safety_set_mode(SAFETY_NOOUTPUT, 0);
-  int err = safety_set_mode(SAFETY_ALLOUTPUT, 17);
+  int err = 0
+  if(hw_type == HW_TYPE_BLACK_PANDA){
+    err = safety_set_mode(SAFETY_NOOUTPUT, 0);
+    can_silent = ALL_CAN_SILENT;
+  }
+  else {
+    err = safety_set_mode(SAFETY_ALLOUTPUT, 17);
+    can_silent = ALL_CAN_LIVE;
+  }
   if (err == -1) {
     puts("Failed to set safety mode\n");
     while (true) {
       // if SAFETY_NOOUTPUT isn't succesfully set, we can't continue
     }
   }
-  can_silent = ALL_CAN_LIVE;
   can_init_all();
 
-//#ifndef EON
-//  spi_init();
-//#endif
+#ifndef EON
+  spi_init();
+#endif
 
-//#ifdef EON
+#ifdef EON
   // have to save power
   if (hw_type == HW_TYPE_WHITE_PANDA) {
     current_board->set_esp_gps_mode(ESP_GPS_DISABLED);
   }
   // only enter power save after the first cycle
-  //if (current_board->check_ignition()) {
-  //  set_power_save_state(POWER_SAVE_STATUS_ENABLED);
-  //}
-//#endif
+  /*if (current_board->check_ignition()) {
+    set_power_save_state(POWER_SAVE_STATUS_ENABLED);
+  }*/
+#endif
 
   // 48mhz / 65536 ~= 732 / 732 = 1
   timer_init(TIM3, 732);

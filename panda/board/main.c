@@ -694,12 +694,8 @@ int main(void) {
 
   // default to silent mode to prevent issues with Ford
   // hardcode a specific safety mode if you want to force the panda to be in a specific mode
-  int err = 0
-  if(hw_type == HW_TYPE_BLACK_PANDA){
-    err = safety_set_mode(SAFETY_NOOUTPUT, 0);
-    can_silent = ALL_CAN_SILENT;
-  }
-  else {
+  int err = 0;
+  if(hw_type != HW_TYPE_BLACK_PANDA){
     err = safety_set_mode(SAFETY_ALLOUTPUT, 17);
     can_silent = ALL_CAN_LIVE;
   }

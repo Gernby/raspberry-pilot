@@ -114,6 +114,7 @@ use_discrete_angle = True
 
 execution_time_avg = 0.0
 time_factor = 1.0
+lateral_offset = 0
 calibration_factor = 1.0
 
 kegman = kegman_conf()  
@@ -127,6 +128,7 @@ descaled_output = output_standard.transform(output_scaler.inverse_transform(mode
 
 l_prob = 0.0
 r_prob = 0.0
+lateral_adjust = 0
 frame = 0
 dump_sock(gernModelInputs, True)
 
@@ -195,9 +197,9 @@ while 1:
   for i in range(len(cal_col)):
     if cal_factor[i] > 0:
       new_input[-1,:,cal_col[i]] -= calibration[i]
-  '''for i in range(4):
+  for i in range(4):
     if [cs.camFarLeft.parm4, cs.camFarRight.parm4, cs.camLeft.parm4, cs.camRight.parm4][i] > 0:
-      new_input[-1:,:,adj_col[i]] += 0'''
+      new_input[-1:,:,adj_col[i]] += lateral_adjust
 
   new_input[-1,:,:11] = vehicle_scaler.transform(vehicle_standard.transform(new_input[-1,:,:11]))
   new_input[-1,-1:,-32:] = camera_scaler.transform(camera_standard.transform(new_input[-1,-1:,-32:]))
@@ -220,18 +222,24 @@ while 1:
 
   calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,2::3], minimize=True)
 
-  if cs.vEgo > 10 and l_prob > 0 and r_prob > 0:
-    if calc_center[1][0,0] <= calc_center[2][0,0]:
-      width_trim -= 1
-    else:
+  if cs.vEgo > 10 and (l_prob > 0 or r_prob > 0):
+    if calc_center[1][0,0] > calc_center[2][0,0] and l_prob > 0 and r_prob > 0:
       width_trim += 1
-    width_trim = min(width_trim, 0)
+    else:
+      width_trim -= 1
+    width_trim = max(-100, min(width_trim, 0))
+    if l_prob - r_prob > 0.1:
+      lateral_adjust += 0.25
+    elif r_prob - l_prob > 0.1:
+      lateral_adjust -= 0.25
+    else:
+      lateral_adjust = max(lateral_offset - 50, lateral_adjust - 0.25, min(lateral_offset + 50, lateral_adjust + 0.25, lateral_offset))
   
   if abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10:
     if calc_center[0][0,0] > 0:
-      angle_bias -= (0.00001 * cs.vEgo)
+      angle_bias -= (0.000001 * cs.vEgo)
     elif calc_center[0][-10,0] < 0:
-      angle_bias += (0.00001 * cs.vEgo)
+      angle_bias += (0.000001 * cs.vEgo)
 
   path_send.pathPlan.angleSteers = float(slow_angles[5])
   path_send.pathPlan.mpcAngles = [float(x) for x in slow_angles]
@@ -241,7 +249,7 @@ while 1:
   path_send.pathPlan.angleOffset = float(calibration[0])
   path_send.pathPlan.angleBias = angle_bias
   path_send.pathPlan.paramsValid = calibrated
-  path_send.pathPlan.cPoly = [float(x) for x in (calc_center[0][:,0])]
+  path_send.pathPlan.cPoly = [float(x) for x in (calc_center[0][:,0] + lateral_adjust)]
   path_send.pathPlan.lPoly = [float(x) for x in (calc_center[1][:,0] + 0.5 * lane_width)]
   path_send.pathPlan.rPoly = [float(x) for x in (calc_center[2][:,0] - 0.5 * lane_width)]
   path_send.pathPlan.lProb = float(l_prob)
@@ -256,7 +264,7 @@ while 1:
   path_send.init('pathPlan')
   if frame % 60 == 0:
     #print(calibration_factor, np.round(calibration, 2))
-    print('lane_width: %0.1f angle bias: %0.2f  width_trim: %0.1f  center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs' % (lane_width, angle_bias, width_trim, calc_center[0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,0], descaled_output[1,1], execution_time_avg))
+    print('lane_width: %0.1f angle bias: %0.2f  width_trim: %0.1f  lateral_offset:  %d   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs' % (lane_width, angle_bias, width_trim, lateral_adjust, calc_center[0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,0], descaled_output[1,1], execution_time_avg))
 
   if frame % 6000 == 0:
     with open(os.path.expanduser('~/calibration.json'), 'w') as f:
@@ -272,7 +280,7 @@ while 1:
     angle_factor = float(kegman.conf['angleFactor'])
     use_bias = float(kegman.conf['angleBias'])
     use_angle_offset = float(kegman.conf['angleOffset'])
-    use_lateral_offset = float(kegman.conf['lateralOffset'])
+    lateral_offset = float(kegman.conf['lateralOffset'])
     use_discrete_angle = True if kegman.conf['useDiscreteAngle'] == "1" else False
 
   execution_time_avg += max(0.0001, time_factor) * ((time.time() - start_time) - execution_time_avg)

@@ -31,12 +31,15 @@ serverPush.connect("tcp://" + SERVER_ADDRESS + ":8593")
 if pathPlan != None: poller.register(pathPlan, zmq.POLLIN)
 if heartBeatSub != None: poller.register(heartBeatSub, zmq.POLLIN)
 if carState != None: poller.register(carState, zmq.POLLIN)
+dashPub = messaging.pub_sock(8597)
 
 frame_count = 0
 params = Params()
 user_id = str(params.get("PandaDongleId"))
+user_id = user_id.replace("'","")
 
-#if len(sys.argv) >= 2: 
+#if len(sys.argv) >= 2:
+do_influx = not (len(sys.argv) >= 2 and sys.argv[1] == "-1") 
 do_send_live = False
 target_address = '127.0.0.1'
 cred = 'u=liveOP&p=liveOP&'
@@ -72,6 +75,7 @@ kegmanDataString = []
 localCarStateDataString1 = []
 localCarStateDataString2 = []
 insertString = []
+fileStrings = []
 canInsertString = []
 
 angle_offset = 0
@@ -147,12 +151,19 @@ while 1:
     try:
       frame += 1
       insertString = "".join(["".join(localCarStateDataString2), "".join(localCarStateDataString1), "".join(localPathDataString)])
-      r = requests.post(target_URL, data=insertString)
+      if do_influx:
+        r = requests.post(target_URL, data=insertString)
+        dashPub.send_string(insertString)
+        if frame % 3 == 0: print(len(insertString), r)
       #time.sleep(0.5)
       localCarStateDataString1 = []
       localCarStateDataString2 = []
       localPathDataString = []
-      if frame % 3 == 0: print(len(insertString), r)
+      if cs.vEgo > 0:
+        #fileStrings.append(insertString)
+        #if len(fileStrings) >= 60:
+        with open('/data/upload/%s_%0.0f.dat' % (user_id, time.time()//60), "a") as myfile:
+          myfile.write(insertString)
     except:
       try:
         r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')

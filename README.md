@@ -5,31 +5,31 @@
 1. A laptop capable of burning microSD cards and has a decent battery life (min. 30 minutes)
 2. Compression software on the above laptop that can decompress the `xz` format (titles and installation process varies by Operating System)
 3. Raspberry Pi 4 with 4GB RAM
-4. White, Gray, or Black Panda from Comma.ai shop (Note: The Black Panda does not yet work here. We can use some help!)
-5. Comma.ai Giraffe or custom-built Giraffe or harness for your car if using a White or Gray Panda
+4. White, Gray, or Black Panda from Comma.ai shop (Note: Black Panda support is very early but making progress)
+5. Honda Bosch Giraffe from Comma.ai shop if using a White or Gray Panda, Honda Bosch harness for Black Panda
 6. USB A-to-C cable
 7. USB A-to-A cable or mini USB cable with a Panda Paw from the Comma.ai shop (for flashing the Panda from the Pi)
 8. A way to power the Pi in your car (high power 12v to USB adapter, USB port on laptop above, or 12v to 120/240v inverter)
-9. Minimum 32GB class 10 microSD card
-10. Micro-HDMI adapter (the Raspberry Pi 4 does not use the same HDMI connectors as any previous models)
+9. Minimum 16GB class 10 microSD card
+10. Optional Micro-HDMI adapter (the Raspberry Pi 4 does not use the same HDMI connectors as any previous models)
 11. TV or monitor that accepts HDMI input
-12. USB keyboard
-13. Physical Ethernet connection for the initial installation inside your home
-14. Cellular hotspot (or standard WiFi you can reach from your car -- no cable company or retail WiFi)
+12. Optional USB keyboard
+13. Optional physical Ethernet connection for the initial installation inside your home
+14. Cellular hotspot or home WiFi you can reach from your car (no cable company or retail WiFi)
 
 ## MicroSD card preparation and first login
 
 1. Go to https://ubuntu.com/download/raspberry-pi on the laptop that will prepare the microSD card
 2. In the Raspberry Pi 4 column, locate the row for Ubuntu 18.04 LTS, and click "Download 64-bit" at the far right end
-3. Decompress the `xz`-compressed Ubuntu image file (process varies by Operating System)
+3. Decompress the `xz`-compressed Ubuntu image file (process varies by Operating System, not required with Balena Etcher)
 4. Insert the microSD card into the microSD-to-SD card adapter and then into the computer you will use to burn the image
 5. Umount ("eject") the microSD card if the computer automatically mounted it but do not remove it from the slot
 6. Burn the decompressed image to the microSD card (process varies by Operating System)
 7. When finished, remove and reinsert the SD card adapter. Wait for the Operating System to detect and mount the microSD card.
 8. Use your file manager to browse the partition on the card called "system-boot".
-9. In Linux, run `sudo sed -i -e 's/expire: true/expire: false/' user-data` or in other Operating Systems, open the user-data file for editing and change `expire: true` to `expire: false`
+9. If you are using Linux to setup the card, run `sudo sed -i -e 's/expire: true/expire: false/' user-data`. In MacOS or Windows, open the user-data file for editing and change `expire: true` to `expire: false`.
 10. Open the file called `network-config` for editing.
-11. Locate the end of the user instructions with "# Some additional examples are commented out below". Edit the remainder of the file to resemble this example:
+11. Edit the lower portion of the file to resemble this example:
 
 ```
 version: 2
@@ -58,20 +58,20 @@ wifis:
 13. Safely unmount the microSD card. Do not proceed until you know you have safely unmounted.
 14. Remove the SD card adapter from the computer and remove the microSD card from the adapter
 15. Insert the microSD card into the Rasperry Pi 4 with the contacts facing "up" towards the bottom of the mainboard
-16. Connect the keyboard, micro-HDMI adapter and the HDMI cable
-17. Connect the USB A end of the USB A-to-C cable to the power supply and the USB C end into the power port on the Pi
-18. Wait for the Pi to boot and wait several more seconds after the login is presented to finish the first boot
-19. Log into the Pi using "ubuntu" for the username and the password
-20. Try to `ping 8.8.8.8`. If successful, continue to the next section. If not, reboot and log in again with ubuntu/ubuntu.
-
-From this point forward, you may continue using the keyboard and monitor to work on the Pi or you may return to your primary computer and log into the Pi using `ssh`.
+16. If you are using a local console, connect the keyboard, micro-HDMI adapter and the HDMI cable
+17. Connect the Ethernet cable if you do not have WiFi.
+18. Connect the USB A end of the USB A-to-C cable to the power supply and the USB C end into the power port on the Pi
+19. Allow the Pi to boot and wait at least two minutes. If you are using the console, wait for several lines of text to appear before attempting to log in.
+20. If you are logging in remotely, go to your router's adminstration page to find the IP address given to your Pi (either via cable or WiFi).
+21. Log into the Pi using "ubuntu" for the username and the password
+22. Try to `ping 8.8.8.8`. If successful, continue to the next section. If not, reboot and log in again with ubuntu/ubuntu.
 
 ## Software installation
 (Note: You must have stable Internet connectivity at this point to proceed)
 
 1. Log into the Pi using "ubuntu" as the ID and password if you are not still logged in from earlier steps. Clone the repository
 
-`cd ~`  
+`cd`  
 `git clone https://github.com/Gernby/raspberry-pilot.git`  
 
 2. Ask in Discord for the name of the current branch to checkout.
@@ -81,17 +81,17 @@ From this point forward, you may continue using the keyboard and monitor to work
 6. Wait 30 minutes
 7. Reboot the Pi and log back in as the "ubuntu" user
 8. Run `bash finish_install.sh`
-9. Wait about 90 minutes
+9. Wait about 90 minutes. You will see long periods without any activity or errors pop up. This is normal.
 10. If the process completes successfully, reboot the Pi and log back in as the "ubuntu" user
 11. Run the command `top -u ubuntu`
 12. Look for `controlsd`, `boardd`, and `dashboard` in the rightmost column of the list.
-13. If you see all three, let Gernby know you're ready for the model. He will email it to you.
-14. When you receive the model, download the attachment from your email and copy it to `~/raspilot/models` (note that the 's' at the end is critical). The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
+13. If you see all three, let Gernby know you're ready for the model. He will get it to you one way or another.
+14. When you receive the model, copy it to `~/raspilot/models` (note that the 's' at the end is critical). The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
 15. Reboot the Pi, and log back in
 16. Run `top -u ubuntu` again
 17. Look for `controlsd`, `boardd`, `dashboard`, and `transcoderd` this time
 18. If all four processes are present, you are ready to flash your Panda
-19. If you can't hit your household WiFi from your car, edit /etc/netplan/50-cloud-init.yml to comment out the household WiFi defintion before heading out to the car.
+19. If you can't hit your household WiFi from your car, be sure to turn on your hotspot before booting up the Pi in the car.
 
 ## Flashing the Panda
 (Note 1: The Pi and the Panda need to be powered separately for this step)

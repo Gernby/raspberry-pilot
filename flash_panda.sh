@@ -10,7 +10,7 @@ sleep 10
 pkill -f boardd
 cd ~/raspilot/panda/board
 make clean
-PYTHONPATH=~/raspilot make
+PYTHONPATH=~/raspilot make recover
 echo ""
 echo ""
 echo -e "\e[44m***** if the panda is now flashing red slowly, it was successful\e[0m"

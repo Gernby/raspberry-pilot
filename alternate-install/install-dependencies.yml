@@ -37,9 +37,9 @@
     apt:
       name: ['libusb-dev', 'cmake', 'libnewlib-arm-none-eabi', 'libhdf5-serial-dev', 'hdf5-tools', 'smbclient']
 
-  - name: Group 10 influxdb, apt-transport-https, software-properties-common, adduser, libfontconfig1
+  - name: Group 10 influxdb, apt-transport-https, software-properties-common, adduser, libfontconfig1, dfu-util
     apt:
-      name: ['influxdb', 'apt-transport-https', 'software-properties-common', 'adduser', 'libfontconfig1']
+      name: ['influxdb', 'apt-transport-https', 'software-properties-common', 'adduser', 'libfontconfig1', 'dfu-util']
 
 
 #      state: present

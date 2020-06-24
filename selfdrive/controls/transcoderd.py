@@ -21,7 +21,7 @@ setproctitle('transcoderd')
 INPUTS = 77
 OUTPUTS = 9
 MODEL_VERSION = 'F'
-MODEL_NAME = 'GRU_Complex_Angle_DualRes_TriConv_4thOrder_mae_50_cFactor_0_Advance_0_Lag_15_Smooth_30_Batch_83_6_15_5_Hist_100_Future_0_0_0_Drop_2_2_2_Kernel_1_Stride_1_1_1_DilateProd'
+MODEL_NAME = 'GRU_Complex_Angle_DualRes_TriConv4_4thOrder_mae_50_cFactor_0_Advance_0_Lag_15_Smooth_30_Batch_83_6_15_5_Hist_100_Future_0_0_0_Drop_2_2_2_Kernel_1_Stride_1_1_1_DilateProd'
   
 HISTORY_ROWS = 5
 OUTPUT_ROWS = 15
@@ -228,12 +228,12 @@ while 1:
     else:
       width_trim -= 1
     width_trim = max(-100, min(width_trim, 0))
-    if l_prob - r_prob > 0.1:
+    '''if l_prob - r_prob > 0.1:
       lateral_adjust += 0.25
     elif r_prob - l_prob > 0.1:
       lateral_adjust -= 0.25
     else:
-      lateral_adjust = max(lateral_offset - 50, lateral_adjust - 0.25, min(lateral_offset + 50, lateral_adjust + 0.25, lateral_offset))
+      lateral_adjust = max(lateral_offset - 50, lateral_adjust - 0.25, min(lateral_offset + 50, lateral_adjust + 0.25, lateral_offset))'''
   
   if abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10:
     if calc_center[0][0,0] > 0:

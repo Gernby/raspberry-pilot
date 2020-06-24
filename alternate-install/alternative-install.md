@@ -5,27 +5,31 @@
 1. A laptop capable of burning microSD cards and has a decent battery life (min. 30 minutes)
 2. Compression software on the above laptop that can decompress the `xz` format (titles and installation process varies by Operating System)
 3. Raspberry Pi 4 with 4GB RAM
-4. White, Gray, or Black Panda from Comma.ai shop (Note: The Black Panda does not yet work here. We can use some help!)
-5. Comma.ai Giraffe or custom-built Giraffe or harness for your car if using a White or Gray Panda
+4. White, Gray, or Black Panda from Comma.ai shop (Note: Black Panda support is very early but making progress)
+5. Honda Bosch Giraffe from Comma.ai shop if using a White or Gray Panda, Honda Bosch harness for Black Panda
 6. USB A-to-C cable
 7. USB A-to-A cable or mini USB cable with a Panda Paw from the Comma.ai shop (for flashing the Panda from the Pi)
 8. A way to power the Pi in your car (high power 12v to USB adapter, USB port on laptop above, or 12v to 120/240v inverter)
 9. Minimum 16GB class 10 microSD card
-10. Cellular hotspot (or standard WiFi you can reach from your car -- no cable company or retail WiFi)
+10. Optional Micro-HDMI adapter (the Raspberry Pi 4 does not use the same HDMI connectors as any previous models)
+11. TV or monitor that accepts HDMI input
+12. Optional USB keyboard
+13. Optional physical Ethernet connection for the initial installation inside your home
+14. Cellular hotspot or home WiFi you can reach from your car (no cable company or retail WiFi)
 
-## MicroSD card preparation and first boot up
+## MicroSD card preparation and first login
 
 1. Go to https://ubuntu.com/download/raspberry-pi on the laptop that will prepare the microSD card
 2. In the Raspberry Pi 4 column, locate the row for Ubuntu 18.04 LTS, and click "Download 64-bit" at the far right end
-3. Decompress the `xz`-compressed Ubuntu image file (process varies by Operating System)
+3. Decompress the `xz`-compressed Ubuntu image file (process varies by Operating System, not required with Balena Etcher)
 4. Insert the microSD card into the microSD-to-SD card adapter and then into the computer you will use to burn the image
 5. Umount ("eject") the microSD card if the computer automatically mounted it but do not remove it from the slot
 6. Burn the decompressed image to the microSD card (process varies by Operating System)
-7. Remove the SD card adapter from the slot and reinsert it. Wait several seconds for the system to detect and mount the card.
+7. When finished, remove and reinsert the SD card adapter. Wait for the Operating System to detect and mount the microSD card.
 8. Use your file manager to browse the partition on the card called "system-boot".
-9. `sudo sed -i -e 's/expire: true/expire: false/' user-data` or change `expire: true` to `expire: false` in the user-data file
-10. Open the file called "network-config" for editing.
-11. Locate the end of the user instructions with "# Some additional examples are commented out below". Edit the remainder of the file to resemble this example:
+9. If you are using Linux to setup the card, run `sudo sed -i -e 's/expire: true/expire: false/' user-data`. In MacOS or Windows, open the user-data file for editing and change `expire: true` to `expire: false`.
+10. Open the file called `network-config` for editing.
+11. Edit the lower portion of the file to resemble this example:
 
 ```
 version: 2
@@ -50,13 +54,17 @@ wifis:
 #         password: "passw0rd"
 #         ca-certificate: /etc/my_ca.pem
 ```
-13. Save and exit the file.
-14. Safely unmount the microSD card. Do not proceed until you know you have safely unmounted.
-15. Remove the SD card adapter from the laptop and remove the microSD card from the SD card adapter.
-16. Insert the microSD card into the Pi into the slot on the "bottom" of the Pi with the contacts oriented "up" towards the bottom of the Pi mainboard.
-17. Plug the Pi into power and wait 2 minutes. The Pi needs to boot, finalize some initial configuration, and log into the WiFi.
-18. Log into your WiFi router and locate the Pi in your connected client list.
-19. Use the ssh command or putty to connect to the Pi's IP address.
+12. Save and exit the file.
+13. Safely unmount the microSD card. Do not proceed until you know you have safely unmounted.
+14. Remove the SD card adapter from the computer and remove the microSD card from the adapter
+15. Insert the microSD card into the Rasperry Pi 4 with the contacts facing "up" towards the bottom of the mainboard
+16. If you are using a local console, connect the keyboard, micro-HDMI adapter and the HDMI cable
+17. Connect the Ethernet cable if you do not have WiFi.
+18. Connect the USB A end of the USB A-to-C cable to the power supply and the USB C end into the power port on the Pi
+19. Allow the Pi to boot and wait at least two minutes. If you are using the console, wait for several lines of text to appear before attempting to log in.
+20. If you are logging in remotely, go to your router's adminstration page to find the IP address given to your Pi (either via cable or WiFi).
+21. Log into the Pi using "ubuntu" for the username and the password
+22. Try to `ping 8.8.8.8`. If successful, continue to the next section. If not, reboot and log in again with ubuntu/ubuntu.
 
 ## Software installation
 1. Log into the Pi using "ubuntu" as the user and password.

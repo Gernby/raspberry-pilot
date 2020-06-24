@@ -54,7 +54,7 @@ sudo apt install -y opencl-headers pkg-config python-pip wget checkinstall libus
 sudo apt install -y clang-3.8 libatlas-base-dev libopenblas-base libopenblas-dev gcc gfortran ocl-icd-opencl-dev 
 sudo apt install -y capnproto opencl-headers autotools-dev uuid-dev libsodium-dev valgrind python-qt4
 sudo apt install -y libusb-dev cmake libnewlib-arm-none-eabi libhdf5-serial-dev hdf5-tools smbclient
-sudo apt install -y influxdb apt-transport-https software-properties-common adduser libfontconfig1
+sudo apt install -y influxdb apt-transport-https software-properties-common adduser libfontconfig1 dfu-util
 wget https://dl.grafana.com/oss/release/grafana_6.6.2_arm64.deb
 sudo dpkg -i grafana_6.6.2_arm64.deb
 sudo /bin/systemctl daemon-reload

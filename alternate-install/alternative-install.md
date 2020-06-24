@@ -86,16 +86,17 @@ cd ..
 6. Wait 30 minutes
 7. Log out of the Pi (reboot?) and log back in as the "ubuntu" user
 8. `sh finish_install.sh`
-9. Wait about 1.5 hours
+9. Wait about 90 minutes. You will see long periods without any activity or errors pop up. This is normal.
 10. If the process completes successfully, reboot the Pi and log back in as the "ubuntu" user
 11. Run the command `top -u ubuntu`
 12. Look for `controlsd`, `boardd`, and `dashboard` in the rightmost column of the list.
-13. If you see all three, let Gernby know you're ready for the model. He will email it to you.
-14. When you receive the model, download the attachment from your email and copy it to `~/raspilot/models` (note that the 's' at the end is critical). The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
+13. If you see all three, let Gernby know you're ready for the model. He will get it to you one way or another.
+14. When you receive the model, copy it to `~/raspilot/models` (note that the 's' at the end is critical). The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
 15. Reboot the Pi, and log back in
 16. Run `top -u ubuntu` again
 17. Look for `controlsd`, `boardd`, `dashboard`, and `transcoderd` this time
 18. If all four processes are present, you are ready to flash your Panda
+19. If you can't hit your household WiFi from your car, be sure to turn on your hotspot before booting up the Pi in the car.
 
 ## Note: The following steps are required if you need to flash the Panda. The steps are under construction based on the new WiFi management features.
 

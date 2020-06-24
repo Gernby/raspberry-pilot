@@ -81,7 +81,8 @@ cd ..
 
 3. Ask in Discord for the name of the current branch to checkout.
 4. `git checkout <branch name>`
-5. `sh start_install.sh`
+5. `cd /boot/firmware`
+5. `sh start-install-v2.sh`
 6. Wait 30 minutes
 7. Log out of the Pi (reboot?) and log back in as the "ubuntu" user
 8. `sh finish_install.sh`

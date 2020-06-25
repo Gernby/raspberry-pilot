@@ -21,7 +21,7 @@ setproctitle('transcoderd')
 INPUTS = 77
 OUTPUTS = 9
 MODEL_VERSION = 'F'
-MODEL_NAME = 'GRU_Complex_Angle_DualRes_TriConv4_4thOrder_mae_50_cFactor_0_Advance_0_Lag_15_Smooth_30_Batch_83_6_15_5_Hist_100_Future_0_0_0_Drop_2_2_2_Kernel_1_Stride_1_1_1_DilateProd'
+MODEL_NAME = 'GRU_Complex_Angle_DualRes_TriConv5_4thOrder_mae_50_cFactor_0_Advance_0_Lag_15_Smooth_30_Batch_83_6_15_5_Hist_100_Future_0_0_0_Drop_2_3_3_Kernel_1_Stride_1_1_1_DilateProd'
   
 HISTORY_ROWS = 5
 OUTPUT_ROWS = 15
@@ -67,7 +67,7 @@ def sub_sock(port, poller=None, addr="127.0.0.1", conflate=False, timeout=None):
     poller.register(sock, zmq.POLLIN)
   return sock
 
-def tri_blend(l_prob, r_prob, lr_prob, tri_value, minimize=False):
+def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, prev_center, minimize=False):
   left = tri_value[:,1:2]
   right = tri_value[:,2:3]
   center = tri_value[:,0:1]
@@ -77,7 +77,12 @@ def tri_blend(l_prob, r_prob, lr_prob, tri_value, minimize=False):
   else:
     abs_left = 1
     abs_right = 1     
-  return [lr_prob * (abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001) + (1-lr_prob) * center, left, right]
+  new_center = [lr_prob * (abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001) + (1-lr_prob) * center, left, right]
+  if steer > 0:
+    new_center = np.maximum(new_center, prev_center - 5)
+  elif steer < 0:
+    new_center = np.minimum(new_center, prev_center + 5)
+  return new_center
 
 
 gernPath = pub_sock(service_list['pathPlan'].port)
@@ -96,11 +101,11 @@ advanceSteer = 1
 one_deg_per_sec = np.ones((OUTPUT_ROWS,1)) / 15
 left_center = np.zeros((OUTPUT_ROWS,1))
 right_center = np.zeros((OUTPUT_ROWS,1))
-calc_center = np.zeros((OUTPUT_ROWS,1))
+calc_center = np.zeros((3,OUTPUT_ROWS,1))
 projected_center = np.zeros((OUTPUT_ROWS,1))
 left_probs = np.zeros((OUTPUT_ROWS,1))
 right_probs = np.zeros((OUTPUT_ROWS,1))
-calc_angles = np.zeros((OUTPUT_ROWS,1))
+fast_angles = np.zeros((OUTPUT_ROWS,1))
 center_limit = np.reshape(0.5 * np.arange(OUTPUT_ROWS) + 10,(OUTPUT_ROWS,1))
 accel_counter = 0   
 upper_limit = 0
@@ -213,14 +218,7 @@ while 1:
   max_width_step = 0.05 * cs.vEgo * l_prob * r_prob
   lane_width = max(570, lane_width - max_width_step * 2, min(1200, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
   
-  if use_discrete_angle:
-    fast_angles = advanceSteer * descaled_output[:,0:1] + calibration[0] - angle_bias
-    slow_angles = advanceSteer * descaled_output[:,1:2] + calibration[0] - angle_bias
-  else:
-    fast_angles = angle_factor * advanceSteer * (descaled_output[:,0:1] - descaled_output[0,0:1]) + cs.steeringAngle
-    slow_angles = angle_factor * advanceSteer * (descaled_output[:,1:2] - descaled_output[0,1:2]) + cs.steeringAngle 
-
-  calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,2::3], minimize=True)
+  calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,2::3], fast_angles[5,0]-fast_angles[0,0], calc_center[0], minimize=True)
 
   if cs.vEgo > 10 and (l_prob > 0 or r_prob > 0):
     if calc_center[1][0,0] > calc_center[2][0,0] and l_prob > 0 and r_prob > 0:
@@ -240,6 +238,13 @@ while 1:
       angle_bias -= (0.000001 * cs.vEgo)
     elif calc_center[0][-10,0] < 0:
       angle_bias += (0.000001 * cs.vEgo)
+
+  if use_discrete_angle:
+    fast_angles = advanceSteer * descaled_output[:,0:1] + calibration[0] - angle_bias
+    slow_angles = advanceSteer * descaled_output[:,1:2] + calibration[0] - angle_bias
+  else:
+    fast_angles = angle_factor * advanceSteer * (descaled_output[:,0:1] - descaled_output[0,0:1]) + cs.steeringAngle
+    slow_angles = angle_factor * advanceSteer * (descaled_output[:,1:2] - descaled_output[0,1:2]) + cs.steeringAngle 
 
   path_send.pathPlan.angleSteers = float(slow_angles[5])
   path_send.pathPlan.mpcAngles = [float(x) for x in slow_angles]
@@ -267,10 +272,10 @@ while 1:
     print('lane_width: %0.1f angle bias: %0.2f  width_trim: %0.1f  lateral_offset:  %d   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs' % (lane_width, angle_bias, width_trim, lateral_adjust, calc_center[0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,0], descaled_output[1,1], execution_time_avg))
 
   if frame % 6000 == 0:
+    print(np.round(calibration,2))
     with open(os.path.expanduser('~/calibration.json'), 'w') as f:
-      print(np.round(calibration,2))
       json.dump({'calibration': list(calibration),'lane_width': lane_width,'angle_bias': angle_bias}, f, indent=2, sort_keys=True)
-      os.chmod(os.path.expanduser("~/calibration.json"), 0o764)
+      #os.chmod(os.path.expanduser("~/calibration.json"), 0o764)
 
 
   # TODO: replace kegman_conf with params!

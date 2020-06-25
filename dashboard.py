@@ -90,6 +90,10 @@ lastHeartBeat = 0
 messaging.drain_sock(carState, True)
 messaging.drain_sock(pathPlan, False)
 messaging.drain_sock(carState, False)
+previous_minute = 0
+logfile = None
+if not os.path.exists('/data/upload/'):
+  os.mkdir('/data/upload')
 
 while 1:
   do_send_live = time.time() - lastHeartBeat < 60
@@ -99,6 +103,10 @@ while 1:
       for _cs in carState.recv_multipart():
         cs = log.Event.from_bytes(_cs).carState
         vEgo = cs.vEgo
+        if vEgo > 0 and time.time()//60 > previous_minute:
+          previous_minute = time.time()//60
+          logfile = open('/data/upload/%s_%0.0f.dat' % (user_id, time.time()//60), "w")
+
         if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
           stock_cam_frame_prev = cs.camLeft.frame
           send_data = tuple([cs.vEgo, cs.econMode, cs.adjustedAngle, cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
@@ -110,31 +118,39 @@ while 1:
                             cs.camFarLeft.frame, cs.camFarLeft.parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4, cs.camFarLeft.parm5, cs.camFarLeft.parm6, cs.camFarLeft.parm7, cs.camFarLeft.parm8, cs.camFarLeft.parm9, cs.camFarLeft.parm10, cs.camFarLeft.parm11, cs.camFarLeft.parm12, cs.camFarLeft.parm13, cs.camFarLeft.full1, cs.camFarLeft.full2, \
                             cs.camFarRight.frame, cs.camFarRight.parm1, cs.camFarRight.parm2, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm6, cs.camFarRight.parm7, cs.camFarRight.parm8, cs.camFarRight.parm9, cs.camFarRight.parm10, cs.camFarRight.parm11, cs.camFarRight.parm12, cs.camFarRight.parm13, cs.camFarRight.full1, cs.camFarRight.full2, cs.canTime])
                     
-          localCarStateDataString2.append(localCarStateFormatString2 % send_data)
+          if do_influx:
+            localCarStateDataString2.append(localCarStateFormatString2 % send_data)
+          if vEgo > 0:
+            logfile.write(localCarStateFormatString2 % send_data)
           if do_send_live:
             serverCarStateDataString2.append(serverCarStateDataFormatString2 % send_data)
-        else:
+        elif vEgo > 0:
           send_data = (cs.vEgo, cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
                             cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
                             cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, cs.camLeft.frame, cs.camFarRight.frame, cs.canTime)
         
-          localCarStateDataString1.append(localCarStateFormatString1 % send_data)
-          if do_send_live and cs.vEgo > 0: 
+          logfile.write(localCarStateFormatString1 % send_data)
+          if do_influx:
+            localCarStateDataString1.append(localCarStateFormatString1 % send_data)
+          if do_send_live: 
             serverCarStateDataString1.append(serverCarStateDataFormatString1 % send_data)
 
     if socket is pathPlan:
       pp = log.Event.from_bytes(pathPlan.recv()).pathPlan
-      if vEgo >= 0 and not cs is None:
+      if not cs is None and not logfile is None:
         send_data0 = tuple(float(x) for x in tuple(pp.lPoly)[::1])
         send_data1 = tuple(float(x) for x in tuple(pp.rPoly)[::1])
         send_data2 = tuple(float(x) for x in tuple(pp.cPoly)[::1])
         send_data3 = (pp.slowAngles[0], pp.slowAngles[1], pp.slowAngles[2], pp.slowAngles[3], pp.slowAngles[4], pp.slowAngles[5], pp.slowAngles[6], pp.lProb, pp.rProb, pp.cProb, pp.laneWidth, pp.angleSteers, pp.rateSteers, pp.angleOffset, pp.lateralOffset, cs.steeringAngle, pp.canTime - pp.canTime, cs.canTime)
 
-        localPathDataString.append("".join([localPathFormatString1 % send_data0, localPathFormatString2 % send_data1, localPathFormatString3 % send_data2, localPathFormatString4 % send_data3]))
+        if do_influx:
+          localPathDataString.append("".join([localPathFormatString1 % send_data0, localPathFormatString2 % send_data1, localPathFormatString3 % send_data2, localPathFormatString4 % send_data3]))
+        if vEgo > 0: 
+          logfile.write("".join([localPathFormatString1 % send_data0, localPathFormatString2 % send_data1, localPathFormatString3 % send_data2, localPathFormatString4 % send_data3]))
         if do_send_live:
           serverPathDataString.append("".join([serverPolyDataFormatString % send_data0, serverPolyDataFormatString % send_data1, serverPolyDataFormatString % send_data2,serverPathDataFormatString % send_data3]))
 
-    if socket is tuneSub:
+    '''if socket is tuneSub:
       config = json.loads(tuneSub.recv_multipart()[1])
       #print(config)
       with open(os.path.expanduser('~/kegman.json'), 'w') as f:
@@ -145,67 +161,59 @@ while 1:
       do_send_live = True
       print("         Heartbeat!")
       messaging.recv_one(heartBeatSub)
-      lastHeartBeat = time.time()
+      lastHeartBeat = time.time()'''
 
-  if len(localCarStateDataString2) >= 15:
-    try:
-      frame += 1
-      insertString = "".join(["".join(localCarStateDataString2), "".join(localCarStateDataString1), "".join(localPathDataString)])
-      if do_influx:
+  if do_influx and len(localCarStateDataString2) >= 15:
+    frame += 1
+    insertString = "".join(["".join(localCarStateDataString2), "".join(localCarStateDataString1), "".join(localPathDataString)])
+    localCarStateDataString1 = []
+    localCarStateDataString2 = []
+    localPathDataString = []
+    if do_influx and frame > 5:
+      try:
         r = requests.post(target_URL, data=insertString)
         dashPub.send_string(insertString)
         if frame % 3 == 0: print(len(insertString), r)
-      #time.sleep(0.5)
-      localCarStateDataString1 = []
-      localCarStateDataString2 = []
-      localPathDataString = []
-      if cs.vEgo > 0:
-        #fileStrings.append(insertString)
-        #if len(fileStrings) >= 60:
-        with open('/data/upload/%s_%0.0f.dat' % (user_id, time.time()//60), "a") as myfile:
-          myfile.write(insertString)
-    except:
-      try:
-        r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')
       except:
-        r = requests.post(target_URL, data='create database carDB')
-    
-  elif len(localCarStateDataString2) > 7 and len(serverCarStateDataString2) >= 15:
-    if do_send_live:
-      insertString = [serverCarStateFormatString2, "~", "".join(serverCarStateDataString2), "!", serverCarStateFormatString1, "~", "".join(serverCarStateDataString1), "!"]
-      insertString.extend([serverPathFormatString, "~", "".join(serverPathDataString), "!"])
-      if kegman_valid:
         try:
-          if False and os.path.isfile(os.path.expanduser('~/kegman.json')):
-            with open(os.path.expanduser('~/kegman.json'), 'r') as f:
-              config = json.load(f)
-              reactMPC = config['reactMPC']
-              dampMPC = config['dampMPC']
-              reactSteer = config['reactSteer']
-              dampSteer = config['dampSteer']
-              delaySteer = config['delaySteer']
-              steerKpV = config['Kp']
-              steerKiV = config['Ki']
-              rateFF = config['rateFF']
-              oscFactor = config['oscFactor']
-              backlash = config['backlash']
-              longOffset = config['longOffset']
-              dampRate = config['dampRate']
-              reactRate = config['reactRate']
-              centerFactor = config['centerFactor']
-              polyReact = config['reactPoly']
-              polyDamp = config['dampPoly']
-              polyScale = config['scalePoly']
-
-              insertString.append(serverKegmanFormatString, "~", "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s|" % \
-                    (reactRate, dampRate, longOffset, backlash, dampMPC, reactMPC, dampSteer, reactSteer, steerKpV, steerKiV, rateFF, cs.angleFFGain, delaySteer,
-                    oscFactor, centerFactor, polyReact, polyDamp, polyScale, cs.canTime), "!")
+          r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')
         except:
-          kegman_valid = False
-      insertString = "".join(insertString)
-      serverPush.send_string(insertString)
-      print(len(insertString), "  server sent")
-      insertString = None
+          r = requests.post(target_URL, data='create database carDB')
+  elif do_send_live and len(localCarStateDataString2) > 7 and len(serverCarStateDataString2) >= 15:
+    insertString = [serverCarStateFormatString2, "~", "".join(serverCarStateDataString2), "!", serverCarStateFormatString1, "~", "".join(serverCarStateDataString1), "!"]
+    insertString.extend([serverPathFormatString, "~", "".join(serverPathDataString), "!"])
+    if kegman_valid:
+      try:
+        if False and os.path.isfile(os.path.expanduser('~/kegman.json')):
+          with open(os.path.expanduser('~/kegman.json'), 'r') as f:
+            config = json.load(f)
+            reactMPC = config['reactMPC']
+            dampMPC = config['dampMPC']
+            reactSteer = config['reactSteer']
+            dampSteer = config['dampSteer']
+            delaySteer = config['delaySteer']
+            steerKpV = config['Kp']
+            steerKiV = config['Ki']
+            rateFF = config['rateFF']
+            oscFactor = config['oscFactor']
+            backlash = config['backlash']
+            longOffset = config['longOffset']
+            dampRate = config['dampRate']
+            reactRate = config['reactRate']
+            centerFactor = config['centerFactor']
+            polyReact = config['reactPoly']
+            polyDamp = config['dampPoly']
+            polyScale = config['scalePoly']
+
+            insertString.append(serverKegmanFormatString, "~", "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s|" % \
+                  (reactRate, dampRate, longOffset, backlash, dampMPC, reactMPC, dampSteer, reactSteer, steerKpV, steerKiV, rateFF, cs.angleFFGain, delaySteer,
+                  oscFactor, centerFactor, polyReact, polyDamp, polyScale, cs.canTime), "!")
+      except:
+        kegman_valid = False
+    insertString = "".join(insertString)
+    serverPush.send_string(insertString)
+    print(len(insertString), "  server sent")
+    insertString = None
     serverCarStateDataString1 = []
     serverCarStateDataString2 = []
     serverPathDataString = []

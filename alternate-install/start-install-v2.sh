@@ -40,6 +40,7 @@ sudo apt install ansible -y
 
 echo "Installing Network Manager for better WiFi management.."
 ansible localhost -b -m apt -a "name=network-manager"
+ansible localhost -b -m lineinfile -a "path=/etc/default/crda regexp='^REGDOMAIN=' line='REGDOMAIN=US'"
 echo "Starting Netork Manager.."
 ansible localhost -b -m service -a "name=NetworkManager state=started"
 

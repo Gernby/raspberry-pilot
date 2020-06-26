@@ -173,6 +173,10 @@ while 1:
       try:
         r = requests.post(target_URL, data=insertString)
         dashPub.send_string(insertString)
+        if r.status_code == 404:
+          print(r)
+          r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')
+          print(r)
         if frame % 3 == 0: print(len(insertString), r)
       except:
         try:

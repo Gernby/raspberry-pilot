@@ -67,21 +67,21 @@ def sub_sock(port, poller=None, addr="127.0.0.1", conflate=False, timeout=None):
     poller.register(sock, zmq.POLLIN)
   return sock
 
-def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, prev_center, minimize=False):
+def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, minimize=False):
   left = tri_value[:,1:2]
   right = tri_value[:,2:3]
   center = tri_value[:,0:1]
   if minimize:
-    abs_left = np.sum(np.absolute(left)) 
+    abs_left = np.sum(np.absolute(left))
     abs_right = np.sum(np.absolute(right))
   else:
     abs_left = 1
     abs_right = 1     
   new_center = [lr_prob * (abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001) + (1-lr_prob) * center, left, right]
   if steer > 0:
-    new_center = np.maximum(new_center, prev_center - 5)
+    new_center[0] = np.maximum(new_center[0], new_center[0] * min(1.0, max(0.0, 1 - abs(steer)))**2)
   elif steer < 0:
-    new_center = np.minimum(new_center, prev_center + 5)
+    new_center[0] = np.minimum(new_center[0], new_center[0] * min(1.0, max(0.0, 1 - abs(steer)))**2)
   return new_center
 
 
@@ -218,7 +218,7 @@ while 1:
   max_width_step = 0.05 * cs.vEgo * l_prob * r_prob
   lane_width = max(570, lane_width - max_width_step * 2, min(1200, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
   
-  calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,2::3], fast_angles[5,0]-fast_angles[0,0], calc_center[0], minimize=True)
+  calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,2::3], cs.torqueRequest, minimize=True)
 
   if cs.vEgo > 10 and (l_prob > 0 or r_prob > 0):
     if calc_center[1][0,0] > calc_center[2][0,0] and l_prob > 0 and r_prob > 0:

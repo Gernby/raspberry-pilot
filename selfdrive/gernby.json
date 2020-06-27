@@ -7,7 +7,7 @@
   "polyReact": "0.5",
   "reactMPC": "0.25",
   "angleFactor": "1.0",
-  "tuneRev": "0.2.5",
+  "tuneRev": "0.2.6",
   "angleOffset": "1",
   "lateralOffset": "1",
   "angleBias": "1"

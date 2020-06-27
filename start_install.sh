@@ -41,6 +41,8 @@ sudo add-apt-repository "deb https://packages.grafana.com/oss/deb stable main"
 sudo apt update
 
 sudo apt install -y  network-manager
+#ansible localhost -b -m lineinfile -a "path=/etc/default/crda regexp='^REGDOMAIN=' line='REGDOMAIN=US'"
+sudo sed -i -e 's/REGDOMAIN=/REGDOMAIN=US/' /etc/default/crda
 sudo systemctl start NetworkManager
 
 # force rescan of the available wifi networks
@@ -66,7 +68,7 @@ sudo apt install -y opencl-headers pkg-config wget checkinstall libusb-1.0
 sudo apt install -y clang-3.8 libatlas-base-dev libopenblas-base libopenblas-dev gcc gfortran ocl-icd-opencl-dev 
 sudo apt install -y capnproto opencl-headers autotools-dev uuid-dev libsodium-dev valgrind
 sudo apt install -y libusb-dev cmake libnewlib-arm-none-eabi libhdf5-serial-dev hdf5-tools smbclient
-sudo apt install -y influxdb influxdb-client apt-transport-https software-properties-common adduser libfontconfig1
+sudo apt install -y influxdb influxdb-client apt-transport-https software-properties-common adduser libfontconfig1 dfu-util
 
 # install and start grafana; reverse the comments below to perform a standard install of grafana
 # sudo apt install -y grafana

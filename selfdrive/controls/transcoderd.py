@@ -69,7 +69,7 @@ def sub_sock(port, poller=None, addr="127.0.0.1", conflate=False, timeout=None):
     poller.register(sock, zmq.POLLIN)
   return sock
 
-def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, prev_center, minimize=False):
+def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, prev_center, minimize=False, optimize=False):
   left = tri_value[:,1:2]
   right = tri_value[:,2:3]
   center = tri_value[:,0:1]
@@ -79,16 +79,15 @@ def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, prev_center, minimize=F
   else:
     abs_left = 1
     abs_right = 1     
-  weighted_center = [(abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001), left, right]
-  #weighted_center = [(lr_prob * (abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001) + (1-lr_prob) * center), left, right]
-  if steer > 0:
-    #weighted_center[0] = np.maximum(weighted_center[0], prev_center - MAX_CENTER_OPPOSE)
-    #weighted_center[0] = np.maximum(weighted_center[0], right)
-    weighted_center[0] = np.maximum(weighted_center[0], center)
-  elif steer < 0:
-    #weighted_center[0] = np.minimum(weighted_center[0], prev_center + MAX_CENTER_OPPOSE)    
-    #weighted_center[0] = np.minimum(weighted_center[0], left)
-    weighted_center[0] = np.minimum(weighted_center[0], center)
+
+  if optimize:
+    weighted_center = [(abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001), left, right]
+    if steer > 0:
+      weighted_center[0] = np.maximum(weighted_center[0], center)
+    elif steer < 0:
+      weighted_center[0] = np.minimum(weighted_center[0], center)
+  else:
+    weighted_center = [(lr_prob * (abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001) + (1-lr_prob) * center), left, right]
   return weighted_center
 
 
@@ -123,6 +122,8 @@ center_rate_prev = 0
 calc_center_prev = calc_center
 angle_factor = 1.0
 use_discrete_angle = True
+use_optimize = True
+use_minimize = False
 
 execution_time_avg = 0.0
 time_factor = 1.0
@@ -225,7 +226,7 @@ while 1:
   max_width_step = 0.05 * cs.vEgo * l_prob * r_prob
   lane_width = max(570, lane_width - max_width_step * 2, min(1200, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
   
-  calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,2::3], cs.torqueRequest, calc_center[0], minimize=True)
+  calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,2::3], cs.torqueRequest, calc_center[0], minimize=use_minimize, optimize=use_optimize)
 
   if cs.vEgo > 10 and (l_prob > 0 or r_prob > 0):
     if calc_center[1][0,0] > calc_center[2][0,0] and l_prob > 0 and r_prob > 0:
@@ -294,6 +295,8 @@ while 1:
     use_angle_offset = float(kegman.conf['angleOffset'])
     lateral_offset = float(kegman.conf['lateralOffset'])
     use_discrete_angle = True if kegman.conf['useDiscreteAngle'] == "1" else False
+    use_optimize = True if kegman.conf['useOptimize'] == '1' else False
+    use_minimize = True if kegman.conf['useMinimize'] == '1' else False
 
   execution_time_avg += max(0.0001, time_factor) * ((time.time() - start_time) - execution_time_avg)
   time_factor *= 0.96

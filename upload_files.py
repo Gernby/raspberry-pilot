@@ -16,6 +16,7 @@ if len(sys.argv) < 2 or sys.argv[1] == 0:
 elif sys.argv[1] == '1':
   min_time = 0
   destination = "192.168.1.3"
+print("using %s" % destination)
 params = Params()
 user_id =  str(params.get("PandaDongleId"))
 user_id = user_id.replace("'","")
@@ -35,6 +36,7 @@ max_limit = 5000
 
 directory = os.fsencode('/data/upload')
 file_data = {"user_id": str(params.get("PandaDongleId")), "file_name": "", "file_content": "", "identifier": identifier}
+file_list = []
 
 for file in os.listdir('/data/upload/'):
   filename = os.fsdecode(file)
@@ -42,10 +44,16 @@ for file in os.listdir('/data/upload/'):
     #print(directory, filename)
     with open(os.path.join('/data/upload/', filename)) as myfile:
       inString = myfile.read()
-      print(len(inString))
+      print("characters sent: %d" % len(inString))
       if len(inString) > 0:
-        file_data.update({"file_name": filename, "file_content": inString})
+        file_data.update({"file_name": filename, "file_content": inString.replace('carState', user_id)})
+        file_list.append(filename)
         dataPush.send_string(json.dumps(file_data))
-        reply = dataSub.recv_string()
-        print(reply)
+        time.sleep(2)
+        if len(file_list) > 5:
+          #print(dataSub.recv_string())
+          reply = dataSub.recv_multipart()
+          print(len(reply))
+          file_to_delete = file_list.pop(file_list.index(json.loads(reply[1])['filename']))
+          print("successfully processed: %s  files in queue: %d" % (file_to_delete, len(file_list)))
         #time.sleep(10)

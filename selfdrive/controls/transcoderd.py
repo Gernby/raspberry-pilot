@@ -26,6 +26,8 @@ MODEL_NAME = 'GRU_Complex_Angle_DualRes_TriConv5_4thOrder_mae_50_cFactor_0_Advan
 HISTORY_ROWS = 5
 OUTPUT_ROWS = 15
 BATCH_SIZE = 1
+MAX_CENTER_OPPOSE = np.reshape(np.arange(15) * 200, (OUTPUT_ROWS,1))
+
 output_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_output_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
 output_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_output_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
 vehicle_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_vehicle_%s.scaler' % (11, MODEL_VERSION)))
@@ -67,7 +69,7 @@ def sub_sock(port, poller=None, addr="127.0.0.1", conflate=False, timeout=None):
     poller.register(sock, zmq.POLLIN)
   return sock
 
-def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, minimize=False):
+def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, prev_center, minimize=False):
   left = tri_value[:,1:2]
   right = tri_value[:,2:3]
   center = tri_value[:,0:1]
@@ -77,11 +79,13 @@ def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, minimize=False):
   else:
     abs_left = 1
     abs_right = 1     
-  new_center = [lr_prob * (abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001) + (1-lr_prob) * center, left, right]
+  new_center = [(lr_prob * (abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001) + (1-lr_prob) * center), left, right]
   if steer > 0:
-    new_center[0] = np.maximum(new_center[0], new_center[0] * min(1.0, max(0.0, 1 - abs(steer)))**2)
+    #new_center[0] = np.maximum(new_center[0], prev_center - MAX_CENTER_OPPOSE)
+    new_center[0] = np.maximum(new_center[0], right)
   elif steer < 0:
-    new_center[0] = np.minimum(new_center[0], new_center[0] * min(1.0, max(0.0, 1 - abs(steer)))**2)
+    #new_center[0] = np.minimum(new_center[0], prev_center + MAX_CENTER_OPPOSE)    
+    new_center[0] = np.minimum(new_center[0], left)
   return new_center
 
 
@@ -218,13 +222,13 @@ while 1:
   max_width_step = 0.05 * cs.vEgo * l_prob * r_prob
   lane_width = max(570, lane_width - max_width_step * 2, min(1200, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
   
-  calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,2::3], cs.torqueRequest, minimize=True)
+  calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,2::3], cs.torqueRequest, calc_center[0], minimize=True)
 
   if cs.vEgo > 10 and (l_prob > 0 or r_prob > 0):
     if calc_center[1][0,0] > calc_center[2][0,0] and l_prob > 0 and r_prob > 0:
-      width_trim += 1
+      width_trim += 0.5
     else:
-      width_trim -= 1
+      width_trim -= 0.5
     width_trim = max(-100, min(width_trim, 0))
     '''if l_prob - r_prob > 0.1:
       lateral_adjust += 0.25

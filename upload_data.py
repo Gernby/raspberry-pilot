@@ -22,7 +22,7 @@ user_id = user_id.replace("'","")
 context = zmq.Context()
 steerPush = context.socket(zmq.PUSH)
 steerPush.connect("tcp://" + destination + ":8594")
-start_time = time.time() * 1000 #- 24 * 60 * 60 * 1000
+start_time = time.time() * 1000 - 60 * 60 * 1000
 min_time = start_time 
 
 for days in range(30):
@@ -53,7 +53,7 @@ for days in range(30):
           send_end = time.time()
 
           sleep_time = max(send_end - send_start, send_start - qry_start) - min(send_end - send_start, send_start - qry_start)
-          time.sleep(sleep_time)
+          time.sleep(min(10,sleep_time))
           print( send_start - qry_start, send_end - send_start, sleep_time)
           if len(result['results']) > 0:
             print(len(r.content))

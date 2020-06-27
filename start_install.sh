@@ -41,6 +41,8 @@ sudo add-apt-repository "deb https://packages.grafana.com/oss/deb stable main"
 sudo apt update
 
 sudo apt install -y  network-manager
+#ansible localhost -b -m lineinfile -a "path=/etc/default/crda regexp='^REGDOMAIN=' line='REGDOMAIN=US'"
+sudo sed -i -e 's/REGDOMAIN=/REGDOMAIN=US/' /etc/default/crda
 sudo systemctl start NetworkManager
 
 # force rescan of the available wifi networks

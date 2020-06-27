@@ -36,7 +36,7 @@ version: 2
 ethernets:
   eth0:
     dhcp4: true
-    optional:true
+    optional: true
 wifis:
   wlan0:
     dhcp4: true

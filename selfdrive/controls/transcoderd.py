@@ -79,14 +79,17 @@ def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, prev_center, minimize=F
   else:
     abs_left = 1
     abs_right = 1     
-  new_center = [(lr_prob * (abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001) + (1-lr_prob) * center), left, right]
+  weighted_center = [(abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001), left, right]
+  #weighted_center = [(lr_prob * (abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001) + (1-lr_prob) * center), left, right]
   if steer > 0:
-    #new_center[0] = np.maximum(new_center[0], prev_center - MAX_CENTER_OPPOSE)
-    new_center[0] = np.maximum(new_center[0], right)
+    #weighted_center[0] = np.maximum(weighted_center[0], prev_center - MAX_CENTER_OPPOSE)
+    #weighted_center[0] = np.maximum(weighted_center[0], right)
+    weighted_center[0] = np.maximum(weighted_center[0], center)
   elif steer < 0:
-    #new_center[0] = np.minimum(new_center[0], prev_center + MAX_CENTER_OPPOSE)    
-    new_center[0] = np.minimum(new_center[0], left)
-  return new_center
+    #weighted_center[0] = np.minimum(weighted_center[0], prev_center + MAX_CENTER_OPPOSE)    
+    #weighted_center[0] = np.minimum(weighted_center[0], left)
+    weighted_center[0] = np.minimum(weighted_center[0], center)
+  return weighted_center
 
 
 gernPath = pub_sock(service_list['pathPlan'].port)

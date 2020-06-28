@@ -10,10 +10,10 @@ from selfdrive.services import service_list
 from common.params import Params
 import numpy as np
 from setproctitle import setproctitle
+from selfdrive.kegman_conf import kegman_conf
 import requests
 
 SERVER_ADDRESS = "gernstation.synology.me"
-SERVER_ADDRESS = "192.168.137.1"
 
 setproctitle('dashboard')
 
@@ -24,14 +24,14 @@ vEgo = 0.0
 carState = messaging.sub_sock(service_list['carState'].port, conflate=False)
 pathPlan = messaging.sub_sock(service_list['pathPlan'].port, conflate=False)
 tuneSub = None #messaging.sub_sock("tcp://" + server_address + ":8596")
-heartBeatSub = messaging.sub_sock(8602, addr=SERVER_ADDRESS, conflate=True)
+#heartBeatSub = messaging.sub_sock(8602, addr=SERVER_ADDRESS, conflate=True)
 
-serverPush = context.socket(zmq.PUSH)
-serverPush.connect("tcp://" + SERVER_ADDRESS + ":8593")
+#serverPush = context.socket(zmq.PUSH)
+#serverPush.connect("tcp://" + SERVER_ADDRESS + ":8593")
 if pathPlan != None: poller.register(pathPlan, zmq.POLLIN)
-if heartBeatSub != None: poller.register(heartBeatSub, zmq.POLLIN)
+#if heartBeatSub != None: poller.register(heartBeatSub, zmq.POLLIN)
 if carState != None: poller.register(carState, zmq.POLLIN)
-dashPub = messaging.pub_sock(8597)
+#dashPub = messaging.pub_sock(8597)
 
 frame_count = 0
 params = Params()
@@ -39,7 +39,9 @@ user_id = str(params.get("PandaDongleId"))
 user_id = user_id.replace("'","")
 
 #if len(sys.argv) >= 2:
-do_influx = not (len(sys.argv) >= 2 and sys.argv[1] == "-1") 
+
+kegman = kegman_conf()  
+do_influx = True if kegman.conf['useInfluxDB'] == '1' else False
 do_send_live = False
 target_address = '127.0.0.1'
 cred = 'u=liveOP&p=liveOP&'

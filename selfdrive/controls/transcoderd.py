@@ -21,8 +21,16 @@ setproctitle('transcoderd')
 INPUTS = 77
 OUTPUTS = 9
 MODEL_VERSION = 'F'
-MODEL_NAME = 'GRU_Complex_Angle_DualRes_TriConv5_4thOrder_mae_50_cFactor_0_Advance_0_Lag_15_Smooth_30_Batch_83_6_15_5_Hist_100_Future_0_0_0_Drop_2_3_3_Kernel_1_Stride_1_1_1_DilateProd'
-  
+MODEL_NAME = ''
+for filename in os.listdir('models/'):
+  if filename[-5:] == '.hdf5':
+    if MODEL_NAME == '':
+      MODEL_NAME = filename
+    else:
+      print("\n\n   More than one model found!  Exiting!\n\n")
+      exit()
+     #[0]  #'Model-100-2-2-3-3'
+print('loading model: %s' % MODEL_NAME)
 HISTORY_ROWS = 5
 OUTPUT_ROWS = 15
 BATCH_SIZE = 1
@@ -34,7 +42,7 @@ vehicle_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_vehicle_%
 vehicle_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_vehicle_%s.scaler' % (11, MODEL_VERSION)))
 camera_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_camera_%s.scaler' % (32, MODEL_VERSION)))
 camera_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_camera_%s.scaler' % (32, MODEL_VERSION)))
-model = load_model(os.path.expanduser('models/%s.hdf5' % (MODEL_NAME)))
+model = load_model(os.path.expanduser('models/%s' % (MODEL_NAME)))
 new_input = np.zeros((BATCH_SIZE,HISTORY_ROWS, INPUTS))
 model_input = new_input
 print(model.summary())
@@ -69,7 +77,7 @@ def sub_sock(port, poller=None, addr="127.0.0.1", conflate=False, timeout=None):
     poller.register(sock, zmq.POLLIN)
   return sock
 
-def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, prev_center, minimize=False, optimize=False):
+def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, angle, prev_center, minimize=False, optimize=False):
   left = tri_value[:,1:2]
   right = tri_value[:,2:3]
   center = tri_value[:,0:1]
@@ -80,7 +88,7 @@ def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, prev_center, minimize=F
     abs_left = 1
     abs_right = 1     
 
-  if optimize:
+  if optimize and abs(angle) < 5:
     weighted_center = [(abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001), left, right]
     if steer > 0:
       weighted_center[0] = np.maximum(weighted_center[0], center)
@@ -226,7 +234,7 @@ while 1:
   max_width_step = 0.05 * cs.vEgo * l_prob * r_prob
   lane_width = max(570, lane_width - max_width_step * 2, min(1200, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
   
-  calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,2::3], cs.torqueRequest, calc_center[0], minimize=use_minimize, optimize=use_optimize)
+  calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,2::3], cs.torqueRequest, cs.steeringAngle - calibration[0], calc_center[0], minimize=use_minimize, optimize=use_optimize)
 
   if cs.vEgo > 10 and (l_prob > 0 or r_prob > 0):
     if calc_center[1][0,0] > calc_center[2][0,0] and l_prob > 0 and r_prob > 0:

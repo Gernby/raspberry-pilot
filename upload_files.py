@@ -49,11 +49,16 @@ for file in os.listdir('/data/upload/'):
         file_data.update({"file_name": filename, "file_content": inString.replace('carState', user_id)})
         file_list.append(filename)
         dataPush.send_string(json.dumps(file_data))
-        time.sleep(2)
+        time.sleep(1)
         if len(file_list) > 5:
           #print(dataSub.recv_string())
           reply = dataSub.recv_multipart()
-          print(len(reply))
-          file_to_delete = file_list.pop(file_list.index(json.loads(reply[1])['filename']))
-          print("successfully processed: %s  files in queue: %d" % (file_to_delete, len(file_list)))
+          time.sleep(1)
+          return_data = json.loads(reply[1])
+          file_to_delete = file_list.pop(file_list.index(return_data['filename']))
+          if return_data['statuscode'] == 204:
+            print("successfully processed: %s  files in queue: %d  response length: %d" % (file_to_delete, len(file_list), len(reply)))
+            os.rename('/data/upload/%s' % file_to_delete, '/data/upload/%s' % file_to_delete.replace('.dat','.bak'))
+          else:
+            print(" Oops!  status_code: %d    NOT successful with file: %s" % (return_data['statuscode'], file_to_delete))
         #time.sleep(10)

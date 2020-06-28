@@ -1,5 +1,6 @@
 
 {
+  "tuneRev": "0.2.0",
   "dampMPC": "0.17",
   "_dampMPC_note": "This is the amount of seconds into the future that the desired angle will be smoothed.  Smaller value results in more steering response AND more steering noise",
   "dampTime": "0.0",
@@ -16,7 +17,6 @@
   "_reactMPC_note": "This is the amount of seconds into the future that the desired angle will be projected.  This is used to account for delay in the steering control commands and for the delay caused by smoothing",
   "angleFactor": "1.0",
   "_angleFactor_note": "Similar to advanceSteer, but not currently used",
-  "tuneRev": "0.2.8",
   "angleOffset": "1",
   "_angleOffset_note": "not currently used",
   "lateralOffset": "1",
@@ -28,7 +28,3 @@
   "useMinimize": "1",
   "_useMinimize_note": "This is an option (1 or 0) to consider the noise level from left and right in the blending of the lane center values."
 }
-  "useDiscreteAngle": "1",
-  "useInfluxDB": "1",
-  "useMinimize": "1",
-  "useOptimize": "1"

@@ -21,9 +21,12 @@ sudo /bin/systemctl disable grafana-server
 sudo /bin/systemctl disable influxdb
 ```
 
-If you used the next-generation installer, run this command that combines both steps:
+If you used the next-generation installer or just wish to use ansible,
 
-`ansible localhost -b -m systemd -a "name=influxdb enabled=no,name=grafana-server enabled=no"`
+```
+sudo apt install ansible
+ansible localhost -b -m systemd -a "name=influxdb enabled=no,name=grafana-server enabled=no"
+```
 
 Finally, regardless of the installer you used initially, edit `~/raspilot/controls.sh` to include `-1` as a parameter on the line that launches `dashboard.py`:
 

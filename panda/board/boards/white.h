@@ -154,7 +154,7 @@ uint64_t marker = 0;
 void white_usb_power_mode_tick(uint64_t tcnt){
 
   // on EON or BOOTSTUB, no state machine
-/*#if !defined(BOOTSTUB) && !defined(EON)
+#if !defined(BOOTSTUB) && !defined(EON)
   #define CURRENT_THRESHOLD 0xF00U
   #define CLICKS 45U // 5 seconds to switch modes
 
@@ -212,9 +212,9 @@ void white_usb_power_mode_tick(uint64_t tcnt){
       puts("USB power mode invalid\n");  // set_usb_power_mode prevents assigning invalid values
       break;
   }
-#else*/
+#else
   UNUSED(tcnt);
-//#endif
+#endif
 }
 
 bool white_check_ignition(void){

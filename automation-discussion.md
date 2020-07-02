@@ -18,7 +18,7 @@ I have four Model buttons, each one corresponding to loading an hdf5 file sittin
 
 The second approach uses the open source configuration management tool called Ansible. Ansible allows system administrators to use a standardized language when specifying which states or conditions need to be met on a given system. In this example, I am going to use Ansible to delete the dampTime parameter from the kegman.json file and write a new one in with a specific value. 
 
-Using the same folder structure created for the models, I created /home/ubuntu/buttons/playbooks. Inside that folder are numerous yaml files -- each one corresponds to setting a specific parameter in kegman.json to a specific value. No reboot is required when making these changes. Each playbook first deletes the line with the specified parameter being updated and then adds a new version of that line with the parameter set to the desired value. For example, the playbook that sets "dampTime" to "0.05" and named `/home/ubuntu/buttons/playbooks/dampTime-0.05.yaml` would be this:
+Using the same folder structure created for the models, I created /home/ubuntu/buttons/playbooks. Inside that folder are numerous yaml files -- each one corresponds to setting a specific parameter in kegman.json to a specific value. No reboot is required when making these changes. Each playbook first deletes the line with the specified parameter being updated and then adds a new version of that line with the parameter set to the desired value. For example, the playbook named `/home/ubuntu/buttons/playbooks/dampTime-0.05.yaml` that sets "dampTime" to "0.05" would consist of this:
 
 ```
 ---

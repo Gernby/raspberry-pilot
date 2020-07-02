@@ -12,7 +12,7 @@ The first approach to automating tasks covered here includes specifying commands
 
 `/bin/rm /home/ubuntu/raspilot/models/*5 && /bin/cp /home/ubuntu/buttons/model-1/* /home/ubuntu/raspilot/models && /usr/bin/sudo /sbin/reboot`
 
-I have four Model buttons, each one corresponding to loading an hdf5 file sitting in a specific directory before rebooting the Pi to make it take effect.
+I have four Model buttons, each one corresponding to loading an hdf5 file sitting in a specific directory before rebooting the Pi to make it take effect. When new models are published, I'll copy the new scalers into the models folder and place up to four hdf5 files in each of the model folders associated with the buttons.
 
 ## Changing values in kegman.json
 

@@ -42,7 +42,17 @@ The command behind the button in the mobile app to set this value is:
 
 `/usr/bin/ansible-playbook /home/ubuntu/buttons/playbooks/dampTime-0.05.yaml`
 
-You will end up with several buttons that will set specific parameters in kegman.json to whatever value is specified in the playbook associated with each button.
+You will end up with several buttons that will set specific parameters in kegman.json to whatever value is specified in the playbook associated with each button. When deciding which parameters to change and which values to try for those parameters, see these recommended settings and their typical range:
+
+```
+dampTime: 0.0 to 0.25
+dampMPC: 0.0 to 0.2
+reactMPC: 0.0 to 0.3
+polyFactor: 0.0 to 0.5
+polyDamp: 0.0 to 0.5
+```
+
+A reasonable selection of pairings will need to be built for all of these and the resulting buttons created to trigger the settings. Watch this space for updates.
 
 ## Future goals
 

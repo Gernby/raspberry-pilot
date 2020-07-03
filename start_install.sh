@@ -59,7 +59,7 @@ sudo apt full-upgrade -y
 sudo apt autoremove -y
 
 # install dependencies
-sudo apt install -y build-essential make automake python3.7-dev python3-pip 
+sudo apt install -y build-essential make automake python3.7-dev python3-pip jq
 sudo apt install -y openjdk-8-jdk automake autoconf zip unzip libtool swig libpng-dev zlib1g-dev pkg-config
 sudo apt install -y libhdf5-dev bzip2 clang git libarchive-dev  
 sudo apt install -y libffi-dev libglib2.0-0 libssl-dev libswscale-dev

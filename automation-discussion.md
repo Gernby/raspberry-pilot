@@ -16,33 +16,13 @@ I have four Model buttons, each one corresponding to loading an hdf5 file sittin
 
 ## Changing values in kegman.json
 
-The second approach uses the open source configuration management tool called Ansible. Ansible allows system administrators to use a standardized language when specifying which states or conditions need to be met on a given system. In this example, I am going to use Ansible to delete the dampTime parameter from the kegman.json file and write a new one in with a specific value. 
+The second approach is a little more complex and must be performed in multiple steps. First, the user clicks a button to choose which parameter they wish to modify. That will store the parameter name in a file called `param`. Next, they will indicate whether the value is going to be increased or decreased. This is stored as either a literal + or - in a file called `plus-minus`. Finally, the user will indicate how much to change the value of that parameter. That amount is stored in a file called `delta`. Once all three selections have been made, the user will then click a button called `Submit change` which calls a backend script. 
 
-Using the same folder structure created for the models, I created /home/ubuntu/buttons/playbooks. Inside that folder are numerous yaml files -- each one corresponds to setting a specific parameter in kegman.json to a specific value. No reboot is required when making these changes. Each playbook first deletes the line with the specified parameter being updated and then adds a new version of that line with the parameter set to the desired value. For example, the playbook named `/home/ubuntu/buttons/playbooks/dampTime-0.05.yaml` that sets "dampTime" to "0.05" would consist of this:
+The script will read the three files that were created and populated by the first three user actions. It will find the current value stored in kegman.json, perform some string manipulation and some basic math to derive a new value, then replace the value of the parameter in a temporary copy of kegman.json. Then, the script backs up the current version of kegman.json before overwriting it with the new version just updated. The script then deletes all temporary files used during the update to prevent accidentally reusing any values left over from prior changes.
 
-```
----
-- hosts: localhost
-  tasks:
+## Recommended values for key parameters
 
-  - name: Remove dampTime
-    lineinfile:
-      path: /home/ubuntu/kegman.json
-      regexp: 'dampTime*.:'
-      state: absent
-
-  - name: Set dampTime to 0.05
-    lineinfile:
-      path: /home/ubuntu/kegman.json
-      insertafter: dampMPC
-      line: '  "dampTime": "0.05",'
-```
-
-The command behind the button in the mobile app to set this value is:
-
-`/usr/bin/ansible-playbook /home/ubuntu/buttons/playbooks/dampTime-0.05.yaml`
-
-You will end up with several buttons that will set specific parameters in kegman.json to whatever value is specified in the playbook associated with each button. When deciding which parameters to change and which values to try for those parameters, see these recommended settings and their typical range:
+When deciding which parameters to change and which values to try for those parameters, see these recommended settings and their typical range:
 
 ```
 dampTime: 0.0 to 0.25
@@ -51,9 +31,6 @@ reactMPC: 0.0 to 0.3
 polyFactor: 0.0 to 0.5
 polyDamp: 0.0 to 0.5
 ```
+## Future plans
 
-A reasonable selection of pairings will need to be built for all of these and the resulting buttons created to trigger the settings. Watch this space for updates.
-
-## Future goals
-
-In the future, the goal is to learn how to change the kegman settings by a relative amount while restricting the values to stay within safe limits. For now, only specific values for specific parameters are supported.
+See `changevalue.sh` for a working Proof of Concept of the backend script written in bash. A final version is currently being developed in Python.

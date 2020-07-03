@@ -1,9 +1,9 @@
 - hosts: localhost
   connection: local
   tasks:
-  - name: Group 1 build-essential, make, automake, python3.7-dev,python3-pip
+  - name: Group 1 build-essential, make, automake, python3.7-dev,python3-pip,jq
     apt:
-      name: ['build-essential', 'make', 'automake', 'python3.7-dev', 'python3-pip']
+      name: ['build-essential', 'make', 'automake', 'python3.7-dev', 'python3-pip','jq']
 
   - name: Group 2 openjdk-8-jdk, autoconf, zip, unzip, libtool, swig, libpng-dev, zlib1g-dev, pkg-config
     apt:

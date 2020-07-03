@@ -57,9 +57,11 @@ class Lateral(object):
                                     right_missing,     cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm8, 
                                     far_right_missing, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm8], BIT_MASK)
 
-      camera_flags[3] += (camera_flags[2] + camera_flags[1])
-      camera_flags[1] == 0
-      camera_flags[2] == 0
+      for i in range(2):
+        camera_flags[3+i*16] += (camera_flags[2+i*16] + camera_flags[1+i*16
+        ])
+        camera_flags[1+i*16] == 0
+        camera_flags[2+i*16] == 0
 
       self.camera_array.append(np.concatenate(([cs.vEgo, cs.longAccel,  max(570, path_plan.laneWidth), cs.steeringAngle, cs.lateralAccel, cs.yawRateCAN, 0, 0], np.minimum(1, camera_flags), 
                                                 [cs.camFarLeft.parm10,  cs.camFarLeft.parm2,  cs.camFarLeft.parm1,  cs.camFarLeft.parm3,  cs.camFarLeft.parm4,  cs.camFarLeft.parm5,  cs.camFarLeft.parm7,  cs.camFarLeft.parm9], 

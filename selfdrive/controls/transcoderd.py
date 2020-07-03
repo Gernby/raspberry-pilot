@@ -3,25 +3,37 @@ import os
 import zmq
 import time
 import json
-from tensorflow.python.keras.models import load_model 
 import joblib
 import numpy as np
+
+INPUTS = 77
+OUTPUTS = 9
+MODEL_VERSION = 'F'
+MODEL_NAME = ''
+output_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_output_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
+output_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_output_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
+vehicle_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_vehicle_%s.scaler' % (11, MODEL_VERSION)))
+vehicle_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_vehicle_%s.scaler' % (11, MODEL_VERSION)))
+camera_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_camera_%s.scaler' % (32, MODEL_VERSION)))
+camera_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_camera_%s.scaler' % (32, MODEL_VERSION)))
+
 from selfdrive.kegman_conf import kegman_conf
 from selfdrive.services import service_list
 from enum import Enum
 from cereal import log, car
 from setproctitle import setproctitle
 from common.params import Params 
+from tensorflow.python.keras.models import load_model 
 
 setproctitle('transcoderd')
 
+params = Params()
+#kegman = kegman_conf()  
+
 #import sys
 #sys.stderr = open('../laterald.txt', 'w')
+(mode, ino, dev, nlink, uid, gid, size, atime, mtime, kegtime_prev) = os.stat(os.path.expanduser('~/kegman.json'))
 
-INPUTS = 77
-OUTPUTS = 9
-MODEL_VERSION = 'F'
-MODEL_NAME = ''
 for filename in os.listdir('models/'):
   if filename[-5:] == '.hdf5':
     if MODEL_NAME == '':
@@ -36,12 +48,6 @@ OUTPUT_ROWS = 15
 BATCH_SIZE = 1
 MAX_CENTER_OPPOSE = np.reshape(np.arange(15) * 200, (OUTPUT_ROWS,1))
 
-output_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_output_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
-output_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_output_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
-vehicle_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_vehicle_%s.scaler' % (11, MODEL_VERSION)))
-vehicle_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_vehicle_%s.scaler' % (11, MODEL_VERSION)))
-camera_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_camera_%s.scaler' % (32, MODEL_VERSION)))
-camera_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_camera_%s.scaler' % (32, MODEL_VERSION)))
 model = load_model(os.path.expanduser('models/%s' % (MODEL_NAME)))
 new_input = np.zeros((BATCH_SIZE,HISTORY_ROWS, INPUTS))
 model_input = new_input
@@ -138,9 +144,6 @@ time_factor = 1.0
 lateral_offset = 0
 calibration_factor = 1.0
 
-kegman = kegman_conf()  
-
-
 model_output = None
 start_time = time.time()
 
@@ -183,20 +186,36 @@ print(adj_col)
 
 try:
   calibrated = True
-  with open(os.path.expanduser('~/calibration.json'), 'r') as f:
-    calibration_data = json.load(f)
-    calibration = np.array(calibration_data['calibration'])
-    if len(calibration) != len(cal_col):
-      calibration = np.zeros(len(cal_col))
-      calibrated = False
-      print("resetting calibration")
+  calibration_data = params.get("CalibrationParams")
+  calibration_data =  json.loads(calibration_data)
+  calibration = np.array(calibration_data['calibration'])
+  if len(calibration) != len(cal_col):
+    with open(os.path.expanduser('~/calibration.json'), 'r') as f:
+      calibration_data = json.load(f)
+      calibration = np.array(calibration_data['calibration'])
+      if len(calibration) != len(cal_col):
+        calibration = np.zeros(len(cal_col))
+        calibrated = False
+        print("resetting calibration")
+  lane_width = calibration_data['lane_width']
+  angle_bias = calibration_data['angle_bias']
+  print(calibration)
+except:
+  # TODO: Remove this after user's calibrations have been moved to params
+  try:
+    with open(os.path.expanduser('~/calibration.json'), 'r') as f:
+      calibration_data = json.load(f)
+      calibration = np.array(calibration_data['calibration'])
+      if len(calibration) != len(cal_col):
+        calibration = np.zeros(len(cal_col))
+        calibrated = False
+        print("resetting calibration")
     lane_width = calibration_data['lane_width']
     angle_bias = calibration_data['angle_bias']
-    print(calibration)
-except:
-  calibrated = False
-  print("resetting calibration")
-  calibration = np.zeros(len(cal_col))
+  except:
+    calibrated = False
+    print("resetting calibration")
+    calibration = np.zeros(len(cal_col))
 
 while 1:
   cs = car.CarState.from_bytes(gernModelInputs.recv())
@@ -289,22 +308,23 @@ while 1:
 
   if frame % 6000 == 0:
     print(np.round(calibration,2))
-    with open(os.path.expanduser('~/calibration.json'), 'w') as f:
-      json.dump({'calibration': list(calibration),'lane_width': lane_width,'angle_bias': angle_bias}, f, indent=2, sort_keys=True)
-      #os.chmod(os.path.expanduser("~/calibration.json"), 0o764)
-
+    params.put("CalibrationParams", json.dumps({'calibration': list(calibration),'lane_width': lane_width,'angle_bias': angle_bias}))
+    #os.remove(os.path.expanduser('~/calibration.json'))
 
   # TODO: replace kegman_conf with params!
   if frame % 100 == 0:
-    kegman = kegman_conf()  
-    advanceSteer = 1.0 + max(0, float(kegman.conf['advanceSteer']))
-    angle_factor = float(kegman.conf['angleFactor'])
-    use_bias = float(kegman.conf['angleBias'])
-    use_angle_offset = float(kegman.conf['angleOffset'])
-    lateral_offset = float(kegman.conf['lateralOffset'])
-    use_discrete_angle = True if kegman.conf['useDiscreteAngle'] == "1" else False
-    use_optimize = True if kegman.conf['useOptimize'] == '1' else False
-    use_minimize = True if kegman.conf['useMinimize'] == '1' else False
+    (mode, ino, dev, nlink, uid, gid, size, atime, mtime, kegtime) = os.stat(os.path.expanduser('~/kegman.json'))
+    if kegtime != kegtime_prev:
+      kegtime_prev = kegtime
+      kegman = kegman_conf()  
+      advanceSteer = 1.0 + max(0, float(kegman.conf['advanceSteer']))
+      angle_factor = float(kegman.conf['angleFactor'])
+      use_bias = float(kegman.conf['angleBias'])
+      use_angle_offset = float(kegman.conf['angleOffset'])
+      lateral_offset = float(kegman.conf['lateralOffset'])
+      use_discrete_angle = True if kegman.conf['useDiscreteAngle'] == "1" else False
+      use_optimize = True if kegman.conf['useOptimize'] == '1' else False
+      use_minimize = True if kegman.conf['useMinimize'] == '1' else False
 
   execution_time_avg += max(0.0001, time_factor) * ((time.time() - start_time) - execution_time_avg)
   time_factor *= 0.96

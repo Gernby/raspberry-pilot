@@ -2,6 +2,7 @@ from selfdrive.controls.lib.pid import PIController
 from selfdrive.kegman_conf import kegman_conf
 from common.numpy_fast import gernterp, interp, clip
 import numpy as np
+import os
 import time
 from cereal import car
 from common.params import Params
@@ -12,6 +13,8 @@ import json
 class LatControlPID(object):
   def __init__(self, CP):
     self.kegman = kegman_conf(CP)
+    self.kegtime_prev = 0
+
     self.frame = 0
     self.pid = PIController((CP.lateralTuning.pid.kpBP, CP.lateralTuning.pid.kpV),
                             (CP.lateralTuning.pid.kiBP, CP.lateralTuning.pid.kiV),
@@ -65,19 +68,22 @@ class LatControlPID(object):
     if self.frame % 3600 == 0:
       self.params.put("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
     if self.frame % 300 == 0:
-      try:
-        self.kegman = kegman_conf()  #.read_config()
-        self.pid._k_i = ([0.], [float(self.kegman.conf['Ki'])])
-        self.pid._k_p = ([0.], [float(self.kegman.conf['Kp'])])
-        self.pid.k_f = (float(self.kegman.conf['Kf']))
-        self.damp_time = (float(self.kegman.conf['dampTime']))
-        self.react_mpc = (float(self.kegman.conf['reactMPC']))
-        self.damp_mpc = (float(self.kegman.conf['dampMPC']))
-        self.polyReact = 0.5 + float(self.kegman.conf['polyReact'])
-        self.poly_smoothing = max(1.0, float(self.kegman.conf['polyDamp']) * 100.)
-        self.poly_factor = max(0.0, float(self.kegman.conf['polyFactor']) * 0.001)
-      except:
-        print("   Kegman error")
+      (mode, ino, dev, nlink, uid, gid, size, atime, mtime, self.kegtime) = os.stat(os.path.expanduser('~/kegman.json'))
+      if self.kegtime != self.kegtime_prev:
+        try:
+          self.kegman = kegman_conf()  #.read_config()
+          self.pid._k_i = ([0.], [float(self.kegman.conf['Ki'])])
+          self.pid._k_p = ([0.], [float(self.kegman.conf['Kp'])])
+          self.pid.k_f = (float(self.kegman.conf['Kf']))
+          self.damp_time = (float(self.kegman.conf['dampTime']))
+          self.react_mpc = (float(self.kegman.conf['reactMPC']))
+          self.damp_mpc = (float(self.kegman.conf['dampMPC']))
+          self.polyReact = 0.5 + float(self.kegman.conf['polyReact'])
+          self.poly_smoothing = max(1.0, float(self.kegman.conf['polyDamp']) * 100.)
+          self.poly_factor = max(0.0, float(self.kegman.conf['polyFactor']) * 0.001)
+          self.kegtime_prev = self.kegtime
+        except:
+          print("   Kegman error")
 
   def update_lane_state(self, angle_steers, driver_opposing_lane, blinker_on, path_plan):
     if self.lane_changing > 0.0 and path_plan.cProb > 0:

@@ -10,13 +10,15 @@ See Raspberry SSH as one such example app on Android, available here: https://pl
 
 The first approach to automating tasks covered here includes specifying commands as part of the SSH session establishment. This is useful for small, simple tasks such as removing the current hdf5 files from ~/raspilot/models and copying a different one into the folder. I created a folder structure for holding each of the hdf5 files being tested under /home/ubuntu/buttons/model-*, with "model-*' meaning "model-1", "model-2", "model-3", and "model-4". I placed one hdf5 file in each final folder and will replace those files when new model bundles are released. Then I created buttons in the mobile app that erase the current model from ~/raspilot/models, copies a specific hdf5 file over to the models folder, and reboots the Raspberry Pi to make the change take effect. For example, this is the command behind the "Model 1" button in my Raspberry SSH mobile app:
 
-`/bin/rm /home/ubuntu/raspilot/models/*5 && /bin/cp /home/ubuntu/buttons/model-1/* /home/ubuntu/raspilot/models && /usr/bin/sudo /sbin/reboot`
+`/bin/touch /home/ubuntu/models/5 && /bin/rm /home/ubuntu/raspilot/models/*5 && /bin/cp /home/ubuntu/buttons/model-1/* /home/ubuntu/raspilot/models && /usr/bin/sudo /sbin/reboot`
 
 I have four Model buttons, each one corresponding to loading an hdf5 file sitting in a specific directory before rebooting the Pi to make it take effect. When new models are published, I'll copy the new scalers into the models folder and place up to four hdf5 files in each of the model folders associated with the buttons.
 
 ## Changing values in kegman.json
 
-The second approach is a little more complex and must be performed in multiple steps. First, the user clicks a button to choose which parameter they wish to modify. That will store the parameter name in a file called `param`. Next, they will indicate whether the value is going to be increased or decreased. This is stored as either a literal + or - in a file called `plus-minus`. Finally, the user will indicate how much to change the value of that parameter. That amount is stored in a file called `delta`. Once all three selections have been made, the user will then click a button called `Submit change` which calls a backend script. 
+The second approach is a little more complex and must be performed in multiple steps. First, the user clicks a button to choose which parameter they wish to modify. That will store the parameter name in a file called `param`. Next, they will indicate whether the value is going to be increased or decreased. This is stored as either a literal + or - in a file called `plus-minus`. Finally, the user will indicate how much to change the value of that parameter. That amount is stored in a file called `delta`. Once all three selections have been made, the user will then click a button called `Submit change` which calls a backend script, located here:
+
+https://github.com/Gernby/raspberry-pilot/blob/gh-pages/changevalue.sh
 
 The script will read the three files that were created and populated by the first three user actions. It will find the current value stored in kegman.json, perform some string manipulation and some basic math to derive a new value, then replace the value of the parameter in a temporary copy of kegman.json. Then, the script backs up the current version of kegman.json before overwriting it with the new version just updated. The script then deletes all temporary files used during the update to prevent accidentally reusing any values left over from prior changes.
 
@@ -33,4 +35,4 @@ polyDamp: 0.0 to 0.5
 ```
 ## Future plans
 
-See `changevalue.sh` for a working Proof of Concept of the backend script written in bash. A final version is currently being developed in Python.
+See `changevalue.sh` for a working Proof of Concept of the backend script written in bash. A final version is currently being developed in Python. Additionally, there are millions of combinations of settings in kegman.json. If we develop a way to automatically adjust certain settings in kegman.json once every minute (for example), I'm going to need a button that stops the automatic updates if the system lands on a good setting.

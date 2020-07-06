@@ -28,10 +28,6 @@ sudo apt install ansible
 ansible localhost -b -m systemd -a "name=influxdb enabled=no,name=grafana-server enabled=no"
 ```
 
-Finally, regardless of the installer you used initially, edit `~/raspilot/controls.sh` to include `-1` as a parameter on the line that launches `dashboard.py`:
-
-`python ~/raspilot/dashboard.py -1 &`
-
 ## Conclusion
 
 Making those changes should reduce resource consumption on your Pi enough to eliminate unexpected ACC disengagements and the accompanied dashboard warnings and alert tones.

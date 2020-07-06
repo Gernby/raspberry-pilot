@@ -17,18 +17,27 @@ SERVER_ADDRESS = "gernstation.synology.me"
 
 setproctitle('dashboard')
 
-kegman_valid = True
+kegman = kegman_conf()  
+do_influx = True if kegman.conf['useInfluxDB'] == '1' else False
+do_send_live = False
+target_address = '127.0.0.1'
+cred = 'u=liveOP&p=liveOP&'
+target_URL = 'http://%s:8086/write?db=carDB&%sprecision=ms' % (target_address, cred)
+#target_URL = 'http://192.168.137.1:8086/write?db=carDB&precision=ms' 
+print(target_URL)
+
+kegman_valid = False
 context = zmq.Context()
 poller = zmq.Poller()
 vEgo = 0.0
 carState = messaging.sub_sock(service_list['carState'].port, conflate=False)
-pathPlan = messaging.sub_sock(service_list['pathPlan'].port, conflate=False)
+pathPlan = messaging.sub_sock(service_list['pathPlan'].port, conflate=True)
 tuneSub = None #messaging.sub_sock("tcp://" + server_address + ":8596")
 #heartBeatSub = messaging.sub_sock(8602, addr=SERVER_ADDRESS, conflate=True)
 
 #serverPush = context.socket(zmq.PUSH)
 #serverPush.connect("tcp://" + SERVER_ADDRESS + ":8593")
-if pathPlan != None: poller.register(pathPlan, zmq.POLLIN)
+if pathPlan != None and do_influx: poller.register(pathPlan, zmq.POLLIN)
 #if heartBeatSub != None: poller.register(heartBeatSub, zmq.POLLIN)
 if carState != None: poller.register(carState, zmq.POLLIN)
 #dashPub = messaging.pub_sock(8597)
@@ -40,14 +49,6 @@ user_id = user_id.replace("'","")
 
 #if len(sys.argv) >= 2:
 
-kegman = kegman_conf()  
-do_influx = True if kegman.conf['useInfluxDB'] == '1' else False
-do_send_live = False
-target_address = '127.0.0.1'
-cred = 'u=liveOP&p=liveOP&'
-target_URL = 'http://%s:8086/write?db=carDB&%sprecision=ms' % (target_address, cred)
-#target_URL = 'http://192.168.137.1:8086/write?db=carDB&precision=ms' 
-print(target_URL)
 #tunePush.send_json(config)
 #tunePush = None
 #tuneSub.setsockopt(zmq.SUBSCRIBE, str(user_id))
@@ -106,8 +107,9 @@ while 1:
         cs = log.Event.from_bytes(_cs).carState
         vEgo = cs.vEgo
         if vEgo > 0 and time.time()//60 > previous_minute:
+          if not logfile is None: logfile.close()
           previous_minute = time.time()//60
-          logfile = open('/data/upload/%s_%0.0f.dat' % (user_id, time.time()//60), "w")
+          logfile = open('/data/upload/%s_%0.0f.dat' % (user_id, time.time()//60), "a")
 
         if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
           stock_cam_frame_prev = cs.camLeft.frame
@@ -123,7 +125,8 @@ while 1:
           if do_influx:
             localCarStateDataString2.append(localCarStateFormatString2 % send_data)
           if vEgo > 0:
-            logfile.write(localCarStateFormatString2 % send_data)
+            fileStrings.append(localCarStateFormatString2 % send_data)
+            #logfile.write(localCarStateFormatString2 % send_data)
           if do_send_live:
             serverCarStateDataString2.append(serverCarStateDataFormatString2 % send_data)
         elif vEgo > 0:
@@ -131,11 +134,15 @@ while 1:
                             cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
                             cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, cs.camLeft.frame, cs.camFarRight.frame, cs.canTime)
         
-          logfile.write(localCarStateFormatString1 % send_data)
+          fileStrings.append(localCarStateFormatString1 % send_data)
+          #logfile.write(localCarStateFormatString1 % send_data)
           if do_influx:
             localCarStateDataString1.append(localCarStateFormatString1 % send_data)
           if do_send_live: 
             serverCarStateDataString1.append(serverCarStateDataFormatString1 % send_data)
+      if vEgo > 0 and len(fileStrings) > 0: 
+        logfile.write("".join(fileStrings))
+      fileStrings.clear()
 
     if socket is pathPlan:
       pp = log.Event.from_bytes(pathPlan.recv()).pathPlan
@@ -147,8 +154,8 @@ while 1:
 
         if do_influx:
           localPathDataString.append("".join([localPathFormatString1 % send_data0, localPathFormatString2 % send_data1, localPathFormatString3 % send_data2, localPathFormatString4 % send_data3]))
-        if vEgo > 0: 
-          logfile.write("".join([localPathFormatString1 % send_data0, localPathFormatString2 % send_data1, localPathFormatString3 % send_data2, localPathFormatString4 % send_data3]))
+        #if vEgo > 0: 
+        #  logfile.write("".join([localPathFormatString1 % send_data0, localPathFormatString2 % send_data1, localPathFormatString3 % send_data2, localPathFormatString4 % send_data3]))
         if do_send_live:
           serverPathDataString.append("".join([serverPolyDataFormatString % send_data0, serverPolyDataFormatString % send_data1, serverPolyDataFormatString % send_data2,serverPathDataFormatString % send_data3]))
 
@@ -223,3 +230,5 @@ while 1:
     serverCarStateDataString1 = []
     serverCarStateDataString2 = []
     serverPathDataString = []
+  #if not do_influx:
+  #  time.sleep(0.02)

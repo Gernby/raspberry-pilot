@@ -437,6 +437,7 @@ class CarState():
     self.steer_override = abs(self.steer_torque_driver) > STEER_THRESHOLD[self.CP.carFingerprint]
     self.yaw_rate = cp.vl["KINEMATICS"]["YAW"]
     self.long_accel = cp.vl["KINEMATICS"]["LONG_ACCEL"]
+    
     self.lateral_accel = cp.vl["KINEMATICS"]["LAT_ACCEL"]
 
     steer_counter = cp.vl["STEERING_SENSORS"]['COUNTER']
@@ -449,7 +450,7 @@ class CarState():
         self.steer_data_skipped += 1
     else:
       self.steer_good_count += 1
-      if self.steer_good_count % 1000 == 0: print("data reused: %d  skipped %d  good %d   %d vs %d" % (self.steer_data_reused, self.steer_data_skipped, self.steer_good_count, steer_counter, (self.prev_steering_counter + 1) % 4))
+      if self.steer_good_count % 10000 == 0: print("data reused: %d  skipped %d  good %d   %d vs %d" % (self.steer_data_reused, self.steer_data_skipped, self.steer_good_count, steer_counter, (self.prev_steering_counter + 1) % 4))
     self.prev_steering_counter = steer_counter
 
     self.brake_switch = cp.vl["POWERTRAIN_DATA"]['BRAKE_SWITCH']

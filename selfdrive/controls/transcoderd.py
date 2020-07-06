@@ -147,8 +147,23 @@ calibration_factor = 1.0
 model_output = None
 start_time = time.time()
 
-model_output = model.predict([new_input[  :,:,:5], new_input[  :,:,5:-16],new_input[  :,:,-16:-8], new_input[  :,:,-8:]])
+car_params = car.CarParams.from_bytes(params.get('CarParams'))
+
+#['Civic','CRV','Accord','Insight']
+fingerprint = np.zeros((1, HISTORY_ROWS, 4), dtype=np.int)
+if 'CIVIC' in car_params.carFingerprint:
+  fingerprint[:,:,0] = 1
+elif 'CRV' in car_params.carFingerprint:
+  fingerprint[:,:,1] = 1
+elif 'ACCORD' in car_params.carFingerprint:
+  fingerprint[:,:,2] = 1
+elif 'INSIGHT' in car_params.carFingerprint:
+  fingerprint[:,:,3] = 1
+
+
+model_output = model.predict([new_input[  :,:,:5], new_input[  :,:,5:-16],new_input[  :,:,-16:-8], new_input[  :,:,-8:], fingerprint])
 descaled_output = output_standard.transform(output_scaler.inverse_transform(model_output[-1]))
+print(descaled_output)
 
 l_prob = 0.0
 r_prob = 0.0
@@ -185,6 +200,10 @@ print(adj_col)
   print("mean: ", output_standard.mean_[i])'''
 
 try:
+  car_params = params.get('CarParams')
+  print(car_params)
+  #if 'Accord' in car_params['fingerprint']:
+    
   calibrated = True
   calibration_data = params.get("CalibrationParams")
   calibration_data =  json.loads(calibration_data)
@@ -246,7 +265,7 @@ while 1:
   new_input[-1,:-1,5:] = model_input[-1,1:,5:]
   model_input = new_input
 
-  model_output = model.predict_on_batch([model_input[  :,:,:5], model_input[  :,:,5:-16],model_input[  :,:,-16:-8], model_input[  :,:,-8:]])
+  model_output = model.predict_on_batch([model_input[  :,:,:5], model_input[  :,:,5:-16],model_input[  :,:,-16:-8], model_input[  :,:,-8:], fingerprint])
 
   descaled_output = output_standard.inverse_transform(output_scaler.inverse_transform(model_output[-1])) 
   
@@ -275,11 +294,11 @@ while 1:
       angle_bias += (0.000001 * cs.vEgo)
 
   if use_discrete_angle:
-    fast_angles = advanceSteer * descaled_output[:,0:1] + calibration[0] - angle_bias
-    slow_angles = advanceSteer * descaled_output[:,1:2] + calibration[0] - angle_bias
+    fast_angles = angle_factor * descaled_output[:,0:1] + calibration[0] - angle_bias
+    slow_angles = angle_factor * descaled_output[:,1:2] + calibration[0] - angle_bias
   else:
-    fast_angles = angle_factor * advanceSteer * (descaled_output[:,0:1] - descaled_output[0,0:1]) + cs.steeringAngle
-    slow_angles = angle_factor * advanceSteer * (descaled_output[:,1:2] - descaled_output[0,1:2]) + cs.steeringAngle 
+    fast_angles = angle_factor * advanceSteer * (descaled_output[:,0:1] - descaled_output[0,0:1]) + cs.steeringAngle - angle_bias
+    slow_angles = angle_factor * advanceSteer * (descaled_output[:,1:2] - descaled_output[0,1:2]) + cs.steeringAngle - angle_bias
 
   path_send.pathPlan.angleSteers = float(slow_angles[5])
   path_send.pathPlan.mpcAngles = [float(x) for x in slow_angles]

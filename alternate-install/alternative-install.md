@@ -86,7 +86,7 @@ cd ..
 6. Wait 30 minutes
 7. Log out of the Pi (reboot?) and log back in as the "ubuntu" user
 8. `sh finish_install.sh`
-9. Wait about 90 minutes. You will see long periods without any activity or errors pop up. This is normal.
+9. Wait about 90 minutes. You will see long periods without any activity. Some errors will pop up. This is normal.
 10. If the process completes successfully, reboot the Pi and log back in as the "ubuntu" user
 11. Run the command `top -u ubuntu`
 12. Look for `controlsd`, `boardd`, and `dashboard` in the rightmost column of the list.

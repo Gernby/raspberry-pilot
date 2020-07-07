@@ -36,7 +36,7 @@ endif
 ZMQ_LIBS = -lzmq
 OBJDIR = obj
 
-OPENDBC_PATH := $(shell python3 -c 'import opendbc; print(opendbc.DBC_PATH)')
+OPENDBC_PATH := $(shell python3.7 -c 'import opendbc; print(opendbc.DBC_PATH)')
 
 DBC_SOURCES := $(sort $(wildcard $(OPENDBC_PATH)/*.dbc))
 DBC_OBJS := $(patsubst $(OPENDBC_PATH)/%.dbc,$(OBJDIR)/%.o,$(DBC_SOURCES))
@@ -70,12 +70,12 @@ libdbc.so:: $(LIBDBC_OBJS) $(DBC_OBJS)
 		$(CEREAL_LIBS)
 
 packer_impl.so: packer_impl.pyx packer_setup.py
-	python3 packer_setup.py build_ext --inplace
+	python3.7 packer_setup.py build_ext --inplace
 	rm -rf build
 	rm -f packer_impl.cpp
 
 parser_pyx.so: parser_pyx_setup.py parser_pyx.pyx parser_pyx.pxd
-	python3 $< build_ext --inplace
+	python3.7 $< build_ext --inplace
 	rm -rf build
 	rm -f parser_pyx.cpp
 

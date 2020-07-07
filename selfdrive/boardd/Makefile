@@ -28,12 +28,12 @@ EXTRA_LIBS = -lusb
 # # for Drive PX2
 # ZMQ_LIBS = -lczmq -lzmq
 # CEREAL_LIBS = -lcapnp -lkj -lcapnp_c
-# EXTRA_LIBS = -lusb -lpthread
+# EXTRA_LIBS = -lusb-1.0 -lpthread
 # endif
 
 ifeq ($(ARCH),aarch64)
-CFLAGS += -mcpu=cortex-a57
-CXXFLAGS += -mcpu=cortex-a57
+CFLAGS += -mcpu=cortex-a72
+CXXFLAGS += -mcpu=cortex-a72
 endif
 
 
@@ -81,7 +81,7 @@ boardd.o: boardd.cc
 
 
 boardd_api_impl.so: libcan_list_to_can_capnp.a boardd_api_impl.pyx boardd_setup.py
-	python3 boardd_setup.py build_ext --inplace
+	python3.7 boardd_setup.py build_ext --inplace
 	rm -rf build
 	rm -f boardd_api_impl.cpp
 

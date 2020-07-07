@@ -24,6 +24,8 @@ sudo /bin/systemctl disable influxdb
 If you used the next-generation installer or just wish to use ansible,
 
 ```
+sudo apt-add-repository -y ppa:ansible/ansible
+sudo apt update -y
 sudo apt install ansible
 ansible localhost -b -m systemd -a "name=influxdb enabled=no,name=grafana-server enabled=no"
 ```

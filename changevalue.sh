@@ -1,5 +1,6 @@
 #! /bin/bash
 
+# you must sudo apt install jq -y
 # place the param name in /home/ubuntu/changeparam/param
 # place the plus-minus in /home/ubuntu/changeparam/plus-minus
 # place the delta in /home/ubuntu/changeparam/delta

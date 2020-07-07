@@ -55,7 +55,7 @@ pthread_t pigeon_thread_handle = -1;
 bool pigeon_needs_init;
 
 int big_recv;
-uint32_t big_data[RECV_SIZE*2];
+uint32_t big_data[RECV_SIZE*4];
 
 void pigeon_init();
 void *pigeon_thread(void *crap);

@@ -42,7 +42,7 @@ def events_to_bytes(events):
 
 def wait_for_can(logcan):
   print("Waiting for CAN messages...")
-  while len(messaging.recv_one(logcan).can) == 0:
+  while len(messaging.recv_sock(logcan).can) == 0:
     pass
 
 def data_sample(CI, CC, can_sock, carstate, lac_log, lateral, path_plan):

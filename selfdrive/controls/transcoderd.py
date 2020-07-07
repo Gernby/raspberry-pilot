@@ -147,7 +147,7 @@ calibration_factor = 1.0
 model_output = None
 start_time = time.time()
 
-car_params = car.CarParams.from_bytes(params.get('CarParams'))
+car_params = car.CarParams.from_bytes(params.get('CarParams', True))
 
 #['Civic','CRV','Accord','Insight']
 fingerprint = np.zeros((1, HISTORY_ROWS, 4), dtype=np.int)
@@ -159,7 +159,6 @@ elif 'ACCORD' in car_params.carFingerprint:
   fingerprint[:,:,2] = 1
 elif 'INSIGHT' in car_params.carFingerprint:
   fingerprint[:,:,3] = 1
-
 
 model_output = model.predict([new_input[  :,:,:5], new_input[  :,:,5:-16],new_input[  :,:,-16:-8], new_input[  :,:,-8:], fingerprint])
 descaled_output = output_standard.transform(output_scaler.inverse_transform(model_output[-1]))

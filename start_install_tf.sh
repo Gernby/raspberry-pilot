@@ -60,6 +60,16 @@ sudo /bin/systemctl daemon-reload
 
 #python3 -m pip install pipenv --user
 
+wget https://github.com/lhelontra/tensorflow-on-arm/releases/download/v2.2.0/tensorflow-2.2.0-cp37-none-linux_aarch64.whl 
+python3.7 -m pip install cython
+python3.7 -m pip install tensorflow-2.2.0-cp37-none-linux_aarch64.whl
+python3.7 -m pip install sklearn
+python3.7 -m pip install pyzmq
+python3.7 -m pip install pycapnp 
+python3.7 -m pip install setproctitle
+python3.7 -m pip install cffi
+python3.7 -m pip install cython
+
 cp ~/raspilot/finish_install.sh ~/
 sh ~/finish_install.sh
 # Exit SSH and log in again, since pipenv won't work without it

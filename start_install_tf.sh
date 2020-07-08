@@ -3,6 +3,7 @@
 # brand new ubuntu install on SD card
 # cd
 # git clone -b TensorFlow-2-2 https://github.com/Gernby/raspberry-pilot.git
+# mv ~/raspberry-pilot/start_install_tf.sh .
 # sh start_install_tf.sh
 
 # rename the folder

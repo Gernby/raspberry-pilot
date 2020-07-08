@@ -1,37 +1,14 @@
 #!/bin/bash
 
-# this script is meant to run on a fresh image of 64-bit Ubuntu Server for ARM, specifically Raspberry Pi 4.
-# However, I think it should work for any ARM64 SBC on 64-bit Ubuntu for ARM.
-#
-# NOTE: A fresh image has unattended-upgrades enabled. You must wait
-# for the initial upgrade to complete before running this script
-#
-# Download the image for RPi4 here
-# https://ubuntu.com/download/raspberry-pi/thank-you?version=18.04.4&architecture=arm64+raspi3
-#
-# For other ARM64, download from here.
-# http://cdimage.ubuntu.com/releases/18.04.4/release/ubuntu-18.04.4-server-arm64.iso
-#
-# create flash using something like Balena Etcher
-# https://www.balena.io/etcher/
-#
-# In Linux:
-# xzcat ubuntu-18.04.4-preinstalled-server-arm64+raspi3.img.xz | sudo dd bs=4M of=/dev/blkmmc0
-#
-# connect to LAN, monitor and keyboard
-# change default password for ubuntu (default login is ubuntu / ubuntu)
-# run ifconfig to get the Pi IP address
-# SSH into RPi
-# ssh ubuntu@<ip address>
-# top
-# Press <i> to reduce the number of active processes shown
-# Device will automatically update
-# Wait for "up" in the top left corner to reach 10 minutes
-# (Note: you cannot proceed with installing wifi support until the auto update completes)
-# 
-# monitor CPU temperature
-# cat /sys/class/thermal/thermal_zone0/temp
-# 42355 = 42.355 C
+# brand new ubuntu install on SD card
+# cd
+# git clone -b TensorFlow-2-2 https://github.com/Gernby/raspberry-pilot.git
+# sh start_install_tf.sh
+
+# rename the folder
+cd ~
+mv ~/raspberry-pilot ~/raspilot
+cd ~/raspilot
 
 # add grafana signing key and repository
 sudo apt-key add grafana.gpg.key
@@ -77,10 +54,11 @@ sudo dpkg -i grafana_6.6.2_arm64.deb
 
 sudo /bin/systemctl daemon-reload
 sudo /bin/systemctl enable grafana-server
-sudo service influxdb start
-sudo service grafana-server start
+#sudo service influxdb start
+#sudo service grafana-server start
 
-python3 -m pip install pipenv --user
+#python3 -m pip install pipenv --user
 
-cp ~/raspberry-pilot/finish_install.sh ~/
+cp ~/raspilot/finish_install.sh ~/
+sh ~/finish_install.sh
 # Exit SSH and log in again, since pipenv won't work without it

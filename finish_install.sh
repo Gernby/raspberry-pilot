@@ -32,6 +32,6 @@ sudo bash phonelibs/install_capnp.sh
 sudo chown -R 1000:1000 ~/raspilot/node-red
 sudo docker run -it --network host -v /home/ubuntu/raspilot/node-red:/data --name nodered-raspilot nodered/node-red 
 
-python3 -m pipenv --python 3.7
-python3 -m pipenv install
-python3 -m pipenv run bash build_all.sh
+#python3 -m pipenv --python 3.7
+#python3 -m pipenv install
+sh build_all.sh

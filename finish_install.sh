@@ -1,8 +1,8 @@
 #!/bin/bash
 
-cd ~/
-mv raspberry-pilot raspilot
-cd raspilot
+#cd ~
+#mv raspberry-pilot raspilot
+#cd raspilot
 
 sudo mkdir /data
 sudo mkdir /data/params

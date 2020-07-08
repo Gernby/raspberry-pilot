@@ -48,12 +48,12 @@ sudo apt install -y libusb-dev cmake libnewlib-arm-none-eabi libhdf5-serial-dev 
 sudo apt install -y influxdb influxdb-client apt-transport-https software-properties-common adduser libfontconfig1 dfu-util
 
 # install and start grafana; reverse the comments below to perform a standard install of grafana
-# sudo apt install -y grafana
-wget https://dl.grafana.com/oss/release/grafana_6.6.2_arm64.deb
-sudo dpkg -i grafana_6.6.2_arm64.deb
+sudo apt install -y grafana
+#wget https://dl.grafana.com/oss/release/grafana_6.6.2_arm64.deb
+#sudo dpkg -i grafana_6.6.2_arm64.deb
 
 sudo /bin/systemctl daemon-reload
-sudo /bin/systemctl enable grafana-server
+#sudo /bin/systemctl enable grafana-server
 #sudo service influxdb start
 #sudo service grafana-server start
 

@@ -96,6 +96,11 @@ sudo apt install -y influxdb influxdb-client apt-transport-https software-proper
 #ansible localhost -b -m apt -a "name=libusb-dev,cmake,libnewlib-arm-none-eabi,libhdf5-serial-dev,hdf5-tools,smbclient"
 #ansible localhost -b -m apt -a "name=influxdb,influxdb-client,apt-transport-https,software-properties-common,adduser,libfontconfig1,dfu-util"
 
+# change default python
+echo "Changing the default python.."
+sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
+sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.7 2
+
 # install and start grafana and influxdb (installed but temporarily disabled to reduce resource usage)
 sudo apt install -y grafana
 sudo /bin/systemctl daemon-reload

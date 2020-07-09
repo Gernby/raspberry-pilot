@@ -58,7 +58,19 @@ for file in os.listdir('/data/upload/'):
           file_to_delete = file_list.pop(file_list.index(return_data['filename']))
           if return_data['statuscode'] == 204:
             print("successfully processed: %s  files in queue: %d  response length: %d" % (file_to_delete, len(file_list), len(reply)))
-            os.rename('/data/upload/%s' % file_to_delete, '/data/upload/%s' % file_to_delete.replace('.dat','.bak'))
+            #os.rename('/data/upload/%s' % file_to_delete, '/data/upload/%s' % file_to_delete.replace('.dat','.bak'))
+            os.remove('/data/upload/%s' % file_to_delete)
           else:
             print(" Oops!  status_code: %d    NOT successful with file: %s" % (return_data['statuscode'], file_to_delete))
+
+for i in range(len(file_list)):
+  reply = dataSub.recv_multipart()
+  return_data = json.loads(reply[1])
+  file_to_delete = file_list.pop(file_list.index(return_data['filename']))
+  if return_data['statuscode'] == 204:
+    print("successfully processed: %s  files in queue: %d  response length: %d" % (file_to_delete, len(file_list), len(reply)))
+    #os.rename('/data/upload/%s' % file_to_delete, '/data/upload/%s' % file_to_delete.replace('.dat','.bak'))
+    os.remove('/data/upload/%s' % file_to_delete)
+  else:
+    print(" Oops!  status_code: %d    NOT successful with file: %s" % (return_data['statuscode'], file_to_delete))
         #time.sleep(10)

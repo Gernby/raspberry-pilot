@@ -27,7 +27,7 @@ try:
   do_influx = True if kegman.conf['useInfluxDB'] == '1' else False
 except:
   do_influx = False
-  
+
 do_send_live = False
 target_address = '127.0.0.1'
 cred = 'u=liveOP&p=liveOP&'

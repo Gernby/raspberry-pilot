@@ -32,8 +32,6 @@ params = Params()
 
 #import sys
 #sys.stderr = open('../laterald.txt', 'w')
-(mode, ino, dev, nlink, uid, gid, size, atime, mtime, kegtime_prev) = os.stat(os.path.expanduser('~/kegman.json'))
-
 for filename in os.listdir('models/'):
   if filename[-5:] == '.hdf5':
     if MODEL_NAME == '':
@@ -200,6 +198,9 @@ for col in range(len(adj_items)):
   adj_col[col] = all_items.index(adj_items[col])
 print(adj_col)
 #             [46, 54, 62, 70]
+
+(mode, ino, dev, nlink, uid, gid, size, atime, mtime, kegtime_prev) = os.stat(os.path.expanduser('~/kegman.json'))
+
 
 '''for i in range(0, 9, 3):
   print("mean: ", output_standard.mean_[i])

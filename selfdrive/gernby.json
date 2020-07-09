@@ -1,5 +1,5 @@
 {
-  "tuneRev": "0.3.0",
+  "tuneRev": "0.3.2",
   "_dampMPC_note": "This is the amount of seconds into the future that the desired angle will be smoothed.  Smaller value results in more steering response AND more steering noise",
   "_dampTime_note": "This is the amount of seconds into the past that the actual angle will be smoothed.  Smaller value results in more noise, but LESS response.",
   "_advanceSteer_note": "This is the amount of increase or decrease from 1.0 for steering angle adjustment.  (-0.05 --> 0.95 * angle)",

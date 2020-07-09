@@ -39,6 +39,8 @@ class Lateral(object):
     self.advanceSteer = 1
     self.frame_count = 0
     self.centerOffset = 0
+    kegman = kegman_conf() 
+    self.combine_flags = bool(kegman.conf['useCombineFlags'])
 
   def update(self, cs, path_plan):
     self.frame_count += 1
@@ -56,6 +58,7 @@ class Lateral(object):
                                     far_left_missing,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm8, 
                                     right_missing,     cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm8, 
                                     far_right_missing, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm8], BIT_MASK)
+
 
       for i in range(2):
         camera_flags[3+i*16] += (camera_flags[2+i*16] + camera_flags[1+i*16

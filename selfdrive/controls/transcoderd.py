@@ -160,7 +160,14 @@ elif 'ACCORD' in car_params.carFingerprint:
 elif 'INSIGHT' in car_params.carFingerprint:
   fingerprint[:,:,3] = 1
 
-model_output = model.predict([new_input[  :,:,:5], new_input[  :,:,5:-16],new_input[  :,:,-16:-8], new_input[  :,:,-8:], fingerprint])
+try:
+  print("trying version 1")
+  model_output = model.predict([new_input[  :,:,:5], new_input[  :,:,5:-16],new_input[  :,:,-16:-8], new_input[  :,:,-8:], fingerprint])
+except:
+  print("trying version 2")
+  fingerprint = fingerprint[-1,-1:,:]
+  model_output = model.predict([new_input[  :,:,:5], new_input[  :,:,5:-16],new_input[  :,:,-16:-8], new_input[  :,:,-8:], fingerprint])
+
 descaled_output = output_standard.transform(output_scaler.inverse_transform(model_output[-1]))
 print(descaled_output)
 
@@ -273,11 +280,11 @@ while 1:
   
   calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,2::3], cs.torqueRequest, cs.steeringAngle - calibration[0], calc_center[0], minimize=use_minimize, optimize=use_optimize)
 
-  if cs.vEgo > 10 and (l_prob > 0 or r_prob > 0):
-    if calc_center[1][0,0] > calc_center[2][0,0] and l_prob > 0 and r_prob > 0:
-      width_trim += 0.5
+  if cs.vEgo > 10 and l_prob > 0 or r_prob > 0:
+    if calc_center[1][0,0] > calc_center[2][0,0]:
+      width_trim += 1
     else:
-      width_trim -= 0.5
+      width_trim -= 1
     width_trim = max(-100, min(width_trim, 0))
     '''if l_prob - r_prob > 0.1:
       lateral_adjust += 0.25
@@ -289,7 +296,7 @@ while 1:
   if abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10:
     if calc_center[0][0,0] > 0:
       angle_bias -= (0.000001 * cs.vEgo)
-    elif calc_center[0][-10,0] < 0:
+    elif calc_center[0][0,0] < 0:
       angle_bias += (0.000001 * cs.vEgo)
 
   if use_discrete_angle:

@@ -1,10 +1,14 @@
 import json
 import os
+from cereal import log, car
+from common.params import Params 
 
 class kegman_conf():
   def __init__(self, CP=None):
+
     if CP is not None:
       self.type = CP.lateralTuning.which()
+
     self.conf = self.read_config(CP)
 
     #print(self.conf)
@@ -53,48 +57,61 @@ class kegman_conf():
   def read_config(self, CP=None, Reset=False):
     self.element_updated = False
 
-    with open(os.path.expanduser('~/raspilot/selfdrive/gernby.json'), 'r') as f:
-      base_config = json.load(f)
-
     if Reset or not os.path.isfile(os.path.expanduser('~/kegman.json')):
       self.config = {"Kp":"-1","Ki":"-1","Kf":"-1","rateFFGain":"-1","reactMPC":"-1","dampMPC":"-1"}
     else:
       with open(os.path.expanduser('~/kegman.json'), 'r') as f:
         self.config = json.load(f)
 
-    if "advanceSteer" not in self.config:
-      self.config.update({"advanceSteer":"0.0"})
-      self.element_updated = True
+    if not CP is None:
+      with open(os.path.expanduser('~/raspilot/selfdrive/gernby.json'), 'r') as f:
+        base_config = json.load(f)
 
-    if "angleFactor" not in self.config:
-      self.config.update({"angleFactor":"1.0"})
-      self.element_updated = True
-
-    if "lkasMode" not in self.config:
-      self.config.update({"lkasMode":"0"})
-      self.element_updated = True
-
-    if "useInfluxDB" not in self.config:
-      self.config.update({"useInfluxDB":"0"})
-      self.element_updated = True
-
-    if "lateralOffset" not in self.config:
-      self.config.update({"lateralOffset":"0"})
-      self.config.update({"angleOffset":"0"})
-      self.element_updated = True
-
-    if "tuneRev" not in self.config or self.config['tuneRev'] != base_config['tuneRev']:
-      for key, value in base_config.items():
-        self.config.update({key: value})
+      if "advanceSteer" not in self.config:
+        self.config.update({"advanceSteer":"0.0"})
         self.element_updated = True
 
-    if "useDiscreteAngle" not in self.config:
-      self.config.update({"useDiscreteAngle": "1"})
-      self.element_updated = True
+      if "angleFactor" not in self.config:
+        self.config.update({"angleFactor":"1.0"})
+        self.element_updated = True
 
-    if self.element_updated:
-      print("updated")
-      self.write_config(self.config)
+      if "lkasMode" not in self.config:
+        self.config.update({"lkasMode":"0"})
+        self.element_updated = True
+
+      if "useInfluxDB" not in self.config:
+        self.config.update({"useInfluxDB":"0"})
+        self.element_updated = True
+
+      if "lateralOffset" not in self.config:
+        self.config.update({"lateralOffset":"0"})
+        self.config.update({"angleOffset":"0"})
+        self.element_updated = True
+
+      if "tuneRev" not in self.config or self.config['tuneRev'] != base_config['tuneRev']:
+        for car in base_config:
+          if car in CP.carFingerprint:
+            base_config = base_config[car]
+            print(car, base_config)
+            break
+          else:
+            print(CP.carFingerprint)
+        for key, value in base_config.items():
+          self.config.update({key: value})
+          self.element_updated = True
+
+      if "useDiscreteAngle" not in self.config:
+        self.config.update({"useDiscreteAngle": "1"})
+        self.element_updated = True
+
+      if "useOptimize" not in self.config:
+        self.config.update({"useOptimize": "0"})
+        self.config.update({"useMinimize": "0"})
+        self.element_updated = True
+
+      if self.element_updated:
+        print("updated")
+        self.write_config(self.config)
 
     return self.config
 

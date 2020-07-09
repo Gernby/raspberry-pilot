@@ -1,12 +1,18 @@
 #!/bin/bash
 
-# brand new ubuntu install on SD card
-# ssh or log into the Pi
+# User instructions
+# Start with a brand new ubuntu install on SD card
+# plug in an Ethernet cable or get the WiFi working
+# ssh or log into the Pi on a local console
 # cd
 # git clone -b TensorFlow-2-2 https://github.com/Gernby/raspberry-pilot.git
-# mv ~/raspberry-pilot/start_install_tf.sh .
+# mv ~/raspberry-pilot/start_install_tf.sh ~
 # sh start_install_tf.sh
 
+# every so often, please upload performance data for analysis using this command
+# cd ~/raspilot && PYTHONPATH=~/raspilot python3.7 upload_files.py
+
+# --- Install script starts here ---
 # rename the folder
 cd ~
 mv ~/raspberry-pilot ~/raspilot

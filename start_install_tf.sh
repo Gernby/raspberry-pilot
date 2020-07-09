@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # brand new ubuntu install on SD card
+# ssh into the Pi
 # cd
 # git clone -b TensorFlow-2-2 https://github.com/Gernby/raspberry-pilot.git
 # mv ~/raspberry-pilot/start_install_tf.sh .

@@ -82,18 +82,18 @@ echo "Installing the initial dependencies.."
 #sudo apt install -y libusb-dev cmake libnewlib-arm-none-eabi libhdf5-serial-dev hdf5-tools smbclient
 #sudo apt install -y influxdb apt-transport-https software-properties-common adduser libfontconfig1
 
-#ansible localhost -b -m apt -a "name=['build-essential', 'make', 'automake', 'python3.7-dev', 'python3-pip']"
-#ansible localhost -b -m apt -a "name=['openjdk-8-jdk', 'automake', 'autoconf', 'zip', 'unzip', 'libtool', 'swig', 'libpng-dev', 'zlib1g-dev', 'pkg-config']"
-#ansible localhost -b -m apt -a "name=['libhdf5-dev', 'bzip2', 'clang', 'git', 'libarchive-dev']"
-#ansible localhost -b -m apt -a "name=['libffi-dev', 'libglib2.0-0', 'libssl-dev', 'libswscale-dev']"
-#ansible localhost -b -m apt -a "name=['libusb-1.0-0', 'libzmq5-dev', 'ocl-icd-libopencl1', 'ocl-icd-opencl-dev']"
-#ansible localhost -b -m apt -a "name=['opencl-headers', 'wget', 'checkinstall']"
-#ansible localhost -b -m apt -a "name=['libatlas-base-dev', 'libopenblas-base', 'libopenblas-dev', 'gcc', 'gfortran']"
-#ansible localhost -b -m apt -a "name=['capnproto', 'autotools-dev', 'uuid-dev', 'libsodium-dev', 'valgrind']"
-#ansible localhost -b -m apt -a "name=['libusb-dev', 'cmake', 'libnewlib-arm-none-eabi', 'libhdf5-serial-dev', 'hdf5-tools', 'smbclient']"
-#ansible localhost -b -m apt -a "name=['influxdb', 'apt-transport-https', 'software-properties-common', 'adduser', 'libfontconfig1']"
+ansible localhost -b -m apt -a "name=build-essential,make,automake,python3.7-dev,python3-pip,jq"
+ansible localhost -b -m apt -a "name=openjdk-8-jdk,automake,autoconf,zip,unzip,libtool,swig,libpng-dev,zlib1g-dev,pkg-config"
+ansible localhost -b -m apt -a "name=libhdf5-dev,bzip2,clang,git,libarchive-dev"
+ansible localhost -b -m apt -a "name=libffi-dev,libglib2.0-0,libssl-dev,libswscale-dev"
+ansible localhost -b -m apt -a "name=libusb-1.0-0,libzmq5-dev,ocl-icd-libopencl1,ocl-icd-opencl-dev"
+ansible localhost -b -m apt -a "name=opencl-headers,get,checkinstall"
+ansible localhost -b -m apt -a "name=libatlas-base-dev,libopenblas-base,libopenblas-dev,gcc,gfortran"
+ansible localhost -b -m apt -a "name=capnproto,autotools-dev,uuid-dev,libsodium-dev,valgrind"
+ansible localhost -b -m apt -a "name=libusb-dev,cmake,libnewlib-arm-none-eabi,libhdf5-serial-dev,hdf5-tools,smbclient"
+ansible localhost -b -m apt -a "name=influxdb,influxdb-client,apt-transport-https,software-properties-common,adduser,libfontconfig1,dfu-util"
 
-ansible-playbook -v -b install-dependencies.yml
+#ansible-playbook -v -b install-dependencies.yml
 
 #      state: present
 

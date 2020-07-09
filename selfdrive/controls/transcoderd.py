@@ -135,6 +135,7 @@ lr_prob_prev_prev = 0
 center_rate_prev = 0
 calc_center_prev = calc_center
 angle_factor = 1.0
+
 use_discrete_angle = True
 use_optimize = True
 use_minimize = False
@@ -280,7 +281,7 @@ while 1:
   
   calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,2::3], cs.torqueRequest, cs.steeringAngle - calibration[0], calc_center[0], minimize=use_minimize, optimize=use_optimize)
 
-  if cs.vEgo > 10 and l_prob > 0 or r_prob > 0:
+  if cs.vEgo > 10 and l_prob > 0 and r_prob > 0:
     if calc_center[1][0,0] > calc_center[2][0,0]:
       width_trim += 1
     else:

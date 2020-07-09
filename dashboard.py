@@ -17,8 +17,17 @@ SERVER_ADDRESS = "gernstation.synology.me"
 
 setproctitle('dashboard')
 
-kegman = kegman_conf()  
-do_influx = True if kegman.conf['useInfluxDB'] == '1' else False
+frame_count = 0
+params = Params()
+user_id = str(params.get("PandaDongleId"), True)
+user_id = user_id.replace("'","")
+
+try:
+  kegman = kegman_conf()  
+  do_influx = True if kegman.conf['useInfluxDB'] == '1' else False
+except:
+  do_influx = False
+  
 do_send_live = False
 target_address = '127.0.0.1'
 cred = 'u=liveOP&p=liveOP&'
@@ -41,11 +50,6 @@ if pathPlan != None and do_influx: poller.register(pathPlan, zmq.POLLIN)
 #if heartBeatSub != None: poller.register(heartBeatSub, zmq.POLLIN)
 if carState != None: poller.register(carState, zmq.POLLIN)
 #dashPub = messaging.pub_sock(8597)
-
-frame_count = 0
-params = Params()
-user_id = str(params.get("PandaDongleId"))
-user_id = user_id.replace("'","")
 
 #if len(sys.argv) >= 2:
 

@@ -6,6 +6,20 @@ A big part of testing Raspberry Pilot is a process commonly referred to as "A/B 
 
 See Raspberry SSH as one such example app on Android, available here: https://play.google.com/store/apps/details?id=uk.co.knowles_online.raspberryssh&hl=en_US There is a Lite version available, but only the paid version allows you to create enough automation buttons to meet our needs.
 
+## Configuring WiFi
+
+You may have multiple Raspberry Pi 4s configured with Raspberry Pilot. In order to use the same app to remote control each Pi, you're going to need to configure at least one Pi to use the same IP address as the one (or more) other Pis you are using. Otherwise, any work you put into establishing your remote control testing suite will only work on one Pi. Here are the commands for configuring that:
+
+nmcli d wifi connect <your hotspot SSID> password <your hotspot WiFi password>
+sudo nmcli con edit <your hotspot SSID>
+
+Then, in the "nmcli interactive connection editor", run
+
+nmcli> set ipv4.address 192.168.43.89
+Do you also want to set 'ipv4.method' to 'manual'? [yes]: y
+nmcli> save
+Connection '<your hotspot SSID' (9d08f0e6-8e64-4947-b54b-7ab5cc4ced64) successfully updated.
+
 ## Switching models
 
 The first approach to automating tasks covered here includes specifying commands as part of the SSH session establishment. This is useful for small, simple tasks such as removing the current hdf5 files from ~/raspilot/models and copying a different one into the folder. I created a folder structure for holding each of the hdf5 files being tested under `/home/ubuntu/buttons/model-*`, with `model-*` meaning "model-1", "model-2", "model-3", and "model-4". I placed one hdf5 file in each folder and will replace those files when new model bundles are released. Then I created buttons in the mobile app that erase the current model from ~/raspilot/models, copies a specific hdf5 file over to the models folder, and reboots the Raspberry Pi to make the change take effect. For example, this is the command behind the "Model 1" button in my Raspberry SSH mobile app:

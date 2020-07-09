@@ -29,7 +29,7 @@ cd ~/raspilot
 # sudo add-apt-repository "deb https://packages.grafana.com/oss/deb stable main"
 
 echo "Install grafana gpg signing key..."
-ansible localhost -v -b -m apt_key -a "file=/home/ubuntu/raspberry-pilot/grafana.gpg.key"
+ansible localhost -v -b -m apt_key -a "file=/home/ubuntu/raspilot/grafana.gpg.key"
 
 echo "Add grafana repo..."
 ansible localhost -v -b -m apt_repository -a "repo='deb https://packages.grafana.com/oss/deb stable main'"

@@ -19,7 +19,7 @@ setproctitle('dashboard')
 
 frame_count = 0
 params = Params()
-user_id = str(params.get("PandaDongleId"), True)
+user_id = str(params.get("PandaDongleId", True))
 user_id = user_id.replace("'","")
 
 try:

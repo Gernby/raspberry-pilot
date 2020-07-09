@@ -185,10 +185,10 @@ class LatControlPID(object):
           self.angle_steers_des = steer_speed_ratio * interp(self.angle_index, self.path_index, path_plan.fastAngles) + (1 - steer_speed_ratio) * interp(self.angle_index, self.path_index, path_plan.slowAngles)
           self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des) / max(1.0, self.damp_mpc * 100.)
           #self.damp_rate_steers_des += ((path_plan.slowAngles[4] - path_plan.slowAngles[3]) - self.damp_rate_steers_des) / max(1.0, self.damp_mpc * 100.)
-          accel_limit = min(0.2, max(0.1, abs(angle_steers_rate) * 0.1, abs(angle_steers - path_plan.angleOffset) * 0.1))
+          accel_limit = min(0.5, max(0.5, abs(angle_steers_rate) * 0.1, abs(angle_steers - path_plan.angleOffset) * 0.1))
           self.angle_rate_des = float(min(self.angle_rate_des + accel_limit * v_ego, max(self.angle_rate_des - accel_limit * v_ego, self.damp_angle_steers_des + float(self.path_error_comp) - self.limited_damp_angle_steers_des)))
           self.limited_damp_angle_steers_des += self.angle_rate_des
-          requested_angle = min(self.limited_damp_angle_steers_des + 0.1, max(self.limited_damp_angle_steers_des - 0.1, self.damp_angle_steers_des))
+          requested_angle = min(self.limited_damp_angle_steers_des + 0.5, max(self.limited_damp_angle_steers_des - 0.5, self.damp_angle_steers_des))
 
         angle_feedforward = float(self.limited_damp_angle_steers_des - path_plan.angleOffset)
         self.angle_ff_ratio = float(gernterp(abs(angle_feedforward), self.angle_ff_bp[0], self.angle_ff_bp[1]))

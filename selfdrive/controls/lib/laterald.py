@@ -27,7 +27,7 @@ def pub_sock(port, addr="*"):
   return sock
 
 class Lateral(object):
-  def __init__(self):
+  def __init__(self, CP):
     self.params = Params()
     self.use_bias = 1
     self.use_lateral_offset = 1
@@ -39,7 +39,7 @@ class Lateral(object):
     self.advanceSteer = 1
     self.frame_count = 0
     self.centerOffset = 0
-    kegman = kegman_conf() 
+    kegman = kegman_conf(CP) 
     self.combine_flags = bool(kegman.conf['useCombineFlags'])
 
   def update(self, cs, path_plan):

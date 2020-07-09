@@ -70,6 +70,14 @@ python3.7 -m pip install setproctitle
 python3.7 -m pip install cffi
 python3.7 -m pip install cython
 
+# folders for storing various hdf5 files 
+mkdir ~/buttons
+mkdir ~/buttons/model-1
+mkdir ~/buttons/model-2
+mkdir ~/buttons/model-3
+mkdir ~/buttons/model-4
+
+cd
 cp ~/raspilot/finish_install.sh ~/
 sh ~/finish_install.sh
 # Exit SSH and log in again, since pipenv won't work without it

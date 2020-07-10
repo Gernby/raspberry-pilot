@@ -15,10 +15,10 @@ sudo nmcli con edit <your hotspot SSID>
 
 Then, in the "nmcli interactive connection editor", run
 
-nmcli> set ipv4.address 192.168.43.89
-Do you also want to set 'ipv4.method' to 'manual'? [yes]: y
-nmcli> save
-Connection '<your hotspot SSID' (9d08f0e6-8e64-4947-b54b-7ab5cc4ced64) successfully updated.
+    nmcli> set ipv4.address 192.168.43.89
+    Do you also want to set 'ipv4.method' to 'manual'? [yes]: y
+    nmcli> save
+    Connection '<your hotspot SSID' (9d08f0e6-8e64-4947-b54b-7ab5cc4ced64) successfully updated.
 
 ## Switching models
 

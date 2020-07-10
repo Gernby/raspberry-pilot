@@ -19,6 +19,8 @@ Then, in the "nmcli interactive connection editor", run
     Do you also want to set 'ipv4.method' to 'manual'? [yes]: y
     nmcli> save
     Connection '<your hotspot SSID' (9d08f0e6-8e64-4947-b54b-7ab5cc4ced64) successfully updated.
+    nmcli> quit
+    sudo reboot
 
 ## Switching models
 

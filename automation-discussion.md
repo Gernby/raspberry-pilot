@@ -10,8 +10,8 @@ See Raspberry SSH as one such example app on Android, available here: https://pl
 
 You may have multiple Raspberry Pi 4s configured with Raspberry Pilot. In order to use the same app to remote control each Pi, you're going to need to configure at least one Pi to use the same IP address as the one (or more) other Pis you are using. Otherwise, any work you put into establishing your remote control testing suite will only work on one Pi. Here are the commands for configuring that:
 
-nmcli d wifi connect <your hotspot SSID> password <your hotspot WiFi password>
-sudo nmcli con edit <your hotspot SSID>
+    nmcli d wifi connect <your hotspot SSID> password <your hotspot WiFi password>
+    sudo nmcli con edit <your hotspot SSID>
 
 Then, in the "nmcli interactive connection editor", run
 

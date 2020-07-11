@@ -105,8 +105,8 @@ struct CarState {
   curvatureFactor @39 :Float32;
   curvature @40 :Float32;
   yawRateCAN @41 :Float32;
-  canTime @42 :UInt64;
-  sysTime @52 :UInt64;
+  canTime @42 :Float64;
+  sysTime @52 :Float64;
   torqueRequest @43 :Float32;
 
   # gas pedal, 0.0-1.0

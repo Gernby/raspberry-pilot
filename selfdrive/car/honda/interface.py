@@ -418,11 +418,15 @@ class CarInterface(CarInterfaceBase):
   # returns a car.CarState
   def update(self, c, can_strings, lac_log):
     # ******************* do can recv *******************
-    #if self.canTime == 0: 
-    #  self.canTime = int(time.time() * 100) * 10
-    #else:
-    #  self.canTime = self.canTime + 10
-    self.canTime = max(int(time.time() * 100) * 10, self.canTime + 10)
+    ret = car.CarState.new_message()
+    ret.lateralControlState.init('pidState')
+    ret.sysTime = int(time.time() * 100) * 10
+    if self.canTime == 0: 
+      self.canTime = ret.sysTime
+    elif self.canTime < ret.sysTime + 20:
+      self.canTime = self.canTime + 10
+    ret.canTime = self.canTime
+    #self.canTime = max(int(time.time() * 100) * 10, self.canTime + 10)
     #if self.frame % 100 == 0: print(self.canTime)
 
     self.cp.update_strings(can_strings)
@@ -434,12 +438,8 @@ class CarInterface(CarInterfaceBase):
     self.CS.update(self.cp, self.cp_cam)
     #print(self.cp_cam.vl)
     # create message
-    ret = car.CarState.new_message()
-    ret.lateralControlState.init('pidState')
     #print(len(can_strings), can_strings)
     #can_strings = log.Event.from_bytes(can_strings[0])
-    ret.canTime = self.canTime
-    ret.sysTime = int(time.time() * 1000)
     ret.canValid = self.cp.can_valid
     if not lac_log is None:
       ret.torqueRequest = lac_log.output

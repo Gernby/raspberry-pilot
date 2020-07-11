@@ -705,7 +705,7 @@ struct PathPlan {
   pPoly @20 :List(Float32);
   pProb @21 :Float32;
 
-  canTime @25 :UInt64;
+  canTime @25 :Float64;
   angleSteers @8 :Float32; # deg
   rateSteers @13 :Float32; # deg/s
   mpcSolutionValid @9 :Bool;

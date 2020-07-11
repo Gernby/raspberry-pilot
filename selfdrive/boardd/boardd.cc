@@ -491,12 +491,7 @@ void *can_recv_thread(void *crap) {
     // drain the Panda with a sleep, then MAYBE once more if it is ahead of schedule
     if (recv_state++ < panda_loops) {
       last_long_sleep = 1e-3 * nanos_since_boot();
-      if (recv_state == 0) {
-        wake_time += long_sleep_us - short_sleep_us;
-      }
-      else {
-        wake_time += long_sleep_us + short_sleep_us;
-      }
+      wake_time += long_sleep_us;
       force_send = false;
       if (last_long_sleep < wake_time) {
         usleep(wake_time - last_long_sleep);

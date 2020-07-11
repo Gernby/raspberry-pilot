@@ -1,4 +1,4 @@
-          #!/usr/bin/env python3
+          #!/usr/bin/env python3 
 import capnp
 from cereal import car, log
 from common.numpy_fast import clip
@@ -50,11 +50,19 @@ def data_sample(CI, CC, can_sock, carstate, lac_log, lateral, path_plan):
 
   can_strs = [can_sock.recv()]
   CS = CI.update(CC, can_strs, lac_log)
-
-  lateral.update(CS, path_plan)
+  lateral.update(CS, path_plan, 0, 1)
+  if CS.canTime + 20 < CS.sysTime: 
+    can_strs = messaging.drain_sock_raw(can_sock, wait_for_one=False)
+    if len(can_strs) > 0: 
+      print("  Controls lagged by %d CAN packets!" % (len(can_strs)))
+      for i in range(len(can_strs[-40:])):
+        CS = CI.update(CC, [can_strs[i]], lac_log)
+        lateral.update(CS, path_plan, i, len(can_strs[-40:]))
+    else:
+      print("  CAN lagging!")
+      CI.canTime += 20
 
   events = list(CS.events)
-
 
   # carState
   if False:
@@ -283,7 +291,6 @@ def controlsd_thread(gctx=None):
 
     state, soft_disable_timer, v_cruise_kph, v_cruise_kph_last = \
         state_transition(sm.frame, CS, CP, state, events, soft_disable_timer, v_cruise_kph, AM)
-
     # Compute actuators (runs PID loops and lateral MPC)
     sm.update(0)
 

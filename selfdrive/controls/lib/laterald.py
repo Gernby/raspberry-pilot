@@ -42,7 +42,7 @@ class Lateral(object):
     kegman = kegman_conf(CP) 
     self.combine_flags = bool(kegman.conf['useCombineFlags'])
 
-  def update(self, cs, path_plan):
+  def update(self, cs, path_plan, can_index, can_count):
     self.frame_count += 1
 
     self.vehicle_array.append([cs.vEgo, cs.steeringAngle, cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN])
@@ -61,8 +61,7 @@ class Lateral(object):
 
       if self.combine_flags:
         for i in range(2):
-          camera_flags[3+i*16] += (camera_flags[2+i*16] + camera_flags[1+i*16
-          ])
+          camera_flags[3+i*16] += (camera_flags[2+i*16] + camera_flags[1+i*16])
           camera_flags[1+i*16] == 0
           camera_flags[2+i*16] == 0
 
@@ -75,6 +74,6 @@ class Lateral(object):
       if len(self.camera_array) > HISTORY_ROWS:
         self.stock_cam_frame_prev = cs.camLeft.frame
         cs.modelData = [float(x) for x in list(np.asarray(np.concatenate((self.vehicle_array[-HISTORY_ROWS:], self.camera_array[-HISTORY_ROWS:]), axis = 1)).reshape(HISTORY_ROWS * INPUTS))]
-        self.gernModelInputs.send(cs.to_bytes())
+        if can_count - can_index < 5: self.gernModelInputs.send(cs.to_bytes())
         self.camera_array.pop(0)
         self.vehicle_array.pop(0)

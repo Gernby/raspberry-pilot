@@ -837,9 +837,10 @@ class FatalError(RuntimeError):
 def load_ram(esp, args):
     image = LoadFirmwareImage(args.filename)
 
+
     print('RAM boot...')
     for (offset, size, data) in image.segments:
-        print('Downloading %d bytes at %08x...' % (size, offset), end=' ')
+        print('Downloading %d bytes at %08x...' % (size, offset))
         sys.stdout.flush()
         esp.mem_begin(size, div_roundup(size, esp.ESP_RAM_BLOCK), esp.ESP_RAM_BLOCK, offset)
 
@@ -870,7 +871,7 @@ def dump_mem(esp, args):
         f.write(struct.pack('<I', d))
         if f.tell() % 1024 == 0:
             print('\r%d bytes read... (%d %%)' % (f.tell(),
-                                                  f.tell() * 100 / args.size), end=' ')
+                                                  f.tell() * 100 / args.size))
         sys.stdout.flush()
     print('Done!')
 

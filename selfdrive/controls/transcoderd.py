@@ -146,19 +146,8 @@ calibration_factor = 1.0
 model_output = None
 start_time = time.time()
 
-car_params = car.CarParams.from_bytes(params.get('CarParams', True))
-
 #['Civic','CRV','Accord','Insight']
 fingerprint = np.zeros((1, HISTORY_ROWS, 4), dtype=np.int)
-if 'CIVIC' in car_params.carFingerprint:
-  fingerprint[:,:,0] = 1
-elif 'CRV' in car_params.carFingerprint:
-  fingerprint[:,:,1] = 1
-elif 'ACCORD' in car_params.carFingerprint:
-  fingerprint[:,:,2] = 1
-elif 'INSIGHT' in car_params.carFingerprint:
-  fingerprint[:,:,3] = 1
-
 try:
   print("trying version 1")
   model_output = model.predict([new_input[  :,:,:5], new_input[  :,:,5:-16],new_input[  :,:,-16:-8], new_input[  :,:,-8:], fingerprint])
@@ -180,6 +169,17 @@ while model_output.shape[2] > output_scaler.max_abs_.shape[0]:
 
 descaled_output = output_standard.transform(output_scaler.inverse_transform(model_output[-1]))
 print(descaled_output)
+
+car_params = car.CarParams.from_bytes(params.get('CarParams', True))
+
+if 'CIVIC' in car_params.carFingerprint:
+  fingerprint[:,:,0] = 1
+elif 'CRV' in car_params.carFingerprint:
+  fingerprint[:,:,1] = 1
+elif 'ACCORD' in car_params.carFingerprint:
+  fingerprint[:,:,2] = 1
+elif 'INSIGHT' in car_params.carFingerprint:
+  fingerprint[:,:,3] = 1
 
 l_prob = 0.0
 r_prob = 0.0

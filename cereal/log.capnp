@@ -727,6 +727,7 @@ struct PathPlan {
   leftError @29 :List(Float32);
   rightError @30 :List(Float32);
   centerError @31 :List(Float32);
+  sysTime @32 :UInt64;
 }
 
 struct LiveLocationData {

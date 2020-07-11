@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3 
 import os
 import time
 import numpy as np
@@ -418,6 +418,10 @@ class CarInterface(CarInterfaceBase):
   # returns a car.CarState
   def update(self, c, can_strings, lac_log):
     # ******************* do can recv *******************
+    #if self.canTime == 0: 
+    #  self.canTime = int(time.time() * 100) * 10
+    #else:
+    #  self.canTime = self.canTime + 10
     self.canTime = max(int(time.time() * 100) * 10, self.canTime + 10)
     #if self.frame % 100 == 0: print(self.canTime)
 
@@ -435,6 +439,7 @@ class CarInterface(CarInterfaceBase):
     #print(len(can_strings), can_strings)
     #can_strings = log.Event.from_bytes(can_strings[0])
     ret.canTime = self.canTime
+    ret.sysTime = int(time.time() * 1000)
     ret.canValid = self.cp.can_valid
     if not lac_log is None:
       ret.torqueRequest = lac_log.output

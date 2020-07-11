@@ -158,7 +158,7 @@ class LatControlPID(object):
     self.min_index = min(self.min_index, self.angle_index)
     self.max_index = max(self.max_index, self.angle_index)
 
-    if False and self.frame % 300 == 0 and self.frame > 0:
+    if self.frame % 3000 == 0 and self.frame > 0:
       print("old plans:  %d  avg plan age:  %0.3f   min index:  %d  max_index:  %d   center_steer:  %0.2f" % (self.old_plan_count, self.avg_plan_age, self.min_index, self.max_index, self.path_error_comp))
       self.min_index = 100
       self.max_index = 0
@@ -197,8 +197,9 @@ class LatControlPID(object):
             self.path_error_comp += (self.projected_lane_error - self.path_error_comp) / self.poly_smoothing
           self.damp_angle_steers += (angle_steers + angle_steers_rate * self.damp_time - self.damp_angle_steers) / max(1.0, 1 + self.damp_time * 100.)
           #self.damp_angle_rate += (angle_steers_rate - self.damp_angle_rate) / max(1.0, self.damp_time * 100.)
-          steer_speed_ratio = self.polyReact * min(1, v_ego / 30)
-          self.angle_steers_des = steer_speed_ratio * interp(self.angle_index, self.path_index, path_plan.fastAngles) + (1 - steer_speed_ratio) * interp(self.angle_index, self.path_index, path_plan.slowAngles)
+          #steer_speed_ratio = self.polyReact * min(1, v_ego / 30)
+          #self.angle_steers_des = steer_speed_ratio * interp(self.angle_index, self.path_index, path_plan.fastAngles) + (1 - steer_speed_ratio) * interp(self.angle_index, self.path_index, path_plan.slowAngles)
+          self.angle_steers_des = interp(self.angle_index, self.path_index, path_plan.fastAngles)
           self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des) / max(1.0, self.damp_mpc * 100.)
           #self.damp_rate_steers_des += ((path_plan.slowAngles[4] - path_plan.slowAngles[3]) - self.damp_rate_steers_des) / max(1.0, self.damp_mpc * 100.)
           #accel_limit = min(0.2, max(0.1, abs(angle_steers_rate) * 0.1, abs(angle_steers - path_plan.angleOffset) * 0.1))

@@ -133,7 +133,7 @@ lr_prob_prev_prev = 0
 center_rate_prev = 0
 calc_center_prev = calc_center
 angle_factor = 1.0
-
+angle_speed = 3
 use_discrete_angle = True
 use_optimize = True
 use_minimize = False
@@ -167,6 +167,17 @@ except:
   fingerprint = fingerprint[-1,-1:,:]
   model_output = model.predict([new_input[  :,:,:5], new_input[  :,:,5:-16],new_input[  :,:,-16:-8], new_input[  :,:,-8:], fingerprint])
 
+print(model_output.shape)
+while model_output.shape[2] > output_scaler.max_abs_.shape[0]:
+  print("adding column")
+  print(output_standard.mean_.shape, output_scaler.scale_.shape) 
+  output_standard.n_features_in_ += 1
+  output_scaler.max_abs_ = np.concatenate((output_scaler.max_abs_[:1], output_scaler.max_abs_),axis=0)
+  output_scaler.scale_ = np.concatenate((output_scaler.scale_[:1], output_scaler.scale_),axis=0)
+  output_standard.mean_ = np.concatenate((output_standard.mean_[:1], output_standard.mean_),axis=0)
+  output_standard.scale_ = np.concatenate((output_standard.scale_[:1], output_standard.scale_),axis=0)
+  output_standard.var_ = np.concatenate((output_standard.var_[:1], output_standard.var_),axis=0)
+
 descaled_output = output_standard.transform(output_scaler.inverse_transform(model_output[-1]))
 print(descaled_output)
 
@@ -198,8 +209,8 @@ for col in range(len(adj_items)):
   adj_col[col] = all_items.index(adj_items[col])
 print(adj_col)
 #             [46, 54, 62, 70]
-
-(mode, ino, dev, nlink, uid, gid, size, atime, mtime, kegtime_prev) = os.stat(os.path.expanduser('~/kegman.json'))
+kegtime_prev = 0
+#(mode, ino, dev, nlink, uid, gid, size, atime, mtime, kegtime_prev) = os.stat(os.path.expanduser('~/kegman.json'))
 
 
 '''for i in range(0, 9, 3):
@@ -280,7 +291,7 @@ while 1:
   max_width_step = 0.05 * cs.vEgo * l_prob * r_prob
   lane_width = max(570, lane_width - max_width_step * 2, min(1200, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
   
-  calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,2::3], cs.torqueRequest, cs.steeringAngle - calibration[0], calc_center[0], minimize=use_minimize, optimize=use_optimize)
+  calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,3+2::3], cs.torqueRequest, cs.steeringAngle - calibration[0], calc_center[0], minimize=use_minimize, optimize=use_optimize)
 
   if cs.vEgo > 10 and l_prob > 0 and r_prob > 0:
     if calc_center[1][0,0] > calc_center[2][0,0]:
@@ -302,11 +313,11 @@ while 1:
       angle_bias += (0.000001 * cs.vEgo)
 
   if use_discrete_angle:
-    fast_angles = angle_factor * descaled_output[:,0:1] + calibration[0] - angle_bias
-    slow_angles = angle_factor * descaled_output[:,1:2] + calibration[0] - angle_bias
+    fast_angles = angle_factor * descaled_output[:,angle_speed:angle_speed+1] + calibration[0] - angle_bias
+    slow_angles = angle_factor * descaled_output[:,3+1:3+2] + calibration[0] - angle_bias
   else:
-    fast_angles = angle_factor * advanceSteer * (descaled_output[:,0:1] - descaled_output[0,0:1]) + cs.steeringAngle - angle_bias
-    slow_angles = angle_factor * advanceSteer * (descaled_output[:,1:2] - descaled_output[0,1:2]) + cs.steeringAngle - angle_bias
+    fast_angles = angle_factor * advanceSteer * (descaled_output[:,angle_speed:angle_speed+1] - descaled_output[0,angle_speed:angle_speed+1]) + cs.steeringAngle - angle_bias
+    slow_angles = angle_factor * advanceSteer * (descaled_output[:,3+1:3+2] - descaled_output[0,3+1:3+2]) + cs.steeringAngle - angle_bias
 
   path_send.pathPlan.angleSteers = float(slow_angles[5])
   path_send.pathPlan.mpcAngles = [float(x) for x in slow_angles]
@@ -323,6 +334,7 @@ while 1:
   path_send.pathPlan.rProb = float(r_prob)
   path_send.pathPlan.cProb = float(lr_prob)
   path_send.pathPlan.canTime = cs.canTime
+  path_send.pathPlan.sysTime = cs.sysTime
   gernPath.send(path_send.to_bytes())
 
   frame += 1
@@ -331,7 +343,7 @@ while 1:
   path_send.init('pathPlan')
   if frame % 60 == 0:
     #print(calibration_factor, np.round(calibration, 2))
-    print('lane_width: %0.1f angle bias: %0.2f  width_trim: %0.1f  lateral_offset:  %d   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs' % (lane_width, angle_bias, width_trim, lateral_adjust, calc_center[0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,0], descaled_output[1,1], execution_time_avg))
+    print('lane_width: %0.1f angle bias: %0.2f  width_trim: %0.1f  lateral_offset:  %d   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs  angle_speed:  %0.1f' % (lane_width, angle_bias, width_trim, lateral_adjust, calc_center[0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,0], descaled_output[1,1], execution_time_avg, angle_speed))
 
   if frame % 6000 == 0:
     print(np.round(calibration,2))
@@ -347,11 +359,12 @@ while 1:
       advanceSteer = 1.0 + max(0, float(kegman.conf['advanceSteer']))
       angle_factor = float(kegman.conf['angleFactor'])
       use_bias = float(kegman.conf['angleBias'])
+      angle_speed = min(4, max(0, 4 - int(10 * float(kegman.conf['polyReact']))))
       use_angle_offset = float(kegman.conf['angleOffset'])
       lateral_offset = float(kegman.conf['lateralOffset'])
       use_discrete_angle = True if kegman.conf['useDiscreteAngle'] == "1" else False
       use_optimize = True if kegman.conf['useOptimize'] == '1' else False
       use_minimize = True if kegman.conf['useMinimize'] == '1' else False
-
+      
   execution_time_avg += max(0.0001, time_factor) * ((time.time() - start_time) - execution_time_avg)
   time_factor *= 0.96

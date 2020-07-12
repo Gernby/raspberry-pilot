@@ -77,3 +77,5 @@ class Lateral(object):
         if can_count - can_index < 5: self.gernModelInputs.send(cs.to_bytes())
         self.camera_array.pop(0)
         self.vehicle_array.pop(0)
+    
+    time.sleep(0.00001)

@@ -146,7 +146,9 @@ while 1:
           if do_send_live: 
             serverCarStateDataString1.append(serverCarStateDataFormatString1 % send_data)
       if vEgo > 0 and len(fileStrings) > 0: 
+        time.sleep(0.00001)
         logfile.write("".join(fileStrings))
+        time.sleep(0.00001)
       fileStrings.clear()
 
     if socket is pathPlan:
@@ -155,7 +157,8 @@ while 1:
         send_data0 = tuple(float(x) for x in tuple(pp.lPoly)[::1])
         send_data1 = tuple(float(x) for x in tuple(pp.rPoly)[::1])
         send_data2 = tuple(float(x) for x in tuple(pp.cPoly)[::1])
-        send_data3 = (pp.slowAngles[0], pp.slowAngles[1], pp.slowAngles[2], pp.slowAngles[3], pp.slowAngles[4], pp.slowAngles[5], pp.slowAngles[6], pp.lProb, pp.rProb, pp.cProb, pp.laneWidth, pp.angleSteers, pp.rateSteers, pp.angleOffset, pp.lateralOffset, cs.steeringAngle, pp.canTime - pp.canTime, cs.canTime)
+        send_data3 = (pp.fastAngles[0], pp.fastAngles[1], pp.fastAngles[2], pp.fastAngles[3], pp.fastAngles[4], pp.fastAngles[5], pp.fastAngles[6], pp.lProb, pp.rProb, pp.cProb, pp.laneWidth, pp.angleSteers, pp.rateSteers, pp.angleOffset, pp.lateralOffset, cs.steeringAngle, pp.canTime - pp.canTime, cs.canTime)
+        #send_data3 = (pp.fastAngles[3][0], pp.fastAngles[3][1], pp.fastAngles[3][2], pp.fastAngles[3][3], pp.fastAngles[3][4], pp.fastAngles[3][5], pp.fastAngles[3][6], pp.lProb, pp.rProb, pp.cProb, pp.laneWidth, pp.angleSteers, pp.rateSteers, pp.angleOffset, pp.lateralOffset, cs.steeringAngle, pp.canTime - pp.canTime, cs.canTime)
 
         if do_influx:
           localPathDataString.append("".join([localPathFormatString1 % send_data0, localPathFormatString2 % send_data1, localPathFormatString3 % send_data2, localPathFormatString4 % send_data3]))
@@ -185,8 +188,11 @@ while 1:
     localPathDataString = []
     if do_influx and frame > 5:
       try:
+        time.sleep(0.00001)
         r = requests.post(target_URL, data=insertString)
+        time.sleep(0.00001)
         dashPub.send_string(insertString)
+        time.sleep(0.00001)
         if r.status_code == 404:
           print(r)
           r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')

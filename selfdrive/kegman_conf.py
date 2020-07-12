@@ -91,12 +91,10 @@ class kegman_conf():
       if "tuneRev" not in self.config or self.config['tuneRev'] != base_config['tuneRev']:
         for car in base_config:
           if car in CP.carFingerprint:
-            base_config = base_config[car]
-            print(car, base_config)
+            print(car, base_config[car])
             break
-          else:
-            print(CP.carFingerprint)
-        for key, value in base_config.items():
+        self.config.update({'tuneRev': base_config['tuneRev']})
+        for key, value in base_config[car].items():
           self.config.update({key: value})
           self.element_updated = True
 
@@ -116,7 +114,6 @@ class kegman_conf():
     return self.config
 
   def write_config(self, config):
-
     try:
       with open(os.path.expanduser('~/kegman.json'), 'w') as f:
         json.dump(self.config, f, indent=2, sort_keys=True)

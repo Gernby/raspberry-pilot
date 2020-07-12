@@ -173,13 +173,18 @@ print(descaled_output)
 car_params = car.CarParams.from_bytes(params.get('CarParams', True))
 
 if 'CIVIC' in car_params.carFingerprint:
-  fingerprint[:,:,0] = 1
+  index_finger = 0
 elif 'CRV' in car_params.carFingerprint:
-  fingerprint[:,:,1] = 1
+  index_finger = 1
 elif 'ACCORD' in car_params.carFingerprint:
-  fingerprint[:,:,2] = 1
+  index_finger = 2
 elif 'INSIGHT' in car_params.carFingerprint:
-  fingerprint[:,:,3] = 1
+  index_finger = 3
+
+try:
+  fingerprint[:,:,index_finger] = 1
+except:
+  fingerprint[:,index_finger] = 1
 
 l_prob = 0.0
 r_prob = 0.0

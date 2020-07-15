@@ -2,6 +2,7 @@
 # simple boardd wrapper that updates the panda first
 import os
 import time
+from selfdrive.kegman_conf import kegman_conf
 
 from selfdrive.swaglog import cloudlog
 from panda import Panda, PandaDFU, BASEDIR
@@ -69,7 +70,12 @@ def update_panda():
 
 def main(gctx=None):
   setproctitle('pandad')
-  update_panda()
+  try:
+    kegman = kegman_conf()  #.read_config()
+    if bool(kegman.conf['useAutoFlash']): 
+      update_panda()
+  except:
+    pass
 
   os.chdir("selfdrive/boardd")
   os.execvp("./boardd", ["./boardd"])

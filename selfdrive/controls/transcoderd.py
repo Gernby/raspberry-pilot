@@ -19,6 +19,7 @@ camera_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_camera_%s.s
 
 from selfdrive.kegman_conf import kegman_conf
 from selfdrive.services import service_list
+from selfdrive.car.honda.values import CAR
 from enum import Enum
 from cereal import log, car
 from setproctitle import setproctitle
@@ -82,8 +83,8 @@ def sub_sock(port, poller=None, addr="127.0.0.1", conflate=False, timeout=None):
   return sock
 
 def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, angle, prev_center, minimize=False, optimize=False):
-  left = tri_value[:,1:2]
-  right = tri_value[:,2:3]
+  left = l_prob * tri_value[:,1:2] + (1 - l_prob) * tri_value[:,0:1]
+  right = r_prob * tri_value[:,2:3] + (1 - r_prob) * tri_value[:,0:1]
   center = tri_value[:,0:1]
   if minimize:
     abs_left = np.sum(np.absolute(left))
@@ -99,7 +100,8 @@ def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, angle, prev_center, min
     elif steer < 0:
       weighted_center[0] = np.minimum(weighted_center[0], center)
   else:
-    weighted_center = [(lr_prob * (abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001) + (1-lr_prob) * center), left, right]
+    weighted_center = [((lr_prob * (abs_right * left + abs_left * right) / (abs_right + abs_left + 0.0001)) + ((1-lr_prob) * center)), left, right]
+    #weighted_center = [(lr_prob * (abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001) + (1-lr_prob) * center), left, right]
   return weighted_center
 
 
@@ -146,15 +148,9 @@ calibration_factor = 1.0
 model_output = None
 start_time = time.time()
 
-#['Civic','CRV','Accord','Insight']
-fingerprint = np.zeros((1, HISTORY_ROWS, 4), dtype=np.int)
-try:
-  print("trying version 1")
-  model_output = model.predict([new_input[  :,:,:5], new_input[  :,:,5:-16],new_input[  :,:,-16:-8], new_input[  :,:,-8:], fingerprint])
-except:
-  print("trying version 2")
-  fingerprint = fingerprint[-1,-1:,:]
-  model_output = model.predict([new_input[  :,:,:5], new_input[  :,:,5:-16],new_input[  :,:,-16:-8], new_input[  :,:,-8:], fingerprint])
+#['Civic','CRV_5G','Accord_15','Insight', 'Accord']
+fingerprint = np.zeros((1, 10), dtype=np.int)
+model_output = model.predict_on_batch([new_input[  :,:,:5], new_input[  :,:,5:-16],new_input[  :,:,-16:-8], new_input[  :,:,-8:], fingerprint])
 
 print(model_output.shape)
 while model_output.shape[2] > output_scaler.max_abs_.shape[0]:
@@ -172,19 +168,27 @@ print(descaled_output)
 
 car_params = car.CarParams.from_bytes(params.get('CarParams', True))
 
-if 'CIVIC' in car_params.carFingerprint:
+if car_params.carFingerprint == CAR.CIVIC_BOSCH:
   index_finger = 0
-elif 'CRV' in car_params.carFingerprint:
+elif car_params.carFingerprint in [CAR.CRV_5G, CAR.CRV_HYBRID]:
   index_finger = 1
-elif 'ACCORD' in car_params.carFingerprint:
+elif car_params.carFingerprint in [CAR.ACCORD_15, CAR.ACCORD, CAR.ACCORDH]:
   index_finger = 2
-elif 'INSIGHT' in car_params.carFingerprint:
+elif car_params.carFingerprint == CAR.INSIGHT:
   index_finger = 3
 
-try:
-  fingerprint[:,:,index_finger] = 1
-except:
-  fingerprint[:,index_finger] = 1
+fingerprint[:,index_finger] = 1
+if os.path.exists(os.path.expanduser('~/vehicle_option.json')):
+  with open(os.path.expanduser('~/vehicle_option.json'), 'r') as f:
+    vehicle_option = json.load(f)
+    fingerprint[:,3+vehicle_option['vehicle_option']] = 1
+    print(vehicle_option, fingerprint)
+else:
+  fingerprint[:,-1:] = 1
+
+print(fingerprint)
+model_output = model.predict_on_batch([new_input[  :,:,:5], new_input[  :,:,5:-16],new_input[  :,:,-16:-8], new_input[  :,:,-8:], fingerprint])
+print(model_output)
 
 l_prob = 0.0
 r_prob = 0.0
@@ -215,6 +219,7 @@ for col in range(len(adj_items)):
 print(adj_col)
 #             [46, 54, 62, 70]
 kegtime_prev = 0
+angle_speed_count = model_output.shape[2] - 7
 #(mode, ino, dev, nlink, uid, gid, size, atime, mtime, kegtime_prev) = os.stat(os.path.expanduser('~/kegman.json'))
 
 
@@ -289,14 +294,16 @@ while 1:
   new_input[-1,:-1,5:] = model_input[-1,1:,5:]
   model_input = new_input
 
+  time.sleep(0.00001)
   model_output = model.predict_on_batch([model_input[  :,:,:5], model_input[  :,:,5:-16],model_input[  :,:,-16:-8], model_input[  :,:,-8:], fingerprint])
 
+  time.sleep(0.00001)
   descaled_output = output_standard.inverse_transform(output_scaler.inverse_transform(model_output[-1])) 
   
   max_width_step = 0.05 * cs.vEgo * l_prob * r_prob
   lane_width = max(570, lane_width - max_width_step * 2, min(1200, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
   
-  calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,3+2::3], cs.torqueRequest, cs.steeringAngle - calibration[0], calc_center[0], minimize=use_minimize, optimize=use_optimize)
+  calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,angle_speed_count::3], cs.torqueRequest, cs.steeringAngle - calibration[0], calc_center[0], minimize=use_minimize, optimize=use_optimize)
 
   if cs.vEgo > 10 and l_prob > 0 and r_prob > 0:
     if calc_center[1][0,0] > calc_center[2][0,0]:
@@ -304,12 +311,6 @@ while 1:
     else:
       width_trim -= 1
     width_trim = max(-100, min(width_trim, 0))
-    '''if l_prob - r_prob > 0.1:
-      lateral_adjust += 0.25
-    elif r_prob - l_prob > 0.1:
-      lateral_adjust -= 0.25
-    else:
-      lateral_adjust = max(lateral_offset - 50, lateral_adjust - 0.25, min(lateral_offset + 50, lateral_adjust + 0.25, lateral_offset))'''
   
   if abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10:
     if calc_center[0][0,0] > 0:
@@ -317,17 +318,15 @@ while 1:
     elif calc_center[0][0,0] < 0:
       angle_bias += (0.000001 * cs.vEgo)
 
-  if use_discrete_angle:
-    fast_angles = angle_factor * descaled_output[:,angle_speed:angle_speed+1] + calibration[0] - angle_bias
-    slow_angles = angle_factor * descaled_output[:,3+1:3+2] + calibration[0] - angle_bias
-  else:
-    fast_angles = angle_factor * advanceSteer * (descaled_output[:,angle_speed:angle_speed+1] - descaled_output[0,angle_speed:angle_speed+1]) + cs.steeringAngle - angle_bias
-    slow_angles = angle_factor * advanceSteer * (descaled_output[:,3+1:3+2] - descaled_output[0,3+1:3+2]) + cs.steeringAngle - angle_bias
+  fast_angles = []
+  for i in range(angle_speed_count):
+    if use_discrete_angle:
+      fast_angles.append(angle_factor * descaled_output[:,i:i+1] + calibration[0] - angle_bias)
+    else:
+      fast_angles.append(angle_factor * advanceSteer * (descaled_output[:,i:i+1] - descaled_output[0,i:i+1]) + cs.steeringAngle - angle_bias)
 
-  path_send.pathPlan.angleSteers = float(slow_angles[5])
-  path_send.pathPlan.mpcAngles = [float(x) for x in slow_angles]
-  path_send.pathPlan.slowAngles = [float(x) for x in slow_angles]
-  path_send.pathPlan.fastAngles = [float(x) for x in fast_angles]
+  path_send.pathPlan.angleSteers = float(fast_angles[0][5])
+  path_send.pathPlan.fastAngles = [[float(x) for x in y] for y in fast_angles]
   path_send.pathPlan.laneWidth = float(lane_width + width_trim)
   path_send.pathPlan.angleOffset = float(calibration[0])
   path_send.pathPlan.angleBias = angle_bias
@@ -364,7 +363,7 @@ while 1:
       advanceSteer = 1.0 + max(0, float(kegman.conf['advanceSteer']))
       angle_factor = float(kegman.conf['angleFactor'])
       use_bias = float(kegman.conf['angleBias'])
-      angle_speed = min(4, max(0, 4 - int(10 * float(kegman.conf['polyReact']))))
+      angle_speed = min(5, max(0, int(10 * float(kegman.conf['polyReact']))))
       use_angle_offset = float(kegman.conf['angleOffset'])
       lateral_offset = float(kegman.conf['lateralOffset'])
       use_discrete_angle = True if kegman.conf['useDiscreteAngle'] == "1" else False

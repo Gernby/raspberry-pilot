@@ -1,5 +1,6 @@
-          #!/usr/bin/env python3 
+#!/usr/bin/env python3 
 import capnp
+import time
 from cereal import car, log
 from common.numpy_fast import clip
 from common.params import Params
@@ -59,20 +60,9 @@ def data_sample(CI, CC, can_sock, carstate, lac_log, lateral, path_plan):
         CS = CI.update(CC, [can_strs[i]], lac_log)
         lateral.update(CS, path_plan, i, len(can_strs[-40:]))
     else:
-      print("  CAN lagging!")
+      #print("  CAN lagged!")
       CI.canTime += 20
-
   events = list(CS.events)
-
-  # carState
-  if False:
-    cs_send = messaging.new_message()
-    cs_send.init('carState')
-    cs_send.valid = CS.canValid
-    cs_send.carState = CS
-    cs_send.carState.events = events
-    carstate.send(cs_send.to_bytes())
-
 
   return CS, events
 
@@ -184,6 +174,7 @@ def state_control(frame, lkasMode, path_plan, CS, CP, state, events, AM, LaC, la
     AM.add(frame, str(e) + "Permanent", enabled, extra_text_1=extra_text_1, extra_text_2=extra_text_2)
 
   AM.process_alerts(frame)
+  time.sleep(0.00001)
 
   return actuators, lac_log
 
@@ -210,7 +201,9 @@ def data_send(sm, CS, CI, CP, state, events, actuators, carstate, carcontrol, ca
   CC.hudControl.visualAlert = AM.visual_alert
   CC.hudControl.audibleAlert = AM.audible_alert
 
+  time.sleep(0.000001)
   can_sends = CI.apply(CC)
+  time.sleep(0.000001)
   sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
   events_bytes = None
 
@@ -223,6 +216,7 @@ def data_send(sm, CS, CI, CP, state, events, actuators, carstate, carcontrol, ca
     cs_send.carState.events = events
     cs_prev.append(cs_send.to_bytes())
     if CS.camLeft.frame != last_frame: # and CS.camLeft.frame == CS.camFarLeft.frame:
+      time.sleep(0.0001)
       carstate.send_multipart(cs_prev)
       cs_prev.clear()
 

@@ -56,6 +56,7 @@ class LatControlPID(object):
     self.path_index = None #np.arange((30.))*100.0/15.0
     self.accel_limit = 0.05      # 100x degrees/sec**2
     self.angle_rate_des = 0.0    # degrees/sec, rate dynamically limited by accel_limit
+    self.fast_angles = [[]]
 
     try:
       lateral_params = self.params.get("LateralGain")
@@ -71,6 +72,7 @@ class LatControlPID(object):
       (mode, ino, dev, nlink, uid, gid, size, atime, mtime, self.kegtime) = os.stat(os.path.expanduser('~/kegman.json'))
       if self.kegtime != self.kegtime_prev:
         try:
+          time.sleep(0.0001)
           self.kegman = kegman_conf()  #.read_config()
           self.pid._k_i = ([0.], [float(self.kegman.conf['Ki'])])
           self.pid._k_p = ([0.], [float(self.kegman.conf['Kp'])])
@@ -80,7 +82,7 @@ class LatControlPID(object):
           self.damp_mpc = (float(self.kegman.conf['dampMPC']))
           self.wiggle_angle = (float(self.kegman.conf['wiggleAngle']))
           self.accel_limit = (float(self.kegman.conf['accelLimit']))
-          self.polyReact = 0.5 + float(self.kegman.conf['polyReact'])
+          self.polyReact = min(11, max(0, int(10 * float(self.kegman.conf['polyReact']))))
           self.poly_smoothing = max(1.0, float(self.kegman.conf['polyDamp']) * 100.)
           self.poly_factor = max(0.0, float(self.kegman.conf['polyFactor']) * 0.001)
           self.kegtime_prev = self.kegtime
@@ -111,7 +113,7 @@ class LatControlPID(object):
       #  self.lane_change_adjustment = 0.0
       #else:
       self.lane_change_adjustment = interp(self.lane_changing, [0.0, 1.0, 2.0, 2.25, 2.5, 2.75], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-      print("%0.2f lane_changing  %0.2f adjustment  %0.2f p_poly   %0.2f avg_poly   stage = %s    blinker %d   opposing %d  width_1  %0.2f  width_2  %0.2f  center_1  %0.2f  center_2  %0.2f" % (self.lane_changing, self.lane_change_adjustment, path_plan.cPoly[5], path_plan.lPoly[5] + path_plan.rPoly[5], self.stage, blinker_on, driver_opposing_lane, path_plan.laneWidth, 0.6 * abs(path_plan.lPoly[5] - path_plan.rPoly[5]), path_plan.cPoly[0], path_plan.lPoly[5] + path_plan.rPoly[5]))
+      #print("%0.2f lane_changing  %0.2f adjustment  %0.2f p_poly   %0.2f avg_poly   stage = %s    blinker %d   opposing %d  width_1  %0.2f  width_2  %0.2f  center_1  %0.2f  center_2  %0.2f" % (self.lane_changing, self.lane_change_adjustment, path_plan.cPoly[5], path_plan.lPoly[5] + path_plan.rPoly[5], self.stage, blinker_on, driver_opposing_lane, path_plan.laneWidth, 0.6 * abs(path_plan.lPoly[5] - path_plan.rPoly[5]), path_plan.cPoly[0], path_plan.lPoly[5] + path_plan.rPoly[5]))
     elif driver_opposing_lane and path_plan.rProb > 0 and path_plan.lProb > 0 and (blinker_on or abs(path_plan.cPoly[14]) > 100 or min(abs(self.starting_angle - angle_steers), abs(self.angle_steers_des - angle_steers)) > 1.5): # and path_plan.cPoly[14] * path_plan.cPoly[0] > 0:
       print('starting lane change @ %0.2f' % self.lane_changing)
       self.lane_changing = 0.01 
@@ -136,15 +138,16 @@ class LatControlPID(object):
 
   def update(self, active, v_ego, angle_steers, angle_steers_rate, steer_override, CP, path_plan, canTime, blinker_on):
     pid_log = car.CarState.LateralPIDState.new_message()
-    if path_plan.canTime != self.last_plan_time and len(path_plan.slowAngles) > 1:
+    if path_plan.canTime != self.last_plan_time and len(path_plan.fastAngles) > 1:
+      time.sleep(0.00001)
       path_age = (canTime - path_plan.canTime) * 1e-3
       if path_age > 0.23: self.old_plan_count += 1
       if self.path_index is None:
         self.avg_plan_age = path_age
-        self.path_index = np.arange((len(path_plan.slowAngles)))*100.0/15.0
+        self.path_index = np.arange((len(path_plan.fastAngles)))*100.0/15.0
       self.last_plan_time = path_plan.canTime
       self.avg_plan_age += 0.01 * (path_age - self.avg_plan_age)
-
+      self.fast_angles = np.array(path_plan.fastAngles)
       self.c_prob = path_plan.cProb
       #self.projected_lane_error = (self.c_prob / max(1, v_ego)) * self.poly_factor * sum(np.array(path_plan.cPoly))
       self.projected_lane_error = self.c_prob * self.poly_factor * sum(np.array(path_plan.cPoly))
@@ -199,7 +202,7 @@ class LatControlPID(object):
           #self.damp_angle_rate += (angle_steers_rate - self.damp_angle_rate) / max(1.0, self.damp_time * 100.)
           #steer_speed_ratio = self.polyReact * min(1, v_ego / 30)
           #self.angle_steers_des = steer_speed_ratio * interp(self.angle_index, self.path_index, path_plan.fastAngles) + (1 - steer_speed_ratio) * interp(self.angle_index, self.path_index, path_plan.slowAngles)
-          self.angle_steers_des = interp(self.angle_index, self.path_index, path_plan.fastAngles)
+          self.angle_steers_des = interp(self.angle_index, self.path_index, self.fast_angles[int(self.polyReact)])
           self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des) / max(1.0, self.damp_mpc * 100.)
           #self.damp_rate_steers_des += ((path_plan.slowAngles[4] - path_plan.slowAngles[3]) - self.damp_rate_steers_des) / max(1.0, self.damp_mpc * 100.)
           #accel_limit = min(0.2, max(0.1, abs(angle_steers_rate) * 0.1, abs(angle_steers - path_plan.angleOffset) * 0.1))

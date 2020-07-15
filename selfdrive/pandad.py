@@ -5,6 +5,7 @@ import time
 
 from selfdrive.swaglog import cloudlog
 from panda import Panda, PandaDFU, BASEDIR
+from setproctitle import setproctitle
 
 
 def update_panda():
@@ -15,65 +16,62 @@ def update_panda():
   panda = None
   panda_dfu = None
 
-  cloudlog.info("Connecting to panda")
+  print("Connecting to panda")
 
   while True:
     # break on normal mode Panda
     panda_list = Panda.list()
     if len(panda_list) > 0:
-      cloudlog.info("Panda found, connecting")
+      print("Panda found, connecting")
       panda = Panda(panda_list[0])
       break
 
     # flash on DFU mode Panda
     panda_dfu = PandaDFU.list()
     if len(panda_dfu) > 0:
-      cloudlog.info("Panda in DFU mode found, flashing recovery")
+      print("Panda in DFU mode found, flashing recovery")
       panda_dfu = PandaDFU(panda_dfu[0])
       panda_dfu.recover()
 
-    print("waiting for board...")
+    #print("waiting for board..."
     time.sleep(1)
 
-  try:
-    serial = panda.get_serial()[0].decode("utf-8")
-  except Exception:
-    serial = None
-  current_version = "bootstub" if panda.bootstub else panda.get_version()
-  cloudlog.warning("Panda %s connected, version: %s, expected %s" % (serial, current_version, repo_version))
+  current_version = "bootstub" if panda.bootstub else str(panda.get_version())
+  print("Panda connected, version: %s, expected %s" % (current_version, repo_version))
 
   if panda.bootstub or not current_version.startswith(repo_version):
-    cloudlog.info("Panda firmware out of date, update required")
+    print("Panda firmware out of date, update required")
 
     signed_fn = os.path.join(BASEDIR, "board", "obj", "panda.bin.signed")
     if os.path.exists(signed_fn):
-      cloudlog.info("Flashing signed firmware")
+      print("Flashing signed firmware")
       panda.flash(fn=signed_fn)
     else:
-      cloudlog.info("Building and flashing unsigned firmware")
+      print("Building and flashing unsigned firmware")
       panda.flash()
 
-    cloudlog.info("Done flashing")
+    print("Done flashing")
 
   if panda.bootstub:
-    cloudlog.info("Flashed firmware not booting, flashing development bootloader")
+    print("Flashed firmware not booting, flashing development bootloader")
     panda.recover()
-    cloudlog.info("Done flashing bootloader")
+    print("Done flashing bootloader")
 
   if panda.bootstub:
-    cloudlog.info("Panda still not booting, exiting")
+    print("Panda still not booting, exiting")
     raise AssertionError
 
-  version = panda.get_version()
+  version = str(panda.get_version())
   if not version.startswith(repo_version):
-    cloudlog.info("Version mismatch after flashing, exiting")
+    print("Version mismatch after flashing, exiting")
     raise AssertionError
 
 
 def main(gctx=None):
+  setproctitle('pandad')
   update_panda()
 
-  os.chdir("boardd")
+  os.chdir("selfdrive/boardd")
   os.execvp("./boardd", ["./boardd"])
 
 if __name__ == "__main__":

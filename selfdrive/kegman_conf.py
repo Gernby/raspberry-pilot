@@ -114,6 +114,7 @@ class kegman_conf():
     return self.config
 
   def write_config(self, config):
+    print('    WRITING Kegman!')
     try:
       with open(os.path.expanduser('~/kegman.json'), 'w') as f:
         json.dump(self.config, f, indent=2, sort_keys=True)

@@ -121,6 +121,7 @@ python3.7 -m pip install pycapnp
 python3.7 -m pip install setproctitle
 python3.7 -m pip install cffi
 python3.7 -m pip install cython
+python3.7 -m pip install pandacan
 
 # Create folders for storing various hdf5 files; supports switching models via remote ssh commands
 mkdir ~/buttons

@@ -723,7 +723,7 @@ struct PathPlan {
   commIssue @15 :Bool;
   posenetValid @16 :Bool;
   slowAngles @27 :List(Float32);
-  fastAngles @28 :List(Float32);
+  fastAngles @28 :List(List(Float32));
   leftError @29 :List(Float32);
   rightError @30 :List(Float32);
   centerError @31 :List(Float32);

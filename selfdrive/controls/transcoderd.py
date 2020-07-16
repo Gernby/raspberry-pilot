@@ -178,15 +178,14 @@ elif car_params.carFingerprint == CAR.INSIGHT:
   index_finger = 3
 
 fingerprint[:,index_finger] = 1
-if os.path.exists(os.path.expanduser('~/vehicle_option.json')):
-  with open(os.path.expanduser('~/vehicle_option.json'), 'r') as f:
-    vehicle_option = json.load(f)
-    fingerprint[:,3+vehicle_option['vehicle_option']] = 1
-    print(vehicle_option, fingerprint)
-else:
-  fingerprint[:,-1:] = 1
+if not os.path.exists(os.path.expanduser('~/vehicle_option.json')):
+  with open(os.path.expanduser('~/vehicle_option.json'), 'w') as f:
+    json.dump({'vehicle_option': 6}, f, indent=2, )
+with open(os.path.expanduser('~/vehicle_option.json'), 'r') as f:
+  vehicle_option = json.load(f)
+  fingerprint[:,3+vehicle_option['vehicle_option']] = 1
 
-print(fingerprint)
+print(fingerprint, vehicle_option)
 model_output = model.predict_on_batch([new_input[  :,:,:5], new_input[  :,:,5:-16],new_input[  :,:,-16:-8], new_input[  :,:,-8:], fingerprint])
 print(model_output)
 
@@ -312,7 +311,7 @@ while 1:
       width_trim -= 1
     width_trim = max(-100, min(width_trim, 0))
   
-  if abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10:
+  if abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0]) < 3 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and (cs.torqueRequest != 0 or not calibrated):
     if calc_center[0][0,0] > 0:
       angle_bias -= (0.000001 * cs.vEgo)
     elif calc_center[0][0,0] < 0:

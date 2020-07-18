@@ -4,15 +4,22 @@
 # Start with a brand new ubuntu install on SD card
 # plug in an Ethernet cable or get the WiFi working
 # ssh or log into the Pi on a local console
-# cd
-# git clone -b TensorFlow-2-2 https://github.com/Gernby/raspberry-pilot.git
+
+# log into the pi
+# git clone https://github.com/Gernby/raspberry-pilot.git
 # mv ~/raspberry-pilot/start_install_tf.sh ~
 # sh start_install_tf.sh
+
+# check back periodically. should take just under 4 hours
 
 # every so often, please upload data logs for analysis using this command
 # cd ~/raspilot && PYTHONPATH=~/raspilot python3.7 upload_files.py
 
 # --- Install script starts here ---
+
+# disable unattended upgrades right away
+#ansible localhost -b -m apt -a "name=unattended-upgrades state=absent"
+sudo apt remove -y unattended-upgrades
 
 # Install Ansible to support the future direction
 sudo apt-add-repository -y ppa:ansible/ansible
@@ -59,10 +66,6 @@ ansible localhost -b -m service -a "name=NetworkManager state=started"
 
 # connect to Wifi (these are optional parameters and won't block the script from running)
 sudo nmcli d wifi connect $1 password $2
-
-# disable unattended upgrades
-ansible localhost -b -m apt -a "name=unattended-upgrades state=absent"
-# sudo apt remove -y unattended-upgrades
 
 # update Ubuntu and clean up
 echo "Updating Ubuntu and removing unneeded packages.."

@@ -75,7 +75,8 @@ localPathFormatString1 = 'pathPlan,user=' + user_id + ' l0=%0.3f,l1=%0.3f,l2=%0.
 localPathFormatString2 = "r0=%0.3f,r1=%0.3f,r2=%0.3f,r3=%0.3f,r4=%0.3f,r5=%0.3f,r6=%0.3f,r7=%0.3f,r8=%0.3f,r9=%0.3f,r10=%0.3f,r11=%0.3f,r12=%0.3f,r13=%0.3f,r14=%0.3f,"
 localPathFormatString3 = "c0=%0.3f,c1=%0.3f,c2=%0.3f,c3=%0.3f,c4=%0.3f,c5=%0.3f,c6=%0.3f,c7=%0.3f,c8=%0.3f,c9=%0.3f,c10=%0.3f,c11=%0.3f,c12=%0.3f,c13=%0.3f,c14=%0.3f,"
 localPathFormatString4 = "a0=%0.3f,a1=%0.3f,a2=%0.3f,a3=%0.3f,a4=%0.3f,a5=%0.3f,a6=%0.3f,lprob=%0.3f,rprob=%0.3f,cprob=%0.3f,lane_width=%0.3f,angle=%0.3f,rate=%0.3f,angle_offset=%0.2f,lateral_offset=%0.2f,actual_angle=%0.1f,plan_age=%0.3f %d\n"
-localCarStateFormatString2 = "carState,user=" + user_id + " v_ego=%0.4f,econ_mode=%d,adjusted_angle=%0.2f,angle_steers=%0.4f,angle_rate=%0.4f,driver_torque=%0.4f,request=%0.4f,angle_rate_eps=%0.4f,yaw_rate_can=%0.4f,angle_steers_eps=%0.4f,long_accel=%0.4f,p2=%0.4f,p=%0.4f,i=%0.4f,f=%0.4f,damp_angle_steers=%0.4f,damp_angle_steers_des=%0.4f,ff_rate=%0.4f,ff_angle=%0.4f,left_frame=%d,far_right_frame=%d,wheel_speed_fl=%0.4f,wheel_speed_fr=%0.4f,wheel_speed_rl=%0.4f,wheel_speed_rr=%0.4f,l_blinker=%d,r_blinker=%d,lk_mode=%d,enabled=%d,left_frame=%d,left_1=%d,left_2=%d,left_3=%d,left_4=%d,left_5=%d,left_6=%d,left_7=%d,left_8=%d,left_9=%d,left_10=%d,left_11=%d,left_12=%d,left_13=%d,left_full_1=%d,left_full_2=%d,right_frame=%d,right_1=%d,right_2=%d,right_3=%d,right_4=%d,right_5=%d,right_6=%d,right_7=%d,right_8=%d,right_9=%d,right_10=%d,right_11=%d,right_12=%d,right_13=%d,right_full_1=%d,right_full_2=%d,far_left_frame=%d,far_left_1=%d,far_left_2=%d,far_left_3=%d,far_left_4=%d,far_left_5=%d,far_left_6=%d,far_left_7=%d,far_left_9=%d,far_left_8=%d,far_left_10=%d,far_left_11=%d,far_left_12=%d,far_left_13=%d,far_left_full_1=%d,far_left_full_2=%d,far_right_frame=%d,far_right_1=%d,far_right_2=%d,far_right_3=%d,far_right_4=%d,far_right_5=%d,far_right_6=%d,far_right_7=%d,far_right_8=%d,far_right_9=%d,far_right_10=%d,far_right_11=%d,far_right_12=%d,far_right_13=%d,far_right_full_1=%d,far_right_full_2=%d,time_delta=%d %d\n"
+#localCarStateFormatString2 = "carState,user=" + user_id + " v_ego=%0.4f,econ_mode=%d,adjusted_angle=%0.2f,angle_steers=%0.4f,angle_rate=%0.4f,driver_torque=%0.4f,request=%0.4f,angle_rate_eps=%0.4f,yaw_rate_can=%0.4f,angle_steers_eps=%0.4f,long_accel=%0.4f,p2=%0.4f,p=%0.4f,i=%0.4f,f=%0.4f,damp_angle_steers=%0.4f,damp_angle_steers_des=%0.4f,ff_rate=%0.4f,ff_angle=%0.4f,left_frame=%d,far_right_frame=%d,wheel_speed_fl=%0.4f,wheel_speed_fr=%0.4f,wheel_speed_rl=%0.4f,wheel_speed_rr=%0.4f,l_blinker=%d,r_blinker=%d,lk_mode=%d,enabled=%d,left_frame=%d,left_1=%d,left_2=%d,left_3=%d,left_4=%d,left_5=%d,left_6=%d,left_7=%d,left_8=%d,left_9=%d,left_10=%d,left_11=%d,left_12=%d,left_13=%d,left_full_1=%d,left_full_2=%d,right_frame=%d,right_1=%d,right_2=%d,right_3=%d,right_4=%d,right_5=%d,right_6=%d,right_7=%d,right_8=%d,right_9=%d,right_10=%d,right_11=%d,right_12=%d,right_13=%d,right_full_1=%d,right_full_2=%d,far_left_frame=%d,far_left_1=%d,far_left_2=%d,far_left_3=%d,far_left_4=%d,far_left_5=%d,far_left_6=%d,far_left_7=%d,far_left_9=%d,far_left_8=%d,far_left_10=%d,far_left_11=%d,far_left_12=%d,far_left_13=%d,far_left_full_1=%d,far_left_full_2=%d,far_right_frame=%d,far_right_1=%d,far_right_2=%d,far_right_3=%d,far_right_4=%d,far_right_5=%d,far_right_6=%d,far_right_7=%d,far_right_8=%d,far_right_9=%d,far_right_10=%d,far_right_11=%d,far_right_12=%d,far_right_13=%d,far_right_full_1=%d,far_right_full_2=%d,time_delta=%d %d\n"
+localCarStateFormatString2 = "carState,user=" + user_id + " v_ego=%0.4f,econ_mode=%d,adjusted_angle=%0.2f,angle_steers=%0.4f,angle_rate=%0.4f,driver_torque=%0.4f,request=%0.4f,angle_rate_eps=%0.4f,yaw_rate_can=%0.4f,angle_steers_eps=%0.4f,long_accel=%0.4f,p2=%0.4f,p=%0.4f,i=%0.4f,f=%0.4f,damp_angle_steers=%0.4f,damp_angle_steers_des=%0.4f,ff_rate=%0.4f,ff_angle=%0.4f,left_frame=%d,far_right_frame=%d,wheel_speed_fl=%0.4f,wheel_speed_fr=%0.4f,wheel_speed_rl=%0.4f,wheel_speed_rr=%0.4f,l_blinker=%d,r_blinker=%d,lk_mode=%d,enabled=%d,left_frame=%d,left_1=%d,left_2=%d,left_3=%d,left_4=%d,left_5=%d,left_6=%d,left_7=%d,left_8=%d,left_9=%d,left_10=%d,left_11=%d,left_12=%d,left_13=%d,left_full_1=%d,left_full_2=%d,right_frame=%d,right_1=%d,right_2=%d,right_3=%d,right_4=%d,right_5=%d,right_6=%d,right_7=%d,right_8=%d,right_9=%d,right_10=%d,right_11=%d,right_12=%d,right_13=%d,right_full_1=%d,right_full_2=%d,far_left_frame=%d,far_left_1=%d,far_left_2=%d,far_left_3=%d,far_left_4=%d,far_left_5=%d,far_left_6=%d,far_left_7=%d,far_left_9=%d,far_left_8=%d,far_left_10=%d,far_left_11=%d,far_left_12=%d,far_left_13=%d,far_left_full_1=%d,far_left_full_2=%d,far_right_frame=%d,far_right_1=%d,far_right_2=%d,far_right_3=%d,far_right_4=%d,far_right_5=%d,far_right_6=%d,far_right_7=%d,far_right_8=%d,far_right_9=%d,far_right_10=%d,far_right_11=%d,far_right_12=%d,far_right_13=%d,far_right_full_1=%d,far_right_full_2=%d,gflags=%d,glat=%f,glong=%f,galt=%f,gspeed=%f,gbearing=%f,gaccuracy=%f,gNED0=%f,gNED1=%f,gNED2=%f,gvertAccuracy=%f,gbearingAccuracy=%f,gspeedAccuracy=%f,time_delta=%d %d\n"
 localCarStateFormatString1 = "carState,user=" + user_id + " v_ego=%0.4f,angle_steers=%0.4f,angle_rate=%0.4f,driver_torque=%0.4f,request=%0.4f,angle_rate_eps=%0.4f,yaw_rate_can=%0.4f,angle_steers_eps=%0.4f,long_accel=%0.4f,p2=%0.4f,p=%0.4f,i=%0.4f,f=%0.4f,damp_angle_steers=%0.4f,damp_angle_steers_des=%0.4f,ff_rate=%0.4f,ff_angle=%0.4f,left_frame=%d,far_right_frame=%d,time_delta=%d %d\n"
 localPathDataString = []
 kegmanDataString = []
@@ -93,10 +94,11 @@ active = False
 stock_cam_frame_prev = 0
 cs = None
 lastHeartBeat = 0
-
+gpsCount = 0
 messaging.drain_sock(carState, True)
 messaging.drain_sock(pathPlan, False)
 messaging.drain_sock(carState, False)
+
 previous_minute = 0
 logfile = None
 if not os.path.exists('/data/upload/'):
@@ -116,6 +118,11 @@ while 1:
           logfile = open('/data/upload/%s_%0.0f.dat' % (user_id, time.time()//60), "a")
 
         if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
+          gps = cs.gpsLocation
+          if gps.timestamp == 0 or len(gps.vNED) == 0: 
+            vNED = [0,0,0]
+          else:
+            vNED = gps.vNED
           stock_cam_frame_prev = cs.camLeft.frame
           send_data = tuple([cs.vEgo, cs.econMode, cs.adjustedAngle, cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
                             cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
@@ -125,8 +132,9 @@ while 1:
                             cs.camRight.frame, cs.camRight.parm1, cs.camRight.parm2, cs.camRight.parm3, cs.camRight.parm4, cs.camRight.parm5, cs.camRight.parm6, cs.camRight.parm7, cs.camRight.parm8, cs.camRight.parm9, cs.camRight.parm10, cs.camRight.parm11, cs.camRight.parm12, cs.camRight.parm13, cs.camRight.full1, cs.camRight.full2, \
                             cs.camFarLeft.frame, cs.camFarLeft.parm1, cs.camFarLeft.parm2, cs.camFarLeft.parm3, cs.camFarLeft.parm4, cs.camFarLeft.parm5, cs.camFarLeft.parm6, cs.camFarLeft.parm7, cs.camFarLeft.parm8, cs.camFarLeft.parm9, cs.camFarLeft.parm10, cs.camFarLeft.parm11, cs.camFarLeft.parm12, cs.camFarLeft.parm13, cs.camFarLeft.full1, cs.camFarLeft.full2, \
                             cs.camFarRight.frame, cs.camFarRight.parm1, cs.camFarRight.parm2, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm6, cs.camFarRight.parm7, cs.camFarRight.parm8, cs.camFarRight.parm9, cs.camFarRight.parm10, cs.camFarRight.parm11, cs.camFarRight.parm12, cs.camFarRight.parm13, cs.camFarRight.full1, \
-                            cs.camFarRight.full2, cs.canTime - cs.sysTime, cs.canTime])
-                    
+                            cs.camFarRight.full2, gps.flags, gps.latitude, gps.longitude, gps.altitude, gps.speed, gps.bearing, gps.accuracy, vNED[0], vNED[1], vNED[2], gps.verticalAccuracy, gps.bearingAccuracy, gps.speedAccuracy, cs.canTime - cs.sysTime, cs.canTime])
+                            #cs.camFarRight.full2, cs.canTime - cs.sysTime, cs.canTime])
+                            
           if do_influx:
             localCarStateDataString2.append(localCarStateFormatString2 % send_data)
           if vEgo > 0:
@@ -191,7 +199,6 @@ while 1:
         r = requests.post(target_URL, data=insertString)
         time.sleep(0.00001)
         dashPub.send_string(insertString)
-        time.sleep(0.00001)
         if r.status_code == 404:
           print(r)
           r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')

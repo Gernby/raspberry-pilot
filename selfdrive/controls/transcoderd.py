@@ -180,7 +180,7 @@ elif car_params.carFingerprint == CAR.INSIGHT:
 fingerprint[:,index_finger] = 1
 if not os.path.exists(os.path.expanduser('~/vehicle_option.json')):
   with open(os.path.expanduser('~/vehicle_option.json'), 'w') as f:
-    json.dump({'vehicle_option': 6}, f, indent=2, )
+    json.dump({'vehicle_option': 6}, f, indent=2, sort_keys=False)
 with open(os.path.expanduser('~/vehicle_option.json'), 'r') as f:
   vehicle_option = json.load(f)
   fingerprint[:,3+vehicle_option['vehicle_option']] = 1
@@ -293,7 +293,6 @@ while 1:
   new_input[-1,:-1,5:] = model_input[-1,1:,5:]
   model_input = new_input
 
-  time.sleep(0.00001)
   model_output = model.predict_on_batch([model_input[  :,:,:5], model_input[  :,:,5:-16],model_input[  :,:,-16:-8], model_input[  :,:,-8:], fingerprint])
 
   time.sleep(0.00001)

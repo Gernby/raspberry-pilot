@@ -430,15 +430,12 @@ class CarInterface(CarInterfaceBase):
     #if self.frame % 100 == 0: print(self.canTime)
 
     self.cp.update_strings(can_strings)
-    time.sleep(0.00001)
     #self.cp.update(0, False)
     if not self.cp_cam is None: 
       self.cp_cam.update_strings(can_strings)
-      time.sleep(0.00001)
       #self.cp_cam.update(0, False)
 
     self.CS.update(self.cp, self.cp_cam)
-    time.sleep(0.00001)
     # create message
     #print(len(can_strings), can_strings)
     #can_strings = log.Event.from_bytes(can_strings[0])
@@ -762,6 +759,7 @@ class CarInterface(CarInterfaceBase):
 
     pcm_accel = int(clip(c.cruiseControl.accelOverride, 0, 1) * 0xc6)
 
+    time.sleep(0.00001)
     can_sends = self.CC.update(c.enabled, self.CS, self.frame,
                                c.actuators,
                                c.cruiseControl.speedOverride,

@@ -148,6 +148,8 @@ struct CarState {
   adjustedAngle @49 :Float32;
   centerOffset @50 :Float32;
   blinkers @51 :Bool;
+  gpsLocation @53 :GpsLocationData;
+
 
   # lock info
   doorOpen @24 :Bool;
@@ -184,6 +186,60 @@ struct CarState {
     brake @7;
   }
 
+
+  # android struct GpsLocation
+  struct GpsLocationData {
+    # Contains GpsLocationFlags bits.
+    flags @0 :UInt16;
+
+    # Represents latitude in degrees.
+    latitude @1 :Float64;
+
+    # Represents longitude in degrees.
+    longitude @2 :Float64;
+
+    # Represents altitude in meters above the WGS 84 reference ellipsoid.
+    altitude @3 :Float64;
+
+    # Represents speed in meters per second.
+    speed @4 :Float32;
+
+    # Represents heading in degrees.
+    bearing @5 :Float32;
+
+    # Represents expected accuracy in meters. (presumably 1 sigma?)
+    accuracy @6 :Float32;
+
+    # Timestamp for the location fix.
+    # Milliseconds since January 1, 1970.
+    timestamp @7 :Int64;
+
+    source @8 :SensorSource;
+
+    # Represents NED velocity in m/s.
+    vNED @9 :List(Float32);
+
+    # Represents expected vertical accuracy in meters. (presumably 1 sigma?)
+    verticalAccuracy @10 :Float32;
+
+    # Represents bearing accuracy in degrees. (presumably 1 sigma?)
+    bearingAccuracy @11 :Float32;
+
+    # Represents velocity accuracy in m/s. (presumably 1 sigma?)
+    speedAccuracy @12 :Float32;
+
+    enum SensorSource {
+      android @0;
+      iOS @1;
+      car @2;
+      velodyne @3;  # Velodyne IMU
+      fusion @4;
+      external @5;
+      ublox @6;
+      trimble @7;
+    }
+  }
+
   struct CameraPacket {
     parm1 @0 :Int16;
     parm2 @1 :Int16;
@@ -210,7 +266,6 @@ struct CarState {
     pidState @45 :LateralPIDState;
     lqrState @46 :LateralLQRState;
   }
-
 
   struct LateralINDIState {
     active @0 :Bool;

@@ -46,22 +46,26 @@ def wait_for_can(logcan):
   while len(messaging.recv_sock(logcan, wait=True).can) == 0:
     pass
 
-def data_sample(CI, CC, can_sock, carstate, lac_log, lateral, path_plan):
+def data_sample(CI, CC, can_sock, carstate, lac_log, lateral, sm):
   """Receive data from sockets and create events for battery, temperature and disk space"""
-
+ 
   can_strs = [can_sock.recv()]
   CS = CI.update(CC, can_strs, lac_log)
-  lateral.update(CS, path_plan, 0, 1)
+  lateral.update(CS, sm, 0, 1)
   if CS.canTime + 20 < CS.sysTime: 
     can_strs = messaging.drain_sock_raw(can_sock, wait_for_one=False)
     if len(can_strs) > 0: 
-      print("  Controls lagged by %d CAN packets!" % (len(can_strs)))
+      print("  Controls lagged by %d CAN packets!" % (len(can_strs)), [len(x) for x in can_strs])
       for i in range(len(can_strs[-40:])):
+        time.sleep(0.00001)
         CS = CI.update(CC, [can_strs[i]], lac_log)
-        lateral.update(CS, path_plan, i, len(can_strs[-40:]))
+        lateral.update(CS, sm, i, len(can_strs[-40:]))
     else:
       #print("  CAN lagged!")
       CI.canTime += 20
+  else:
+    time.sleep(0.00001)
+
   events = list(CS.events)
 
   return CS, events
@@ -174,7 +178,6 @@ def state_control(frame, lkasMode, path_plan, CS, CP, state, events, AM, LaC, la
     AM.add(frame, str(e) + "Permanent", enabled, extra_text_1=extra_text_1, extra_text_2=extra_text_2)
 
   AM.process_alerts(frame)
-  time.sleep(0.00001)
 
   return actuators, lac_log
 
@@ -201,26 +204,9 @@ def data_send(sm, CS, CI, CP, state, events, actuators, carstate, carcontrol, ca
   CC.hudControl.visualAlert = AM.visual_alert
   CC.hudControl.audibleAlert = AM.audible_alert
 
-  time.sleep(0.000001)
   can_sends = CI.apply(CC)
-  time.sleep(0.000001)
   sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
   events_bytes = None
-
-  # carState
-  if True:
-    cs_send = messaging.new_message()
-    cs_send.init('carState')
-    cs_send.valid = CS.canValid
-    cs_send.carState = CS
-    cs_send.carState.events = events
-    cs_prev.append(cs_send.to_bytes())
-    if CS.camLeft.frame != last_frame: # and CS.camLeft.frame == CS.camFarLeft.frame:
-      time.sleep(0.0001)
-      carstate.send_multipart(cs_prev)
-      cs_prev.clear()
-
-  
 
   return CC, events_bytes
 
@@ -232,12 +218,12 @@ def controlsd_thread(gctx=None):
   # Pub Sockets
   sendcan = messaging.pub_sock(service_list['sendcan'].port)
   controlsstate = messaging.pub_sock(service_list['controlsState'].port)
-  carstate = messaging.pub_sock(service_list['carState'].port)
+  carstate = None #messaging.pub_sock(service_list['carState'].port)
   carcontrol = messaging.pub_sock(service_list['carControl'].port)
   carevents = messaging.pub_sock(service_list['carEvents'].port)
   carparams = messaging.pub_sock(service_list['carParams'].port)
 
-  sm = messaging.SubMaster(['pathPlan','health'])
+  sm = messaging.SubMaster(['pathPlan','health','gpsLocationExternal'])
   can_sock = messaging.sub_sock(service_list['can'].port)
   hw_type = messaging.recv_one(sm.sock['health']).health.hwType
   is_panda_black = hw_type == log.HealthData.HwType.blackPanda  
@@ -281,7 +267,7 @@ def controlsd_thread(gctx=None):
     start_time = 0 # time.time()  #sec_since_boot()
 
     # Sample data and compute car events
-    CS, events = data_sample(CI, CC, can_sock, carstate, lac_log, lateral, sm['pathPlan'])
+    CS, events = data_sample(CI, CC, can_sock, carstate, lac_log, lateral, sm)
 
     state, soft_disable_timer, v_cruise_kph, v_cruise_kph_last = \
         state_transition(sm.frame, CS, CP, state, events, soft_disable_timer, v_cruise_kph, AM)

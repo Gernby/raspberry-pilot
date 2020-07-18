@@ -67,31 +67,26 @@ wifis:
 22. Try to `ping 8.8.8.8`. If successful, continue to the next section. If not, reboot and log in again with ubuntu/ubuntu.
 
 ## Software installation
-(Note: You must have stable Internet connectivity at this point to proceed)
+(Note: You must have stable Internet connectivity at this point to proceed. Also, you must kick off the install within about 5 minutes. If you boot up the Pi but don't start the install relatively soon, the Pi will update itself, preventing you from starting the install for about 20 minutes.)
 
 1. Log into the Pi using "ubuntu" as the ID and password if you are not still logged in from earlier steps. Clone the repository
-
-`cd`  
-`git clone https://github.com/Gernby/raspberry-pilot.git`  
-
-2. Ask in Discord for the name of the current branch to checkout.
-3. `cd raspberry-pilot`
-4. `git checkout <branch name>`
-5. `bash start_install.sh`
-6. Wait 30 minutes
-7. Reboot the Pi and log back in as the "ubuntu" user
-8. Run `bash finish_install.sh`
-9. Wait about 90 minutes. You will see long periods without any activity or errors pop up. This is normal.
-10. If the process completes successfully, reboot the Pi and log back in as the "ubuntu" user
-11. Run the command `top -u ubuntu`
-12. Look for `controlsd`, `boardd`, and `dashboard` in the rightmost column of the list.
-13. If you see all three, let Gernby know you're ready for the model. He will get it to you one way or another.
-14. When you receive the model, copy it to `~/raspilot/models` (note that the 's' at the end is critical). The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
-15. Reboot the Pi, and log back in
-16. Run `top -u ubuntu` again
-17. Look for `controlsd`, `boardd`, `dashboard`, and `transcoderd` this time
-18. If all four processes are present, you are ready to flash your Panda
-19. If you can't hit your household WiFi from your car, be sure to turn on your hotspot before booting up the Pi in the car.
+```
+git clone https://github.com/Gernby/raspberry-pilot.git
+mv raspberry-pilot/start_install_tf.sh .
+sh start_install_tf.sh
+```
+2. Install should take just under 4 hours. If it finishes too quickly, come to Discord to discuss.
+3. Reboot the Pi and log back in as the "ubuntu" user
+4. If the process completes successfully, reboot the Pi and log back in as the "ubuntu" user
+5. Run the command `top -u ubuntu`
+6. Look for `controlsd`, `boardd`, and `dashboard` in the rightmost column of the list.
+7. If you see all three, let Gernby know you're ready for the model. He will get it to you one way or another.
+8. When you receive the model, copy it to `~/raspilot/models` (note that the 's' at the end is critical). The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
+9. Reboot the Pi, and log back in
+10. Run `top -u ubuntu` again
+11. Look for `controlsd`, `boardd`, `dashboard`, and `transcoderd` this time
+12. If all four processes are present, you are ready to flash your Panda
+13. If you can't hit your household WiFi from your car, be sure to turn on your hotspot before booting up the Pi in the car.
 
 ## Flashing the Panda
 (Note 1: The Pi and the Panda need to be powered separately for this step)

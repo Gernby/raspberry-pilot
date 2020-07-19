@@ -1,0 +1,9 @@
+- hosts: localhost
+  connection: local
+  tasks:
+  - name: "Launch Raspberry Pilot on boot"
+    cron:
+      name: "Launch Raspberry Pilot on boot"
+      special_time: reboot
+      job: "bash raspilot/launch_openpilot.sh"
+      state:present

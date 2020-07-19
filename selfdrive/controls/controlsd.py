@@ -18,6 +18,7 @@ from selfdrive.controls.lib.laterald import Lateral
 from selfdrive.controls.lib.alertmanager import AlertManager
 from setproctitle import setproctitle
 
+
 ThermalStatus = log.ThermalData.ThermalStatus
 State = log.ControlsState.OpenpilotState
 #import sys
@@ -53,7 +54,7 @@ def data_sample(CI, CC, can_sock, carstate, lac_log, lateral, sm):
   CS = CI.update(CC, can_strs, lac_log)
   lateral.update(CS, sm, 0, 1)
   if CS.canTime + 20 < CS.sysTime: 
-    can_strs = messaging.drain_sock_raw(can_sock, wait_for_one=False)
+    can_strs = messaging.drain_sock_raw(can_sock, wait_for_one=False, limit=3)
     if len(can_strs) > 0: 
       print("  Controls lagged by %d CAN packets!" % (len(can_strs)), [len(x) for x in can_strs])
       for i in range(len(can_strs[-40:])):

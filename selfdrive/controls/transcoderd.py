@@ -83,7 +83,7 @@ def sub_sock(port, poller=None, addr="127.0.0.1", conflate=False, timeout=None):
   return sock
 
 def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, angle, prev_center, minimize=False, optimize=False):
-  left = l_prob * tri_value[:,1:2] + (1 - l_prob) * tri_value[:,0:1]
+  '''left = l_prob * tri_value[:,1:2] + (1 - l_prob) * tri_value[:,0:1]
   right = r_prob * tri_value[:,2:3] + (1 - r_prob) * tri_value[:,0:1]
   center = tri_value[:,0:1]
   if minimize:
@@ -102,8 +102,8 @@ def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, angle, prev_center, min
   else:
     weighted_center = [((lr_prob * (abs_right * left + abs_left * right) / (abs_right + abs_left + 0.0001)) + ((1-lr_prob) * center)), left, right]
     #weighted_center = [(lr_prob * (abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001) + (1-lr_prob) * center), left, right]
-  return weighted_center
-
+  return weighted_center'''
+  return [tri_value[:,0:1],tri_value[:,1:2],tri_value[:,2:3]]
 
 gernPath = pub_sock(service_list['pathPlan'].port)
 gernModelInputs = sub_sock(service_list['model'].port, conflate=True)
@@ -303,17 +303,17 @@ while 1:
   
   calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,angle_speed_count::3], cs.torqueRequest, cs.steeringAngle - calibration[0], calc_center[0], minimize=use_minimize, optimize=use_optimize)
 
-  if cs.vEgo > 10 and l_prob > 0 and r_prob > 0:
+  '''if cs.vEgo > 10 and l_prob > 0 and r_prob > 0:
     if calc_center[1][0,0] > calc_center[2][0,0]:
       width_trim += 1
     else:
       width_trim -= 1
-    width_trim = max(-100, min(width_trim, 0))
+    width_trim = max(-100, min(width_trim, 0))'''
   
   if abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0]) < 3 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and (cs.torqueRequest != 0 or not calibrated):
-    if calc_center[0][0,0] > 0:
+    if calc_center[0][5,0] > 0:
       angle_bias -= (0.000001 * cs.vEgo)
-    elif calc_center[0][0,0] < 0:
+    elif calc_center[0][5,0] < 0:
       angle_bias += (0.000001 * cs.vEgo)
 
   fast_angles = []

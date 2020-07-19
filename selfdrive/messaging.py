@@ -49,9 +49,9 @@ def drain_sock_raw_poller(poller, sock, wait_for_one=False):
 
   return ret
 
-def drain_sock_raw(sock, wait_for_one=False):
+def drain_sock_raw(sock, wait_for_one=False, limit=-1):
   ret = []
-  while 1:
+  while limit < 0 or len(ret) < limit:
     try:
       if wait_for_one and len(ret) == 0:
         dat = sock.recv()

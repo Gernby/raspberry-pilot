@@ -711,8 +711,8 @@ int main() {
   printf("starting boardd");
 
   // set process priority
-  err = set_realtime_priority(4);
-  LOG("setpriority returns %d", err);
+  //err = set_realtime_priority(4);
+  //LOG("setpriority returns %d", err);
 
   // check the environment
   if (getenv("STARTED")) {

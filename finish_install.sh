@@ -16,7 +16,8 @@ SUBSYSTEMS=="usb", ATTR{idVendor}=="bbaa", ATTR{idProduct}=="ddee", MODE:="0666"
 EOF
 sudo udevadm control --reload-rules && sudo udevadm trigger
 
-(crontab -l; echo "@reboot bash raspilot/launch_openpilot.sh";) | crontab -
+#(crontab -l; echo "@reboot bash raspilot/launch_openpilot.sh";) | crontab -
+ansible-playbook ~/raspilot/crontab.yml
 crontab -l
 (sudo crontab -l; echo "@reboot sleep 60; bash /home/ubuntu/raspilot/fix_niceness.sh";) | sudo crontab -
 sudo crontab -l

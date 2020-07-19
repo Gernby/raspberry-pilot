@@ -63,17 +63,18 @@ ZMQ_SHARED_LIBS = -L$(BASEDIR)/external/zmq/lib \
 endif
 
 .PHONY: all
-all: ubloxd paramsd
+all: ubloxd 
+#paramsd
 
 include ../common/cereal.mk
 
-LOC_OBJS = locationd_yawrate.o params_learner.o paramsd.o \
-           ../common/swaglog.o \
-           ../common/params.o \
-           ../common/util.o \
-					 $(PHONELIBS)/json11/json11.o \
-					 $(PHONELIBS)/json/src/json.o \
-           $(CEREAL_OBJS)
+#LOC_OBJS = locationd_yawrate.o params_learner.o paramsd.o \
+#           ../common/swaglog.o \
+#           ../common/params.o \
+#           ../common/util.o \
+#					 $(PHONELIBS)/json11/json11.o \
+#					 $(PHONELIBS)/json/src/json.o \
+#           $(CEREAL_OBJS)
 
 LOC_DEPS := $(LOC_OBJS:.o=.d)
 
@@ -94,12 +95,12 @@ liblocationd.so: $(LOC_OBJS)
             $(ZMQ_SHARED_LIBS) \
             $(EXTRA_LIBS)
 
-paramsd: $(LOC_OBJS)
-	@echo "[ LINK ] $@"
-	$(CXX) -fPIC -o '$@' $^ \
-            $(CEREAL_LIBS) \
-            $(ZMQ_LIBS) \
-            $(EXTRA_LIBS)
+#paramsd: $(LOC_OBJS)
+#	@echo "[ LINK ] $@"
+#	$(CXX) -fPIC -o '$@' $^ \
+#            $(CEREAL_LIBS) \
+#            $(ZMQ_LIBS) \
+#            $(EXTRA_LIBS)
 
 ubloxd: ubloxd.o $(OBJS)
 	@echo "[ LINK ] $@"

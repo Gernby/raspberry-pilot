@@ -21,6 +21,7 @@ class kegman_conf():
         self.conf = self.read_config(CP, True)
         self.init_config(CP)
 
+
   def init_config(self, CP):
     write_conf = False
     self.type = "pid"
@@ -58,7 +59,8 @@ class kegman_conf():
     self.element_updated = False
 
     if Reset or not os.path.isfile(os.path.expanduser('~/kegman.json')):
-      self.config = {"Kp":"-1","Ki":"-1","Kf":"-1","rateFFGain":"-1","reactMPC":"-1","dampMPC":"-1"}
+      self.config = {"Kp":"-1","Ki":"-1","Kf":"-1","rateFFGain":"-1","reactMPC":"-1","dampMPC":"-1","useAutoFlash": "0"}
+      self.element_updated = True
     else:
       with open(os.path.expanduser('~/kegman.json'), 'r') as f:
         self.config = json.load(f)

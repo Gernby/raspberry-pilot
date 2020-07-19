@@ -72,7 +72,7 @@ def main(gctx=None):
   setproctitle('pandad')
   try:
     kegman = kegman_conf()  #.read_config()
-    if bool(kegman.conf['useAutoFlash']): 
+    if bool(int(kegman.conf['useAutoFlash'])): 
       update_panda()
   except:
     pass

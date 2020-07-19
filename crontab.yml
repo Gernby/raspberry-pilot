@@ -3,7 +3,16 @@
   tasks:
   - name: "Launch Raspberry Pilot on boot"
     cron:
-      name: "Launch Raspberry Pilot on boot"
+      user: ubuntu
+      name: "Launch Raspberry Pilot"
       special_time: reboot
       job: "bash raspilot/launch_openpilot.sh"
-      state:present
+      state: present
+  - name: "Adjust the niceness of critical porcesses"
+    cron:
+      user: root
+      name: "Adjust the niceness of critical processes"
+      special_time: reboot
+      job: "sleep 60; bash /home/ubuntu/raspilot/fix_niceness.sh"
+      state: present
+    become: yes

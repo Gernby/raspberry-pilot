@@ -7,8 +7,8 @@
 3. Raspberry Pi 4 with 4GB RAM
 4. White, Gray, or Black Panda from Comma.ai shop
 5. Honda Bosch Giraffe from Comma.ai shop if using a White or Gray Panda, Honda Bosch harness for Black Panda
-6. USB A-to-C cable
-7. USB A-to-A cable or mini USB cable with a Panda Paw from the Comma.ai shop (for flashing White or Gray Pandas from the Pi)
+6. USB A-to-C cable ([This](https://www.amazon.com/Anker-2-Pack-Premium-Charging-Samsung/dp/B07DC5PPFV) two pack of 6-ft. cables is popular)
+7. USB A-to-A cable (like [this](https://www.amazon.com/gp/product/B0002MKBI2) one) or mini USB cable with a Panda Paw from the Comma.ai shop (for flashing White or Gray Pandas from the Pi)
 8. A way to power the Pi in your car (battery pack, laptop, or high power 12v power adapter for the car)
 9. Minimum 16GB A1-rated microSD card
 10. Optional Micro-HDMI adapter plus TV or monitor that accepts HDMI input (the Raspberry Pi 4 does not use the same HDMI connectors as any previous models)
@@ -20,24 +20,22 @@
 
 1. Go to https://ubuntu.com/download/raspberry-pi on the laptop that will prepare the microSD card
 2. In the Raspberry Pi 4 column, locate the row for Ubuntu 18.04 LTS, and click "Download 64-bit" at the far right end
-3. Decompress the `xz`-compressed Ubuntu image file (process varies by Operating System, not required with Balena Etcher)
-4. Insert the microSD card into the microSD-to-SD card adapter and then into the computer you will use to burn the image
-5. Umount ("eject") the microSD card if the computer automatically mounted it but do not remove it from the slot
-6. Burn the decompressed image to the microSD card (process varies by Operating System)
-7. When finished, remove and reinsert the SD card adapter. Wait for the Operating System to detect and mount the microSD card.
+3. Insert the microSD card into the microSD-to-SD card adapter and then into the computer you will use to burn the image
+4. If you have Balena Etcher, flash the SD card with the image you just downloaded
+5. If you are not using Balena Etcher, decompress the `xz`-compressed Ubuntu image file
+6. Umount ("eject") the microSD card if the computer automatically mounted it but do not remove it from the slot
+7. Burn the decompressed image to the microSD card (process varies by Operating System)
 
 ## Network preparation for the first boot
 
-1. Use your file manager to browse the partition on the card called "system-boot".
-2. If you are using Linux to setup the card, run:
-
-`sudo sed -i -e 's/expire: true/expire: false/' user-data`
-
-In MacOS or Windows, open the user-data file for editing and change `expire: true` to `expire: false`.
+1. With the image written to the card, remove and reinsert the SD card adapter. Wait for the Operating System to detect and mount the microSD card.
+2. Navigate to the "system-boot" partition using graphical or command line utilities
+3. Locate the file called `user-data` and in the password expiry section, change `expire: true` to read `expire: false`
+4. Save and exit the file
 
 **Note: The easiest networking option is just plug the Pi into an RJ-45 port on your router or an unused port on a laptop that is using WiFi. Modern Operating Systems make it easy to share your WiFi connection with the Pi this way.**
 
-If you cannot connect your Pi via a physical Ethernet cable, follow these steps to setup WiFi on your Pi prior to first boot.
+If you cannot connect your Pi via a physical Ethernet cable, follow the steps below to setup WiFi on your Pi prior to first boot.
 
 1. Open the file called `network-config` for editing.
 2. Edit the lower portion of the file to resemble this example:

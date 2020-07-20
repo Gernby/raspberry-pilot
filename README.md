@@ -117,8 +117,9 @@ somewhere in the middle of the file. If you add it to the end, add a trailing co
 
 ### White or Gray Panda
 
-1. Connect the Pi to the Panda using USB A-to-C. Turn on the car. Wait 2 minutes. Turn the car off.
-2. Remove the USB cable from the Panda and move it to an external power source such as a battery pack or laptop USB port
+1. If you're doing this in the car, bring a spare USB cable with you so you don't have to undo a cable you've hidden.
+2. Connect the Pi to the Panda using USB A-to-C. Turn on the car. Wait 2 minutes. Turn the car off.
+2. Disconnect the Pi from the Panda and move it to an external power source such as a battery pack or laptop USB port
 3. Connect the USB A-to-A cable between the Pi and the Panda
 4. SSH into the Pi using "ubuntu/ubuntu"
 5. Edit `~/kegman.json` to add
@@ -134,7 +135,7 @@ somewhere in the middle of the file. If you add it to the end, add a trailing co
 
 8. This will prevent the Pi from attempting to flash the Panda on subsequent boots as this behavior is not desired for White and Gray Pandas
 9. Shutdown the Pi with `sudo halt`
-10. Remove the USB A-to-A cable connecting the Pi to the Panda. Move the USB A-to-C cable from the temporary power source back to the Panda.
+10. Remove the USB A-to-A cable connecting the Pi to the Panda. Disconnect the Pi from the temporary power source and connect it back to the Panda.
 
 ## Loading the Model
 

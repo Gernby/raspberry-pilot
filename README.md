@@ -96,18 +96,11 @@ sh start_install_tf.sh
 3. If the process completes successfully, reboot the Pi and log back in as the "ubuntu" user
 4. Run the command `top -u ubuntu`
 5. Look for `controlsd`, `boardd`, `ubloxd` and `dashboard` in the rightmost column of the list.
-6. If you see all four, let Gernby know you're ready for the model. He will get it to you one way or another.
-7. When you receive the model, delete all files in `~/raspilot/models` and unzip the new archive in that folder. The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
-
-**Note: You must ensure that only one file ending with '5' must exist in this folder. If multiple files match, delete or move all but one of the excess files to ~.**
-
-8. Reboot the Pi, and log back in
-9. Run `top -u ubuntu` again
-10. Look for `controlsd`, `boardd`, `ubloxd`, `dashboard`, and `transcoderd` this time
-11. If all five processes are present, you are ready to flash your Panda
-12. If you can't hit your household WiFi from your car, be sure to turn on your hotspot before booting up the Pi in the car.
+6. If you see all four, let Gernby know you're ready for the model. He will get it to you one way or another. You are ready to flash your Panda.
 
 ## Flashing the Panda
+
+**Note: If you can't hit your household WiFi from your car, be sure to configure the Pi to hit your cellular hotspot and turn on your hotspot before booting up the Pi in the car.**
 
 ### Black Panda
 
@@ -143,9 +136,20 @@ somewhere in the middle of the file. If you add it to the end, add a trailing co
 9. Shutdown the Pi with `sudo halt`
 10. Remove the USB A-to-A cable connecting the Pi to the Panda. Move the USB A-to-C cable from the temporary power source back to the Panda.
 
+## Loading the Model
+
+1. When you receive the model from Gernby, delete all files in `~/raspilot/models` and unzip the new archive in that folder. The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
+
+**Note: You must ensure that only one file ending with '5' exists in this folder. If multiple files match, delete or move all but one of the excess files to ~.**
+
+2. Reboot the Pi, and log back in
+3. Run `top -u ubuntu`
+4. Look for `controlsd`, `boardd`, `ubloxd`, `dashboard`, and `transcoderd` this time
+5. If all five processes are present, you are ready to train the software and see how it drives
+
 ## First Drive and Training
 
-1. With the Panda flashed and the Pi and Panda connected in the standard configuration, you should be ready to train the software and drive
+1. With the model loaded, the Panda flashed and the Pi and Panda connected in the standard configuration, you should be ready to train the software and drive
 2. Turn on the car and watch the dash. The `ACC` and `LKAS` indicators should only appear Orange for a couple of seconds before turning Green.
 3. After about a minute, the lane marking indicators should light up but show as outlines. You do not need to wait for this to show up before driving.
 4. Drive to a road with well-marked lines on both sides of the car and with minimal curves and breaks in the lines -- an interstate is preferred

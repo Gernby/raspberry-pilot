@@ -36,7 +36,7 @@ class Lateral(object):
     self.centerOffset = 0
     self.lastGPS = 0
     kegman = kegman_conf(CP) 
-    self.combine_flags = bool(kegman.conf['useCombineFlags'])
+    self.combine_flags = bool(int(kegman.conf['useCombineFlags']))
 
   def update(self, cs, sm, can_index, can_count):
     self.frame_count += 1
@@ -88,7 +88,7 @@ class Lateral(object):
           camera_flags[1+i*16] == 0
           camera_flags[2+i*16] == 0
 
-      self.camera_array.append(np.concatenate(([cs.vEgo, cs.longAccel, max(570, sm['pathPlan'].laneWidth), cs.steeringAngle, cs.lateralAccel, cs.yawRateCAN, 0, 0], np.minimum(1, camera_flags), 
+      self.camera_array.append(np.concatenate(([cs.vEgo, cs.longAccel,  max(570, sm['pathPlan'].laneWidth), cs.steeringAngle, cs.lateralAccel, cs.yawRateCAN, 0, 0], np.minimum(1, camera_flags), 
                                                 [cs.camFarLeft.parm10,  cs.camFarLeft.parm2,  cs.camFarLeft.parm1,  cs.camFarLeft.parm3,  cs.camFarLeft.parm4,  cs.camFarLeft.parm5,  cs.camFarLeft.parm7,  cs.camFarLeft.parm9], 
                                                 [cs.camFarRight.parm10, cs.camFarRight.parm2, cs.camFarRight.parm1, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm7, cs.camFarRight.parm9],
                                                 [cs.camLeft.parm10,     cs.camLeft.parm2,     cs.camLeft.parm1,     cs.camLeft.parm3,     cs.camLeft.parm4,     cs.camLeft.parm5,     cs.camLeft.parm7,     cs.camLeft.parm9],    

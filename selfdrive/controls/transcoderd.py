@@ -83,27 +83,18 @@ def sub_sock(port, poller=None, addr="127.0.0.1", conflate=False, timeout=None):
   return sock
 
 def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, angle, prev_center, minimize=False, optimize=False):
-  '''left = l_prob * tri_value[:,1:2] + (1 - l_prob) * tri_value[:,0:1]
+  left = l_prob * tri_value[:,1:2] + (1 - l_prob) * tri_value[:,0:1]
   right = r_prob * tri_value[:,2:3] + (1 - r_prob) * tri_value[:,0:1]
   center = tri_value[:,0:1]
   if minimize:
     abs_left = np.sum(np.absolute(left))
     abs_right = np.sum(np.absolute(right))
+    weighted_center = [(abs_right * left + abs_left * right) / (abs_left + abs_right), tri_value[:,1:2], tri_value[:,2:3]]
   else:
-    abs_left = 1
-    abs_right = 1     
-
-  if optimize and abs(angle) < 5:
-    weighted_center = [(abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001), left, right]
-    if steer > 0:
-      weighted_center[0] = np.maximum(weighted_center[0], center)
-    elif steer < 0:
-      weighted_center[0] = np.minimum(weighted_center[0], center)
-  else:
-    weighted_center = [((lr_prob * (abs_right * left + abs_left * right) / (abs_right + abs_left + 0.0001)) + ((1-lr_prob) * center)), left, right]
+    weighted_center = [0.5 * left + 0.5 * right, tri_value[:,1:2], tri_value[:,2:3]]
+    #weighted_center = [((lr_prob * (abs_right * left + abs_left * right) / (abs_right + abs_left + 0.0001)) + ((1-lr_prob) * center)), left, right]
     #weighted_center = [(lr_prob * (abs_right * l_prob * left + abs_left * r_prob * right) / (abs_right * l_prob + abs_left * r_prob + 0.0001) + (1-lr_prob) * center), left, right]
-  return weighted_center'''
-  return [tri_value[:,0:1],tri_value[:,1:2],tri_value[:,2:3]]
+  return weighted_center
 
 gernPath = pub_sock(service_list['pathPlan'].port)
 gernModelInputs = sub_sock(service_list['model'].port, conflate=True)

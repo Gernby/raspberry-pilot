@@ -2,7 +2,6 @@
 # cython: c_string_encoding=ascii, language_level=3
 
 from posix.dlfcn cimport dlopen, dlsym, RTLD_LAZY
-
 from libcpp cimport bool
 import os
 import numbers
@@ -29,6 +28,7 @@ cdef class CANParser:
     self.dbc = self.dbc_lookup(dbc_name)
     self.vl = {}
     self.ts = {}
+    self.addr = {}
 
     self.can_invalid_cnt = CAN_INVALID_CNT
 
@@ -43,6 +43,7 @@ cdef class CANParser:
       self.vl[name] = {}
       self.ts[msg.address] = {}
       self.ts[name] = {}
+      self.addr[msg.address] = name
 
     # Convert message names into addresses
     for i in range(len(signals)):
@@ -58,6 +59,7 @@ cdef class CANParser:
         name = c[0].encode('utf8')
         c = (self.msg_name_to_address[name], c[1])
         checks[i] = c
+
 
     cdef vector[SignalParseOptions] signal_options_v
     cdef SignalParseOptions spo
@@ -106,6 +108,7 @@ cdef class CANParser:
 
       self.vl[name][cv_name] = cv.value
       self.ts[name][cv_name] = cv.ts
+      self.addr[cv.address] = name
 
       updated_val.insert(cv.address)
 

@@ -24,11 +24,13 @@ from enum import Enum
 from cereal import log, car
 from setproctitle import setproctitle
 from common.params import Params 
+from common.profiler import Profiler
 from tensorflow.python.keras.models import load_model 
 
 setproctitle('transcoderd')
 
 params = Params()
+profiler = Profiler(False, 'transcoder')
 #kegman = kegman_conf()  
 
 #import sys
@@ -237,6 +239,7 @@ try:
         print("resetting calibration")
   lane_width = calibration_data['lane_width']
   angle_bias = calibration_data['angle_bias']
+  center_bias = 0
   print(calibration)
 except:
   # TODO: Remove this after user's calibrations have been moved to params
@@ -250,13 +253,16 @@ except:
         print("resetting calibration")
     lane_width = calibration_data['lane_width']
     angle_bias = calibration_data['angle_bias']
+    center_bias = 0
   except:
     calibrated = False
     print("resetting calibration")
     calibration = np.zeros(len(cal_col))
 
 while 1:
-  cs = car.CarState.from_bytes(gernModelInputs.recv())
+  cs = gernModelInputs.recv()
+  profiler.checkpoint('inputs_recv', True)
+  cs = car.CarState.from_bytes(cs)
   start_time = time.time()  
   new_input = np.asarray(cs.modelData).reshape(1, HISTORY_ROWS, INPUTS)
   l_prob = min(1, max(0, cs.camLeft.parm4 / 127))
@@ -278,17 +284,21 @@ while 1:
   for i in range(4):
     if [cs.camFarLeft.parm4, cs.camFarRight.parm4, cs.camLeft.parm4, cs.camRight.parm4][i] > 0:
       new_input[-1:,:,adj_col[i]] += lateral_adjust
+  profiler.checkpoint('calibrate')
 
   new_input[-1,:,:11] = vehicle_scaler.transform(vehicle_standard.transform(new_input[-1,:,:11]))
   new_input[-1,-1:,-32:] = camera_scaler.transform(camera_standard.transform(new_input[-1,-1:,-32:]))
+  profiler.checkpoint('scale')
+  
   new_input[-1,:-1,5:] = model_input[-1,1:,5:]
   model_input = new_input
 
   model_output = model.predict_on_batch([model_input[  :,:,:5], model_input[  :,:,5:-16],model_input[  :,:,-16:-8], model_input[  :,:,-8:], fingerprint])
+  profiler.checkpoint('predict')
 
-  time.sleep(0.00001)
   descaled_output = output_standard.inverse_transform(output_scaler.inverse_transform(model_output[-1])) 
-  
+  profiler.checkpoint('scale')
+
   max_width_step = 0.05 * cs.vEgo * l_prob * r_prob
   lane_width = max(570, lane_width - max_width_step * 2, min(1200, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
   
@@ -301,26 +311,34 @@ while 1:
       width_trim -= 1
     width_trim = max(-100, min(width_trim, 0))'''
   
-  if abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0]) < 3 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and (cs.torqueRequest != 0 or not calibrated):
-    if calc_center[0][5,0] > 0:
-      angle_bias -= (0.000001 * cs.vEgo)
-    elif calc_center[0][5,0] < 0:
-      angle_bias += (0.000001 * cs.vEgo)
-
   fast_angles = []
   for i in range(angle_speed_count):
     if use_discrete_angle:
-      fast_angles.append(angle_factor * descaled_output[:,i:i+1] + calibration[0] - angle_bias)
+      fast_angles.append(angle_factor * descaled_output[:,i:i+1] + calibration[0])
     else:
-      fast_angles.append(angle_factor * advanceSteer * (descaled_output[:,i:i+1] - descaled_output[0,i:i+1]) + cs.steeringAngle - angle_bias)
+      fast_angles.append(angle_factor * advanceSteer * (descaled_output[:,i:i+1] - descaled_output[0,i:i+1]) + cs.steeringAngle)
+
+  if abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0]) < 3 and cs.vEgo > 10 and cs.torqueRequest != 0:
+    '''if l_prob > 0 and r_prob > 0 and cs.camFarLeft.parm2 - cs.camFarRight.parm2 < 1200:
+      if cs.camFarLeft.parm2 + cs.camFarRight.parm2 > 0:
+        center_bias += (0.00001 * cs.vEgo)
+      else:
+        center_bias -= (0.00001 * cs.vEgo)'''
+    if fast_angles[0][0] - angle_bias > cs.steeringAngle:
+      angle_bias += (0.00001 * cs.vEgo)
+    else:
+      angle_bias -= (0.00001 * cs.vEgo)
+
+
+  profiler.checkpoint('process')
 
   path_send.pathPlan.angleSteers = float(fast_angles[0][5])
-  path_send.pathPlan.fastAngles = [[float(x) for x in y] for y in fast_angles]
+  path_send.pathPlan.fastAngles = [[float(x) - angle_bias for x in y] for y in fast_angles]
   path_send.pathPlan.laneWidth = float(lane_width + width_trim)
   path_send.pathPlan.angleOffset = float(calibration[0])
   path_send.pathPlan.angleBias = angle_bias
   path_send.pathPlan.paramsValid = calibrated
-  path_send.pathPlan.cPoly = [float(x) for x in (calc_center[0][:,0] + lateral_adjust)]
+  path_send.pathPlan.cPoly = [float(x) for x in (calc_center[0][:,0])]
   path_send.pathPlan.lPoly = [float(x) for x in (calc_center[1][:,0] + 0.5 * lane_width)]
   path_send.pathPlan.rPoly = [float(x) for x in (calc_center[2][:,0] - 0.5 * lane_width)]
   path_send.pathPlan.lProb = float(l_prob)
@@ -329,19 +347,25 @@ while 1:
   path_send.pathPlan.canTime = cs.canTime
   path_send.pathPlan.sysTime = cs.sysTime
   gernPath.send(path_send.to_bytes())
+  profiler.checkpoint('send')
+  
 
   frame += 1
 
   path_send = log.Event.new_message()
   path_send.init('pathPlan')
+  profiler.checkpoint('log_init')
+
   if frame % 60 == 0:
     #print(calibration_factor, np.round(calibration, 2))
-    print('lane_width: %0.1f angle bias: %0.2f  width_trim: %0.1f  lateral_offset:  %d   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs  angle_speed:  %0.1f' % (lane_width, angle_bias, width_trim, lateral_adjust, calc_center[0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,0], descaled_output[1,1], execution_time_avg, angle_speed))
+    print('lane_width: %0.1f angle bias: %0.2f  center_bias: %0.2f  lateral_offset:  %d   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs  angle_speed:  %0.1f' % (lane_width, angle_bias, center_bias, lateral_adjust, calc_center[0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,0], descaled_output[1,1], execution_time_avg, angle_speed))
 
-  if frame % 6000 == 0:
+  if frame % 3000 == 0:
     print(np.round(calibration,2))
-    params.put("CalibrationParams", json.dumps({'calibration': list(calibration),'lane_width': lane_width,'angle_bias': angle_bias}))
+    params.put("CalibrationParams", json.dumps({'calibration': list(calibration),'lane_width': lane_width,'angle_bias': angle_bias,'center_bias': center_bias}))
     #os.remove(os.path.expanduser('~/calibration.json'))
+    profiler.checkpoint('save_cal')
+
 
   # TODO: replace kegman_conf with params!
   if frame % 100 == 0:
@@ -358,6 +382,11 @@ while 1:
       use_discrete_angle = True if kegman.conf['useDiscreteAngle'] == "1" else False
       use_optimize = True if kegman.conf['useOptimize'] == '1' else False
       use_minimize = True if kegman.conf['useMinimize'] == '1' else False
+    profiler.checkpoint('kegman')
       
   execution_time_avg += max(0.0001, time_factor) * ((time.time() - start_time) - execution_time_avg)
   time_factor *= 0.96
+
+  if frame % 1000 == 0:
+    profiler.display()
+    profiler.reset(True)

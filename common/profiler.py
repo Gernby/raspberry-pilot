@@ -1,14 +1,15 @@
 import time
 
-class Profiler():
-  def __init__(self, enabled=False):
+class Profiler(object):
+  def __init__(self, enabled=False, source=''):
     self.enabled = enabled
     self.cp = {}
+    self.source = source
     self.cp_ignored = []
     self.iter = 0
     self.start_time = time.time()
     self.last_time = self.start_time
-    self.tot = 0.
+    self.tot = 0.00001
 
   def reset(self, enabled=False):
     self.enabled = enabled
@@ -17,6 +18,7 @@ class Profiler():
     self.iter = 0
     self.start_time = time.time()
     self.last_time = self.start_time
+    self.tot = 0.00001
 
   def checkpoint(self, name, ignore=False):
     # ignore flag needed when benchmarking threads with ratekeeper
@@ -36,11 +38,11 @@ class Profiler():
     if not self.enabled:
       return
     self.iter += 1
-    print("******* Profiling *******")
+    #print("******* Profiling *******")
     for n, ms in sorted(self.cp.items(), key=lambda x: -x[1]):
-      if n in self.cp_ignored:
-        print("%30s: %7.2f   percent: %3.0f   IGNORED" % (n, ms*1000.0, ms/self.tot*100))
-      else:
-        print("%30s: %7.2f   percent: %3.0f" % (n, ms*1000.0, ms/self.tot*100))
-    print("Iter clock: %2.6f   TOTAL: %2.2f" % (self.tot/self.iter, self.tot))
+      if not n in self.cp_ignored:
+      #  print("%30s: %7.2f   percent: %3.0f   IGNORED" % (n, ms*1000.0, ms/self.tot*100))
+      #else:
+        print("%s - %30s: %9.1f   percent: %3.0f" % (self.source, n, ms*1000.0, ms/self.tot*100))
+    #print("Iter clock: %2.6f   TOTAL: %2.2f" % (self.tot/self.iter, self.tot))
 

@@ -26,6 +26,7 @@
 #include "common/swaglog.h"
 #include "common/timing.h"
 
+#include <map>
 #include <algorithm>
 
 // double the FIFO size
@@ -33,6 +34,7 @@
 #define TIMEOUT 0
 
 namespace {
+
 
 volatile sig_atomic_t do_exit = 0;
 
@@ -203,6 +205,17 @@ void handle_usb_issue(int err, const char func[]) {
   // TODO: check other errors, is simply retrying okay?
 }
 
+uint64_t read_u64_be(const uint8_t* v) {
+  return (((uint64_t)v[0] << 56)
+          | ((uint64_t)v[1] << 48)
+          | ((uint64_t)v[2] << 40)
+          | ((uint64_t)v[3] << 32)
+          | ((uint64_t)v[4] << 24)
+          | ((uint64_t)v[5] << 16)
+          | ((uint64_t)v[6] << 8)
+          | (uint64_t)v[7]);
+}
+
 bool can_recv(void *s, bool force_send) {
   int err;
   uint32_t data[RECV_SIZE/4];
@@ -235,14 +248,18 @@ bool can_recv(void *s, bool force_send) {
   // TODO: Add CAN filter
   big_index = big_recv/0x10;
   force_send = false;
+  int j = 0;
   for (int i = 0; i<(recv/0x10); i++) {
-    big_data[(big_index + i)*4] = data[i*4];
-    big_data[(big_index + i)*4+1] = data[i*4+1];
-    big_data[(big_index + i)*4+2] = data[i*4+2];
-    big_data[(big_index + i)*4+3] = data[i*4+3];
-    big_recv += 0x10;    
-    //if (data[i*4] >> 21 == 229 && (data[i*4+1] >> 4) & 0xff == 1) force_send = true;
-    if (data[i*4] >> 21 == 330) force_send = true;
+    if (data[i*4] >> 21 <= 927) {
+      big_data[(big_index + j)*4] = data[i*4];
+      big_data[(big_index + j)*4+1] = data[i*4+1];
+      big_data[(big_index + j)*4+2] = data[i*4+2];
+      big_data[(big_index + j)*4+3] = data[i*4+3];
+      big_recv += 0x10;    
+      //if (data[i*4] >> 21 == 229 && (data[i*4+1] >> 4) & 0xff == 1) force_send = true;
+      if (data[i*4] >> 21 == 330) force_send = true;
+      j++;
+    }
   }
   if (force_send) {
     frame_sent = true;
@@ -250,8 +267,11 @@ bool can_recv(void *s, bool force_send) {
     capnp::MallocMessageBuilder msg;
     cereal::Event::Builder event = msg.initRoot<cereal::Event>();
     event.setLogMonoTime(nanos_since_boot());
+    //std::map<std::pair<uint32_t, std::string>, Signal> signal_lookup;
+    std::map<std::pair<uint32_t, uint64_t>, int> message_index;
 
     auto can_data = event.initCan(big_recv/0x10);
+    int dup_count = 0;
 
     // populate message
     for (int i = 0; i<(big_recv/0x10); i++) {
@@ -267,6 +287,17 @@ bool can_recv(void *s, bool force_send) {
       int len = big_data[i*4+1]&0xF;
       can_data[i].setDat(kj::arrayPtr((uint8_t*)&big_data[i*4+2], len));
       can_data[i].setSrc((big_data[i*4+1] >> 4) & 0xff);
+
+      uint8_t dat[8] = {0};
+      memcpy(dat, can_data[i].getDat().begin(), can_data[i].getDat().size());
+      uint64_t dat2 = read_u64_be(dat);
+      auto val_index = message_index.find(std::make_pair(big_data[i*4] >> 21, dat2));
+      if (val_index == message_index.end()) {
+        message_index[std::make_pair(big_data[i*4] >> 21, dat2)] = 0;
+      }
+      else {
+        dup_count++;
+      }      
     }
 
     // send to can
@@ -274,6 +305,8 @@ bool can_recv(void *s, bool force_send) {
     auto bytes = words.asBytes();
     zmq_send(s, bytes.begin(), bytes.size(), 0);
     big_recv = 0;
+    //if (dup_count > 10) printf("%d Dups found in %d!\n", dup_count, big);         
+
   }
 
   return frame_sent;
@@ -689,7 +722,7 @@ void *pigeon_thread(void *crap) {
     }
 
     // 10ms
-    usleep(10*1000);
+    usleep(30*1000);
     cnt++;
   }
 

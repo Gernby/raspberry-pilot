@@ -4,6 +4,7 @@ import time
 from cereal import car, log
 from common.numpy_fast import clip
 from common.params import Params
+from common.profiler import Profiler
 import selfdrive.messaging as messaging
 from selfdrive.services import service_list
 from selfdrive.boardd.boardd import can_list_to_can_capnp
@@ -47,25 +48,31 @@ def wait_for_can(logcan):
   while len(messaging.recv_sock(logcan, wait=True).can) == 0:
     pass
 
-def data_sample(CI, CC, can_sock, carstate, lac_log, lateral, sm):
+def data_sample(CI, CC, can_sock, carstate, lac_log, lateral, sm, profiler):
   """Receive data from sockets and create events for battery, temperature and disk space"""
  
   can_strs = [can_sock.recv()]
-  CS = CI.update(CC, can_strs, lac_log)
+  profiler.checkpoint('can_recv', True)
+  CS = CI.update(CC, can_strs, lac_log, profiler)
+  profiler.checkpoint('carstate')
   lateral.update(CS, sm, 0, 1)
+  profiler.checkpoint('lateral')
   if CS.canTime + 20 < CS.sysTime: 
     can_strs = messaging.drain_sock_raw(can_sock, wait_for_one=False, limit=3)
+    profiler.checkpoint('drain_can')
     if len(can_strs) > 0: 
       print("  Controls lagged by %d CAN packets!" % (len(can_strs)), [len(x) for x in can_strs])
       for i in range(len(can_strs[-40:])):
-        time.sleep(0.00001)
-        CS = CI.update(CC, [can_strs[i]], lac_log)
+        #time.sleep(0.00001)
+        CS = CI.update(CC, [can_strs[i]], lac_log, profiler)
+        profiler.checkpoint('drain_carstate')
         lateral.update(CS, sm, i, len(can_strs[-40:]))
+        profiler.checkpoint('drain_lateral')
     else:
       #print("  CAN lagged!")
       CI.canTime += 20
-  else:
-    time.sleep(0.00001)
+  #else:
+  #  time.sleep(0.00001)
 
   events = list(CS.events)
 
@@ -158,7 +165,7 @@ def state_transition(frame, CS, CP, state, events, soft_disable_timer, v_cruise_
   return state, soft_disable_timer, v_cruise_kph, v_cruise_kph_last
 
 
-def state_control(frame, lkasMode, path_plan, CS, CP, state, events, AM, LaC, lac_log):
+def state_control(frame, lkasMode, path_plan, CS, CP, state, events, AM, LaC, lac_log, profiler):
   """Given the state, this function returns an actuators packet"""
 
   actuators = car.CarControl.Actuators.new_message()
@@ -168,6 +175,7 @@ def state_control(frame, lkasMode, path_plan, CS, CP, state, events, AM, LaC, la
 
   # Steering PID loop and lateral MPC
   actuators.steer, actuators.steerAngle, lac_log = LaC.update(path_plan.paramsValid and CS.lkMode and (active or lkasMode), CS.vEgo, CS.steeringAngle, CS.steeringTorqueEps, CS.steeringPressed, CP, path_plan, CS.canTime, CS.blinkers)
+  profiler.checkpoint('lac_update')
     # parse warnings from car specific interface
   for e in get_events(events, [ET.WARNING]):
     extra_text = ""
@@ -182,7 +190,7 @@ def state_control(frame, lkasMode, path_plan, CS, CP, state, events, AM, LaC, la
 
   return actuators, lac_log
 
-def data_send(sm, CS, CI, CP, state, events, actuators, carstate, carcontrol, carevents, carparams, controlsstate, sendcan, AM, LaC, start_time, lac_log, events_prev, cs_prev, last_frame):
+def data_send(sm, CS, CI, CP, state, events, actuators, carstate, carcontrol, carevents, carparams, controlsstate, sendcan, AM, LaC, start_time, lac_log, events_prev, profiler):
   """Send actuators and hud commands to the car, send controlsstate and MPC logging"""
 
   CC = car.CarControl.new_message()
@@ -204,8 +212,9 @@ def data_send(sm, CS, CI, CP, state, events, actuators, carstate, carcontrol, ca
 
   CC.hudControl.visualAlert = AM.visual_alert
   CC.hudControl.audibleAlert = AM.audible_alert
-
+  profiler.checkpoint('data_send')
   can_sends = CI.apply(CC)
+  profiler.checkpoint('ci_apply')
   sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
   events_bytes = None
 
@@ -217,6 +226,8 @@ def controlsd_thread(gctx=None):
   params = Params()
   print(params)
   # Pub Sockets
+  profiler = Profiler(False, 'controls')
+
   sendcan = messaging.pub_sock(service_list['sendcan'].port)
   controlsstate = messaging.pub_sock(service_list['controlsState'].port)
   carstate = None #messaging.pub_sock(service_list['carState'].port)
@@ -257,8 +268,7 @@ def controlsd_thread(gctx=None):
   soft_disable_timer = 0
   v_cruise_kph = 255
   events_prev = []
-  cs_prev = []
-  last_frame = 0
+  frame = 0
 
   sm['pathPlan'].sensorValid = True
   sm['pathPlan'].posenetValid = True
@@ -268,19 +278,27 @@ def controlsd_thread(gctx=None):
     start_time = 0 # time.time()  #sec_since_boot()
 
     # Sample data and compute car events
-    CS, events = data_sample(CI, CC, can_sock, carstate, lac_log, lateral, sm)
+    CS, events = data_sample(CI, CC, can_sock, carstate, lac_log, lateral, sm, profiler)
+    profiler.checkpoint('data_sample')
 
     state, soft_disable_timer, v_cruise_kph, v_cruise_kph_last = \
         state_transition(sm.frame, CS, CP, state, events, soft_disable_timer, v_cruise_kph, AM)
+    profiler.checkpoint('state_transition')
     # Compute actuators (runs PID loops and lateral MPC)
     sm.update(0)
+    profiler.checkpoint('sm_update')
 
-    actuators, lac_log = state_control(sm.frame, lkasMode, sm['pathPlan'], CS, CP, state, events, AM, LaC, lac_log)
+    actuators, lac_log = state_control(sm.frame, lkasMode, sm['pathPlan'], CS, CP, state, events, AM, LaC, lac_log, profiler)
+    profiler.checkpoint('state_control')
 
     # Publish data
     CC, events_prev = data_send(sm, CS, CI, CP, state, events, actuators, carstate, carcontrol, carevents, carparams,
-                    controlsstate, sendcan, AM, LaC, start_time, lac_log, events_prev, cs_prev, last_frame)
-    last_frame = CS.camLeft.frame
+                    controlsstate, sendcan, AM, LaC, start_time, lac_log, events_prev, profiler)
+    profiler.checkpoint('data_send')
+    frame += 1
+    if frame % 10000 == 0 and profiler.enabled:
+      profiler.display()
+      profiler.reset(True)
 
     
 def main(gctx=None):

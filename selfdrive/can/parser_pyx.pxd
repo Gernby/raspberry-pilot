@@ -92,5 +92,6 @@ cdef class CANParser:
     dict ts
     bool can_valid
     int can_invalid_cnt
+    dict addr
 
   cdef unordered_set[uint32_t] update_vl(self)

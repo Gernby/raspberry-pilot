@@ -8,24 +8,31 @@ from cereal import log, car
 import selfdrive.messaging as messaging
 from selfdrive.services import service_list
 from common.params import Params
+from common.profiler import Profiler
 import numpy as np
 from setproctitle import setproctitle
 from selfdrive.kegman_conf import kegman_conf
 import requests
 
 SERVER_ADDRESS = "gernstation.synology.me"
+#SERVER_ADDRESS = '192.168.1.3'   #"gernstation.synology.me"
 
 setproctitle('dashboard')
 
 frame_count = 0
 params = Params()
+profiler = Profiler(False, 'dashboard')
 user_id = str(params.get("PandaDongleId", True))
 user_id = user_id.replace("'","")
 
 try:
-  kegman = kegman_conf()  
+  car_params = car.CarParams.from_bytes(params.get('CarParams', True))
+  kegman = kegman_conf(car_params)  
   do_influx = True if kegman.conf['useInfluxDB'] == '1' else False
+  kegman_valid = ('tuneRev' in kegman.conf)
 except:
+  print("kegman error")
+  kegman_valid = False
   do_influx = False
 
 do_send_live = False
@@ -35,40 +42,36 @@ target_URL = 'http://%s:8086/write?db=carDB&%sprecision=ms' % (target_address, c
 #target_URL = 'http://192.168.137.1:8086/write?db=carDB&precision=ms' 
 print(target_URL)
 
-kegman_valid = False
 context = zmq.Context()
 poller = zmq.Poller()
 vEgo = 0.0
+
 carState = messaging.sub_sock(service_list['carState'].port, conflate=False)
 pathPlan = messaging.sub_sock(service_list['pathPlan'].port, conflate=True)
-tuneSub = None #messaging.sub_sock("tcp://" + server_address + ":8596")
-#heartBeatSub = messaging.sub_sock(8602, addr=SERVER_ADDRESS, conflate=True)
+heartBeatSub = messaging.sub_sock(8597, addr=SERVER_ADDRESS, conflate=True)
 
-#serverPush = context.socket(zmq.PUSH)
-#serverPush.connect("tcp://" + SERVER_ADDRESS + ":8593")
-if pathPlan != None and do_influx: poller.register(pathPlan, zmq.POLLIN)
-#if heartBeatSub != None: poller.register(heartBeatSub, zmq.POLLIN)
+do_send_live = False
+serverPush = None   
+tuneSub = None
+     
+if pathPlan != None: poller.register(pathPlan, zmq.POLLIN)
 if carState != None: poller.register(carState, zmq.POLLIN)
-#dashPub = messaging.pub_sock(8597)
+if heartBeatSub != None: poller.register(heartBeatSub, zmq.POLLIN)
 
-#if len(sys.argv) >= 2:
-
-#tunePush.send_json(config)
-#tunePush = None
-#tuneSub.setsockopt(zmq.SUBSCRIBE, str(user_id))
-serverKegmanFormatString = user_id + ",sources=kegman reactRate=%s,dampRate=%s,longOffset=%s,backlash=%s,dampMPC=%s,reactMPC=%s,dampSteer=%s,reactSteer=%s,KpV=%s,KiV=%s,rateFF=%s,angleFF=%s,delaySteer=%s,oscFactor=%s,centerFactor=%s,dampPoly=%s,reactPoly=%s %s\n"
-serverCanFormatString="CANData,user=" + user_id + ",src=%s,pid=%s d1=%si,d2=%si "
-serverPathFormatString = "pathPlan,user=" + user_id + " l0=%s,l1=%s,l2=%s,l3=%s,l4=%s,l5=%s,l6=%s,l7=%s,l8=%s,l9=%s,l10=%s,l11=%s,l12=%s,l13=%s,l14=%s,r0=%s,r1=%s,r2=%s,r3=%s,r4=%s,r5=%s,r6=%s,r7=%s,r8=%s,r9=%s,r10=%s,r11=%s,r12=%s,r13=%s,r14=%s,c0=%s,c1=%s,c2=%s,c3=%s,c4=%s,c5=%s,c6=%s,c7=%s,c8=%s,c9=%s,c10=%s,c11=%s,c12=%s,c13=%s,c14=%s,a0=%s,a1=%s,a2=%s,a3=%s,a4=%s,a5=%s,a6=%s,lprob=%s,rprob=%s,cprob=%s,lane_width=%s,angle=%s,rate=%s,angle_offset=%s,angle_bias=%s,plan_age=%s %s\n"
+serverKegmanFormatString = user_id + ",sources=kegman reactRate=;dampRate=;longOffset=;backlash=;dampMPC=;reactMPC=;dampSteer=;reactSteer=;KpV=;KiV=;rateFF=;angleFF=;delaySteer=;oscFactor=;centerFactor=;dampPoly=;reactPoly=; ;~"
+serverCanFormatString="CANData,user=" + user_id + ",src=;pid=; d1=;i,d2=;i ;~"
+serverPathFormatString = "pathPlan,user=" + user_id + " l0=;l1=;l2=;l3=;l4=;l5=;l6=;l7=;l8=;l9=;l10=;l11=;l12=;l13=;l14=;r0=;r1=;r2=;r3=;r4=;r5=;r6=;r7=;r8=;r9=;r10=;r11=;r12=;r13=;r14=;c0=;c1=;c2=;c3=;c4=;c5=;c6=;c7=;c8=;c9=;c10=;c11=;c12=;c13=;c14=;a0=;a1=;a2=;a3=;a4=;a5=;a6=;lprob=;rprob=;cprob=;lane_width=;angle=;rate=;angle_offset=;angle_bias=;plan_age=%s %s~"
 serverPathDataFormatString = "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d|"
 serverPolyDataFormatString = "%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,"
 serverPathDataString = []
 kegmanDataString = []
 serverInsertString = []
 serverCanInsertString = []
-serverCarStateFormatString2 = "carState,user=" + user_id + " adjusted_angle=%s,angle_steers=%s,angle_rate=%s,driver_torque=%s,request=%s,angle_rate_eps=%s,yaw_rate_can=%s,angle_steers_eps=%s,long_accel=%s,p2=%s,p=%s,i=%s,f=%s,damp_angle_steers=%s,damp_angle_steers_des=%s,ff_rate=%s,ff_angle=%s,left_frame=%s,far_right_frame=%s,v_ego=%s,wheel_speed_fl=%s,wheel_speed_fr=%s,wheel_speed_rl=%s,wheel_speed_rr=%s,l_blinker=%s,r_blinker=%s,lk_mode=%s,enabled=%s,left_frame=%s,left_1=%s,left_2=%s,left_3=%s,left_4=%s,left_5=%s,left_6=%s,left_7=%s,left_8=%s,left_9=%s,left_10=%s,left_11=%s,left_13=%s,right_frame=%s,right_1=%s,right_2=%s,right_3=%s,right_4=%s,right_5=%s,right_6=%s,right_7=%s,right_8=%s,right_9=%s,right_10=%s,right_11=%s,right_13=%s,far_left_frame=%s,far_left_1=%s,far_left_2=%s,far_left_3=%s,far_left_4=%s,far_left_5=%s,far_left_6=%s,far_left_7=%s,far_left_8=%s,far_left_9=%s,far_left_10=%s,far_left_11=%s,far_left_13=%s,far_right_frame=%s,far_right_1=%s,far_right_2=%s,far_right_3=%s,far_right_4=%s,far_right_5=%s,far_right_6=%s,far_right_7=%s,far_right_8=%s,far_right_9=%s,far_right_10=%s,far_right_11=%s,far_right_13=%s %s\n"
-serverCarStateFormatString1 = "carState,user=" + user_id + " angle_steers=%s,angle_rate=%s,driver_torque=%s,request=%s,angle_rate_eps=%s,yaw_rate_can=%s,angle_steers_eps=%s,long_accel=%s,p2=%s,p=%s,i=%s,f=%s,damp_angle_steers=%s,damp_angle_steers_des=%s,ff_rate=%s,ff_angle=%s,left_frame=%s,far_right_frame=%s %s\n"
-serverCarStateDataFormatString2 = "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d|"
-serverCarStateDataFormatString1 = "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d,%d|"
+serverCarStateFormatString2 = "carState,user=" + user_id + " v_ego=;econ_mode=;adjusted_angle=;angle_steers=;angle_rate=;driver_torque=;request=;angle_rate_eps=;yaw_rate_can=;angle_steers_eps=;long_accel=;p2=;p=;i=;f=;damp_angle_steers=;damp_angle_steers_des=;ff_rate=;ff_angle=;left_frame=;far_right_frame=;wheel_speed_fl=;wheel_speed_fr=;wheel_speed_rl=;wheel_speed_rr=;l_blinker=;r_blinker=;lk_mode=;enabled=;left_frame=;left_1=;left_2=;left_3=;left_4=;left_5=;left_6=;left_7=;left_8=;left_9=;left_10=;left_11=;left_12=;left_13=;left_full_1=;left_full_2=;right_frame=;right_1=;right_2=;right_3=;right_4=;right_5=;right_6=;right_7=;right_8=;right_9=;right_10=;right_11=;right_12=;right_13=;right_full_1=;right_full_2=;far_left_frame=;far_left_1=;far_left_2=;far_left_3=;far_left_4=;far_left_5=;far_left_6=;far_left_7=;far_left_9=;far_left_8=;far_left_10=;far_left_11=;far_left_12=;far_left_13=;far_left_full_1=;far_left_full_2=;far_right_frame=;far_right_1=;far_right_2=;far_right_3=;far_right_4=;far_right_5=;far_right_6=;far_right_7=;far_right_8=;far_right_9=;far_right_10=;far_right_11=;far_right_12=;far_right_13=;far_right_full_1=;far_right_full_2=;gflags=;glat=;glong=;galt=;gspeed=;gbearing=;gaccuracy=;gNED0=;gNED1=;gNED2=;gvertAccuracy=;gbearingAccuracy=;gspeedAccuracy=;time_delta=; ~"
+serverCarStateFormatString1 = "carState,user=" + user_id + " v_ego=;angle_steers=;angle_rate=;driver_torque=;request=;angle_rate_eps=;yaw_rate_can=;angle_steers_eps=;long_accel=;p2=;p=;i=;f=;damp_angle_steers=;damp_angle_steers_des=;ff_rate=;ff_angle=;left_frame=;far_right_frame=;time_delta=; ~"
+
+serverCarStateDataFormatString2 = "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%d,%d|"
+serverCarStateDataFormatString1 = "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d,%d,%d|"
 serverCarStateDataString1 = []
 serverCarStateDataString2 = []
 localPathFormatString1 = 'pathPlan,user=' + user_id + ' l0=%0.3f,l1=%0.3f,l2=%0.3f,l3=%0.3f,l4=%0.3f,l5=%0.3f,l6=%0.3f,l7=%0.3f,l8=%0.3f,l9=%0.3f,l10=%0.3f,l11=%0.3f,l12=%0.3f,l13=%0.3f,l14=%0.3f,'
@@ -76,6 +79,7 @@ localPathFormatString2 = "r0=%0.3f,r1=%0.3f,r2=%0.3f,r3=%0.3f,r4=%0.3f,r5=%0.3f,
 localPathFormatString3 = "c0=%0.3f,c1=%0.3f,c2=%0.3f,c3=%0.3f,c4=%0.3f,c5=%0.3f,c6=%0.3f,c7=%0.3f,c8=%0.3f,c9=%0.3f,c10=%0.3f,c11=%0.3f,c12=%0.3f,c13=%0.3f,c14=%0.3f,"
 localPathFormatString4 = "a0=%0.3f,a1=%0.3f,a2=%0.3f,a3=%0.3f,a4=%0.3f,a5=%0.3f,a6=%0.3f,lprob=%0.3f,rprob=%0.3f,cprob=%0.3f,lane_width=%0.3f,angle=%0.3f,rate=%0.3f,angle_offset=%0.2f,lateral_offset=%0.2f,actual_angle=%0.1f,plan_age=%0.3f %d\n"
 #localCarStateFormatString2 = "carState,user=" + user_id + " v_ego=%0.4f,econ_mode=%d,adjusted_angle=%0.2f,angle_steers=%0.4f,angle_rate=%0.4f,driver_torque=%0.4f,request=%0.4f,angle_rate_eps=%0.4f,yaw_rate_can=%0.4f,angle_steers_eps=%0.4f,long_accel=%0.4f,p2=%0.4f,p=%0.4f,i=%0.4f,f=%0.4f,damp_angle_steers=%0.4f,damp_angle_steers_des=%0.4f,ff_rate=%0.4f,ff_angle=%0.4f,left_frame=%d,far_right_frame=%d,wheel_speed_fl=%0.4f,wheel_speed_fr=%0.4f,wheel_speed_rl=%0.4f,wheel_speed_rr=%0.4f,l_blinker=%d,r_blinker=%d,lk_mode=%d,enabled=%d,left_frame=%d,left_1=%d,left_2=%d,left_3=%d,left_4=%d,left_5=%d,left_6=%d,left_7=%d,left_8=%d,left_9=%d,left_10=%d,left_11=%d,left_12=%d,left_13=%d,left_full_1=%d,left_full_2=%d,right_frame=%d,right_1=%d,right_2=%d,right_3=%d,right_4=%d,right_5=%d,right_6=%d,right_7=%d,right_8=%d,right_9=%d,right_10=%d,right_11=%d,right_12=%d,right_13=%d,right_full_1=%d,right_full_2=%d,far_left_frame=%d,far_left_1=%d,far_left_2=%d,far_left_3=%d,far_left_4=%d,far_left_5=%d,far_left_6=%d,far_left_7=%d,far_left_9=%d,far_left_8=%d,far_left_10=%d,far_left_11=%d,far_left_12=%d,far_left_13=%d,far_left_full_1=%d,far_left_full_2=%d,far_right_frame=%d,far_right_1=%d,far_right_2=%d,far_right_3=%d,far_right_4=%d,far_right_5=%d,far_right_6=%d,far_right_7=%d,far_right_8=%d,far_right_9=%d,far_right_10=%d,far_right_11=%d,far_right_12=%d,far_right_13=%d,far_right_full_1=%d,far_right_full_2=%d,time_delta=%d %d\n"
+
 localCarStateFormatString2 = "carState,user=" + user_id + " v_ego=%0.4f,econ_mode=%d,adjusted_angle=%0.2f,angle_steers=%0.4f,angle_rate=%0.4f,driver_torque=%0.4f,request=%0.4f,angle_rate_eps=%0.4f,yaw_rate_can=%0.4f,angle_steers_eps=%0.4f,long_accel=%0.4f,p2=%0.4f,p=%0.4f,i=%0.4f,f=%0.4f,damp_angle_steers=%0.4f,damp_angle_steers_des=%0.4f,ff_rate=%0.4f,ff_angle=%0.4f,left_frame=%d,far_right_frame=%d,wheel_speed_fl=%0.4f,wheel_speed_fr=%0.4f,wheel_speed_rl=%0.4f,wheel_speed_rr=%0.4f,l_blinker=%d,r_blinker=%d,lk_mode=%d,enabled=%d,left_frame=%d,left_1=%d,left_2=%d,left_3=%d,left_4=%d,left_5=%d,left_6=%d,left_7=%d,left_8=%d,left_9=%d,left_10=%d,left_11=%d,left_12=%d,left_13=%d,left_full_1=%d,left_full_2=%d,right_frame=%d,right_1=%d,right_2=%d,right_3=%d,right_4=%d,right_5=%d,right_6=%d,right_7=%d,right_8=%d,right_9=%d,right_10=%d,right_11=%d,right_12=%d,right_13=%d,right_full_1=%d,right_full_2=%d,far_left_frame=%d,far_left_1=%d,far_left_2=%d,far_left_3=%d,far_left_4=%d,far_left_5=%d,far_left_6=%d,far_left_7=%d,far_left_9=%d,far_left_8=%d,far_left_10=%d,far_left_11=%d,far_left_12=%d,far_left_13=%d,far_left_full_1=%d,far_left_full_2=%d,far_right_frame=%d,far_right_1=%d,far_right_2=%d,far_right_3=%d,far_right_4=%d,far_right_5=%d,far_right_6=%d,far_right_7=%d,far_right_8=%d,far_right_9=%d,far_right_10=%d,far_right_11=%d,far_right_12=%d,far_right_13=%d,far_right_full_1=%d,far_right_full_2=%d,gflags=%d,glat=%f,glong=%f,galt=%f,gspeed=%f,gbearing=%f,gaccuracy=%f,gNED0=%f,gNED1=%f,gNED2=%f,gvertAccuracy=%f,gbearingAccuracy=%f,gspeedAccuracy=%f,time_delta=%d %d\n"
 localCarStateFormatString1 = "carState,user=" + user_id + " v_ego=%0.4f,angle_steers=%0.4f,angle_rate=%0.4f,driver_torque=%0.4f,request=%0.4f,angle_rate_eps=%0.4f,yaw_rate_can=%0.4f,angle_steers_eps=%0.4f,long_accel=%0.4f,p2=%0.4f,p=%0.4f,i=%0.4f,f=%0.4f,damp_angle_steers=%0.4f,damp_angle_steers_des=%0.4f,ff_rate=%0.4f,ff_angle=%0.4f,left_frame=%d,far_right_frame=%d,time_delta=%d %d\n"
 localPathDataString = []
@@ -85,6 +89,7 @@ localCarStateDataString2 = []
 insertString = []
 fileStrings = []
 canInsertString = []
+next_beat_check = time.time() + 20
 
 angle_offset = 0
 angle_bias = 0
@@ -95,9 +100,10 @@ stock_cam_frame_prev = 0
 cs = None
 lastHeartBeat = 0
 gpsCount = 0
-messaging.drain_sock(carState, True)
+
+'''messaging.drain_sock(carState, True)
 messaging.drain_sock(pathPlan, False)
-messaging.drain_sock(carState, False)
+messaging.drain_sock(carState, False)'''
 
 previous_minute = 0
 logfile = None
@@ -105,9 +111,11 @@ if not os.path.exists('/data/upload/'):
   os.mkdir('/data/upload')
 
 while 1:
-  do_send_live = time.time() - lastHeartBeat < 60
+  #do_send_live = time.time() - lastHeartBeat < 60
 
   for socket, event in poller.poll(3000):
+    profiler.checkpoint('poller', True)
+
     if socket is carState:
       for _cs in carState.recv_multipart():
         cs = log.Event.from_bytes(_cs).carState
@@ -140,8 +148,9 @@ while 1:
           if vEgo > 0:
             fileStrings.append(localCarStateFormatString2 % send_data)
             #logfile.write(localCarStateFormatString2 % send_data)
-          if do_send_live:
+          if do_send_live and (vEgo > 0 or frame % 45 == 0):
             serverCarStateDataString2.append(serverCarStateDataFormatString2 % send_data)
+
         elif vEgo > 0:
           send_data = (cs.vEgo, cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
                             cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
@@ -153,10 +162,14 @@ while 1:
             localCarStateDataString1.append(localCarStateFormatString1 % send_data)
           if do_send_live: 
             serverCarStateDataString1.append(serverCarStateDataFormatString1 % send_data)
+      profiler.checkpoint('carstate')
       if vEgo > 0 and len(fileStrings) > 0: 
-        time.sleep(0.00001)
+        #time.sleep(0.00001)
         logfile.write("".join(fileStrings))
-        time.sleep(0.00001)
+        profiler.checkpoint('write_file')
+      frame += 1
+
+        #time.sleep(0.00001)
       fileStrings.clear()
 
     if socket is pathPlan:
@@ -171,23 +184,68 @@ while 1:
           localPathDataString.append("".join([localPathFormatString1 % send_data0, localPathFormatString2 % send_data1, localPathFormatString3 % send_data2, localPathFormatString4 % send_data3]))
         #if vEgo > 0: 
         #  logfile.write("".join([localPathFormatString1 % send_data0, localPathFormatString2 % send_data1, localPathFormatString3 % send_data2, localPathFormatString4 % send_data3]))
-        if do_send_live:
+        if do_send_live and (vEgo > 0 or frame % 45 == 0):
           serverPathDataString.append("".join([serverPolyDataFormatString % send_data0, serverPolyDataFormatString % send_data1, serverPolyDataFormatString % send_data2,serverPathDataFormatString % send_data3]))
+        profiler.checkpoint('pathplan')
 
-    '''if socket is tuneSub:
-      config = json.loads(tuneSub.recv_multipart()[1])
-      #print(config)
-      with open(os.path.expanduser('~/kegman.json'), 'w') as f:
-        json.dump(config, f, indent=2, sort_keys=True)
-        os.chmod(os.path.expanduser("~/kegman.json"), 0o764)
-    
+    if socket is tuneSub:
+      next_beat_check = time.time() + 20
+      config = tuneSub.recv_multipart()
+      config = json.loads(config[1])
+      do_send_live = True
+      do_influx = False
+      print(config)
+      itemChanged = False
+      for item in kegman.conf:
+        if item in config and str(config[item]) != str(kegman.conf[item]) and float(config[item]) != float(kegman.conf[item]) and abs(float(config[item])) == float(config[item]) and not item in ['identifier']:
+          print(item, config[item], kegman.conf[item])
+          kegman.conf[item] = str(config[item])
+          itemChanged = True
+        else:
+          config[item] = kegman.conf[item]
+      if itemChanged:
+        kegman.element_updated = True
+        kegman.write_config(kegman.conf)
+        tunePush.send_json(kegman.conf)
+      profiler.checkpoint('live_tune')
+
     if socket is heartBeatSub:
+      heartBeatSub.recv()
+      print("  Got heart beat!")
+      next_beat_check = time.time() + 20
+      if not do_send_live:
+        identifier = np.random.randint(0, high=10000)
+        tuneSub = context.socket(zmq.SUB)
+        tuneSub.connect("tcp://" + SERVER_ADDRESS + ":8596")
+        tuneSub.setsockopt_string(zmq.SUBSCRIBE, str(identifier))
+        tuneSub.RCVTIMEO = 20000
+        poller.register(tuneSub, zmq.POLLIN)
+        tunePush = context.socket(zmq.PUSH)
+        serverPush = context.socket(zmq.PUSH)
+        tuneSub.connect("tcp://" + SERVER_ADDRESS + ":8596")
+        tuneSub.setsockopt_string(zmq.SUBSCRIBE, str(identifier))
+        tunePush.connect("tcp://" + SERVER_ADDRESS + ":8595")
+        kegman.conf.update({'identifier': identifier, 'userID': user_id})
+        tunePush.send_json(kegman.conf)
+        serverPush.connect("tcp://" + SERVER_ADDRESS + ":8601")
+      profiler.checkpoint('live_tune')
+      if profiler.enabled:
+        profiler.display()
+        profiler.reset(True)
+
+
+      #with open(os.path.expanduser('~/kegman.json'), 'rw') as f:
+      #  keg
+      #  json.dump(config, f, indent=2, sort_keys=True)
+        #os.chmod(os.path.expanduser("~/kegman.json"), 0o764)
+    
+    '''if socket is heartBeatSub:
       do_send_live = True
       print("         Heartbeat!")
       messaging.recv_one(heartBeatSub)
       lastHeartBeat = time.time()'''
 
-  if do_influx and len(localCarStateDataString2) >= 15:
+  if do_influx and len(localCarStateDataString2) >= 45:
     frame += 1
     insertString = "".join(["".join(localCarStateDataString2), "".join(localCarStateDataString1), "".join(localPathDataString)])
     localCarStateDataString1 = []
@@ -209,10 +267,15 @@ while 1:
           r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')
         except:
           r = requests.post(target_URL, data='create database carDB')
-  elif do_send_live and len(localCarStateDataString2) > 7 and len(serverCarStateDataString2) >= 15:
-    insertString = [serverCarStateFormatString2, "~", "".join(serverCarStateDataString2), "!", serverCarStateFormatString1, "~", "".join(serverCarStateDataString1), "!"]
-    insertString.extend([serverPathFormatString, "~", "".join(serverPathDataString), "!"])
-    if kegman_valid:
+    profiler.checkpoint('influx')
+    if frame % 10 == 0 and profiler.enabled:
+      profiler.display()
+      profiler.reset(True)
+
+  elif do_send_live and ((vEgo > 0 and len(serverCarStateDataString2) >= 45) or (vEgo == 0 and len(serverCarStateDataString2) > 0)):
+    insertString = [serverCarStateFormatString2, "".join(serverCarStateDataString2), "!", serverCarStateFormatString1, "".join(serverCarStateDataString1), "!"]
+    insertString.extend([serverPathFormatString, "".join(serverPathDataString), "!"])
+    if False and kegman_valid:
       try:
         if False and os.path.isfile(os.path.expanduser('~/kegman.json')):
           with open(os.path.expanduser('~/kegman.json'), 'r') as f:
@@ -247,5 +310,25 @@ while 1:
     serverCarStateDataString1 = []
     serverCarStateDataString2 = []
     serverPathDataString = []
-  #if not do_influx:
+    profiler.checkpoint('server_push')
+
+  if kegman_valid and time.time() > next_beat_check:
+    poller.unregister(heartBeatSub)
+    heartBeatSub = messaging.sub_sock(8597, addr=SERVER_ADDRESS, conflate=True)
+    poller.register(heartBeatSub, zmq.POLLIN)
+    if do_send_live:
+      print('       Lost heart beat!')
+      poller.unregister(tuneSub)
+      tuneSub.close()
+      serverPush.close()
+      tunePush.close()
+      do_send_live = False
+    else:
+      print('    Heart beat check!')
+    next_beat_check = time.time() + 20
+    profiler.checkpoint('live_tune')
+
+    
   #  time.sleep(0.02)
+  #time.sleep(3)
+  #tunePush.send_json(config)

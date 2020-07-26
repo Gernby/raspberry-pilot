@@ -60,7 +60,7 @@ if heartBeatSub != None: poller.register(heartBeatSub, zmq.POLLIN)
 
 serverKegmanFormatString = user_id + ",sources=kegman reactRate=;dampRate=;longOffset=;backlash=;dampMPC=;reactMPC=;dampSteer=;reactSteer=;KpV=;KiV=;rateFF=;angleFF=;delaySteer=;oscFactor=;centerFactor=;dampPoly=;reactPoly=; ;~"
 serverCanFormatString="CANData,user=" + user_id + ",src=;pid=; d1=;i,d2=;i ;~"
-serverPathFormatString = "pathPlan,user=" + user_id + " l0=;l1=;l2=;l3=;l4=;l5=;l6=;l7=;l8=;l9=;l10=;l11=;l12=;l13=;l14=;r0=;r1=;r2=;r3=;r4=;r5=;r6=;r7=;r8=;r9=;r10=;r11=;r12=;r13=;r14=;c0=;c1=;c2=;c3=;c4=;c5=;c6=;c7=;c8=;c9=;c10=;c11=;c12=;c13=;c14=;a0=;a1=;a2=;a3=;a4=;a5=;a6=;lprob=;rprob=;cprob=;lane_width=;angle=;rate=;angle_offset=;angle_bias=;plan_age=%s %s~"
+serverPathFormatString = "pathPlan,user=" + user_id + " l0=;l1=;l2=;l3=;l4=;l5=;l6=;l7=;l8=;l9=;l10=;l11=;l12=;l13=;l14=;r0=;r1=;r2=;r3=;r4=;r5=;r6=;r7=;r8=;r9=;r10=;r11=;r12=;r13=;r14=;c0=;c1=;c2=;c3=;c4=;c5=;c6=;c7=;c8=;c9=;c10=;c11=;c12=;c13=;c14=;a0=;a1=;a2=;a3=;a4=;a5=;a6=;lprob=;rprob=;cprob=;lane_width=;angle=;rate=;angle_offset=;lateral_offset=;actual_angle=;plan_age=; ~"
 serverPathDataFormatString = "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d|"
 serverPolyDataFormatString = "%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,"
 serverPathDataString = []
@@ -273,8 +273,8 @@ while 1:
       profiler.reset(True)
 
   elif do_send_live and ((vEgo > 0 and len(serverCarStateDataString2) >= 45) or (vEgo == 0 and len(serverCarStateDataString2) > 0)):
-    insertString = [serverCarStateFormatString2, "".join(serverCarStateDataString2), "!", serverCarStateFormatString1, "".join(serverCarStateDataString1), "!"]
-    insertString.extend([serverPathFormatString, "".join(serverPathDataString), "!"])
+    insertString = [serverCarStateFormatString2, "".join(serverCarStateDataString2), "!", serverCarStateFormatString1, "".join(serverCarStateDataString1), "!", serverPathFormatString, "".join(serverPathDataString), "!"]
+    #insertString.extend([serverPathFormatString, "".join(serverPathDataString), "!"])
     if False and kegman_valid:
       try:
         if False and os.path.isfile(os.path.expanduser('~/kegman.json')):

@@ -26,7 +26,7 @@ Then, in the "nmcli interactive connection editor", run
 
 The first approach to automating tasks covered here includes specifying commands as part of the SSH session establishment. This is useful for small, simple tasks such as removing the current hdf5 files from ~/raspilot/models and copying a different one into the folder. I created a folder structure for holding each of the hdf5 files being tested under `/home/ubuntu/buttons/model-*`, with `model-*` meaning "model-1", "model-2", "model-3", and "model-4". I placed one hdf5 file in each folder and will replace those files when new model bundles are released. Then I created buttons in the mobile app that erase the current model from ~/raspilot/models, copies a specific hdf5 file over to the models folder, and reboots the Raspberry Pi to make the change take effect. For example, this is the command behind the "Model 1" button in my Raspberry SSH mobile app:
 
-`/bin/touch /home/ubuntu/models/5 && /bin/rm /home/ubuntu/raspilot/models/*5 && /bin/cp /home/ubuntu/buttons/model-1/* /home/ubuntu/raspilot/models && /usr/bin/sudo /sbin/reboot`
+`/bin/touch /home/ubuntu/raspilot/models/5 && /bin/rm /home/ubuntu/raspilot/models/*5 && /bin/cp /home/ubuntu/buttons/model-1/* /home/ubuntu/raspilot/models && /usr/bin/sudo /sbin/reboot`
 
 I have four Model buttons, each one corresponding to loading an hdf5 file sitting in a specific directory before rebooting the Pi to make it take effect. When new models are published, I'll copy the new scalers into the models folder and place up to four hdf5 files in each of the model folders associated with the buttons.
 

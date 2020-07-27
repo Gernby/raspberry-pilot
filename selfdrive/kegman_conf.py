@@ -59,7 +59,7 @@ class kegman_conf():
     self.element_updated = False
 
     if Reset or not os.path.isfile(os.path.expanduser('~/kegman.json')):
-      self.config = {"Kp":"-1","Ki":"-1","Kf":"-1","rateFFGain":"-1","reactMPC":"-1","dampMPC":"-1","useAutoFlash": "0","useInfluxDB":"0"}
+      self.config = {"Kp":"-1","Ki":"-1","Kf":"-1","rateFFGain":"-1","reactMPC":"-1","dampMPC":"-1","useAutoFlash": "0","useInfluxDB":"0","requireBlinker":"1","requireNudge":"1"}
       self.element_updated = True
     else:
       with open(os.path.expanduser('~/kegman.json'), 'r') as f:
@@ -106,6 +106,11 @@ class kegman_conf():
     if "useOptimize" not in self.config:
       self.config.update({"useOptimize": "0"})
       self.config.update({"useMinimize": "0"})
+      self.element_updated = True
+
+    if "requireBlinker" not in self.config:
+      self.config.update({"requireNudge": "1"})
+      self.config.update({"requireBlinker": "1"})
       self.element_updated = True
 
     if self.element_updated:

@@ -58,6 +58,8 @@ class LatControlPID(object):
     self.accel_limit = 0.05      # 100x degrees/sec**2
     self.angle_rate_des = 0.0    # degrees/sec, rate dynamically limited by accel_limit
     self.fast_angles = [[]]
+    self.live_tune(CP)
+
 
     try:
       lateral_params = self.params.get("LateralGain")
@@ -86,46 +88,50 @@ class LatControlPID(object):
           self.polyReact = min(11, max(0, int(10 * float(self.kegman.conf['polyReact']))))
           self.poly_smoothing = max(1.0, float(self.kegman.conf['polyDamp']) * 100.)
           self.poly_factor = max(0.0, float(self.kegman.conf['polyFactor']) * 0.001)
+          self.require_blinker = bool(int(self.kegman.conf['requireBlinker']))
+          self.require_nudge = bool(int(self.kegman.conf['requireNudge']))
           self.kegtime_prev = self.kegtime
         except:
           print("   Kegman error")
 
   def update_lane_state(self, angle_steers, driver_opposing_lane, blinker_on, path_plan):
-    if self.lane_changing > 0.0: # and path_plan.cProb > 0:
-      self.lane_changing += 0.01  # max(self.lane_changing + 0.01, 0.005 * abs(path_plan.lPoly[5] + path_plan.rPoly[5]))
-      if self.lane_changing > 2.75 or (not blinker_on and self.lane_changing < 1.0 and abs(path_plan.cPoly[5]) < 100 and min(abs(self.starting_angle - angle_steers), abs(self.angle_steers_des - angle_steers)) < 1.5 and path_plan.cPoly[14] * path_plan.cPoly[0] > 0):
-        self.lane_changing = 0.0
-        self.stage = "4"
-      elif 2.25 <= self.lane_changing < 2.5 and path_plan.cPoly[14] * path_plan.cPoly[4] > 0:   # abs(path_plan.lPoly[5] + path_plan.rPoly[5]) < abs(path_plan.cPoly[5]):
-        self.lane_changing = 2.5
-        self.stage = "3"
-      elif 2.0 <= self.lane_changing < 2.25 and path_plan.cPoly[14] * path_plan.cPoly[9] > 0:      # (path_plan.lPoly[5] + path_plan.rPoly[5]) * path_plan.cPoly[0] < 0:
-        self.lane_changing = 2.25
-        self.stage = "2"
-      elif self.lane_changing < 2.0 and path_plan.cPoly[14] * path_plan.cPoly[0] < 0:     #path_plan.laneWidth < 1.2 * abs(path_plan.lPoly[5] + path_plan.rPoly[5]):
-        self.lane_changing = 2.0
-        self.stage = "1"
-      elif self.lane_changing < 1.0 and abs(path_plan.cPoly[14]) > abs(path_plan.cPoly[7]):     #path_plan.laneWidth < 1.2 * abs(path_plan.lPoly[5] + path_plan.rPoly[5]):
-        self.lane_changing = 0.98
+    if self.require_nudge:
+      if self.lane_changing > 0.0: # and path_plan.cProb > 0:
+        self.lane_changing += 0.01  # max(self.lane_changing + 0.01, 0.005 * abs(path_plan.lPoly[5] + path_plan.rPoly[5]))
+        if self.lane_changing > 2.75 or (not blinker_on and self.lane_changing < 1.0 and abs(path_plan.cPoly[5]) < 100 and min(abs(self.starting_angle - angle_steers), abs(self.angle_steers_des - angle_steers)) < 1.5 and path_plan.cPoly[14] * path_plan.cPoly[0] > 0):
+          self.lane_changing = 0.0
+          self.stage = "4"
+        elif 2.25 <= self.lane_changing < 2.5 and path_plan.cPoly[14] * path_plan.cPoly[4] > 0:   # abs(path_plan.lPoly[5] + path_plan.rPoly[5]) < abs(path_plan.cPoly[5]):
+          self.lane_changing = 2.5
+          self.stage = "3"
+        elif 2.0 <= self.lane_changing < 2.25 and path_plan.cPoly[14] * path_plan.cPoly[9] > 0:      # (path_plan.lPoly[5] + path_plan.rPoly[5]) * path_plan.cPoly[0] < 0:
+          self.lane_changing = 2.25
+          self.stage = "2"
+        elif self.lane_changing < 2.0 and path_plan.cPoly[14] * path_plan.cPoly[0] < 0:     #path_plan.laneWidth < 1.2 * abs(path_plan.lPoly[5] + path_plan.rPoly[5]):
+          self.lane_changing = 2.0
+          self.stage = "1"
+        elif self.lane_changing < 1.0 and abs(path_plan.cPoly[14]) > abs(path_plan.cPoly[7]):     #path_plan.laneWidth < 1.2 * abs(path_plan.lPoly[5] + path_plan.rPoly[5]):
+          self.lane_changing = 0.98
+          self.stage = "0"
+        #else:
+        #self.lane_changing = max(self.lane_changing + 0.01, 0.005 * abs(path_plan.lPoly[5] + path_plan.rPoly[5]))
+        #if blinker_on:
+        #  self.lane_change_adjustment = 0.0
+        #else:
+        self.lane_change_adjustment = interp(self.lane_changing, [0.0, 1.0, 2.0, 2.25, 2.5, 2.75], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        #print("%0.2f lane_changing  %0.2f adjustment  %0.2f p_poly   %0.2f avg_poly   stage = %s    blinker %d   opposing %d  width_1  %0.2f  width_2  %0.2f  center_1  %0.2f  center_2  %0.2f" % (self.lane_changing, self.lane_change_adjustment, path_plan.cPoly[5], path_plan.lPoly[5] + path_plan.rPoly[5], self.stage, blinker_on, driver_opposing_lane, path_plan.laneWidth, 0.6 * abs(path_plan.lPoly[5] - path_plan.rPoly[5]), path_plan.cPoly[0], path_plan.lPoly[5] + path_plan.rPoly[5]))
+      elif (blinker_on or not self.require_blinker) and driver_opposing_lane and path_plan.rProb > 0 and path_plan.lProb > 0 and (abs(path_plan.cPoly[14]) > 100 or min(abs(self.starting_angle - angle_steers), abs(self.angle_steers_des - angle_steers)) > 1.0): # and path_plan.cPoly[14] * path_plan.cPoly[0] > 0:
+        print('starting lane change @ %0.2f' % self.lane_changing)
+        self.lane_changing = 0.01 
+        self.lane_change_adjustment = 1.0
+      else:
+        if self.lane_changing != 0: print('terminating lane change @ %0.2f' % self.lane_changing)
+        self.lane_changing = 0
         self.stage = "0"
-      #else:
-      #self.lane_changing = max(self.lane_changing + 0.01, 0.005 * abs(path_plan.lPoly[5] + path_plan.rPoly[5]))
-      #if blinker_on:
-      #  self.lane_change_adjustment = 0.0
-      #else:
-      self.lane_change_adjustment = interp(self.lane_changing, [0.0, 1.0, 2.0, 2.25, 2.5, 2.75], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-      #print("%0.2f lane_changing  %0.2f adjustment  %0.2f p_poly   %0.2f avg_poly   stage = %s    blinker %d   opposing %d  width_1  %0.2f  width_2  %0.2f  center_1  %0.2f  center_2  %0.2f" % (self.lane_changing, self.lane_change_adjustment, path_plan.cPoly[5], path_plan.lPoly[5] + path_plan.rPoly[5], self.stage, blinker_on, driver_opposing_lane, path_plan.laneWidth, 0.6 * abs(path_plan.lPoly[5] - path_plan.rPoly[5]), path_plan.cPoly[0], path_plan.lPoly[5] + path_plan.rPoly[5]))
-    elif driver_opposing_lane and path_plan.rProb > 0 and path_plan.lProb > 0 and (blinker_on or abs(path_plan.cPoly[14]) > 100 or min(abs(self.starting_angle - angle_steers), abs(self.angle_steers_des - angle_steers)) > 1.5): # and path_plan.cPoly[14] * path_plan.cPoly[0] > 0:
-      print('starting lane change @ %0.2f' % self.lane_changing)
-      self.lane_changing = 0.01 
-      self.lane_change_adjustment = 1.0
-    else:
-      if self.lane_changing != 0: print('terminating lane change @ %0.2f' % self.lane_changing)
-      self.lane_changing = 0
-      self.stage = "0"
-      self.starting_angle = angle_steers
-      self.lane_change_adjustment = 1.0
-    
+        self.starting_angle = angle_steers
+        self.lane_change_adjustment = 1.0
+    elif blinker_on:
+      self.lane_change_adjustment = 0.0
 
   def reset(self):
     self.pid.reset()

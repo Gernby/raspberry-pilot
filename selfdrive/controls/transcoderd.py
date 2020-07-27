@@ -137,6 +137,7 @@ execution_time_avg = 0.0
 time_factor = 1.0
 lateral_offset = 0
 calibration_factor = 1.0
+discrete_limit = 0
 
 model_output = None
 start_time = time.time()
@@ -312,11 +313,24 @@ while 1:
     width_trim = max(-100, min(width_trim, 0))'''
   
   fast_angles = []
-  for i in range(angle_speed_count):
-    if use_discrete_angle:
-      fast_angles.append(angle_factor * descaled_output[:,i:i+1] + calibration[0])
+  if use_discrete_angle:
+    if discrete_limit == 1:
+      fast_angles = angle_factor * descaled_output[:,:angle_speed_count] + calibration[0]
     else:
-      fast_angles.append(angle_factor * advanceSteer * (descaled_output[:,i:i+1] - descaled_output[0,i:i+1]) + cs.steeringAngle)
+      relative_angles = angle_factor * advanceSteer * (descaled_output[:,:angle_speed_count] - descaled_output[0,:angle_speed_count]) + cs.steeringAngle
+      fast_angles = np.clip(angle_factor * descaled_output[:,:angle_speed_count] + calibration[0], relative_angles - discrete_limit, relative_angles + discrete_limit)
+  else:
+    fast_angles = angle_factor * advanceSteer * (descaled_output[:,:angle_speed_count] - descaled_output[0,:angle_speed_count]) + cs.steeringAngle
+  
+  '''for i in range(angle_speed_count):
+    if use_discrete_angle:
+      if discrete_limit == 1: 
+        fast_angles.append(angle_factor * descaled_output[:,i:i+1] + calibration[0])
+      else:
+        relative_angles = angle_factor * advanceSteer * (descaled_output[:,i:i+1] - descaled_output[0,i:i+1]) + cs.steeringAngle
+        fast_angles.append(np.clip(angle_factor * descaled_output[:,i:i+1] + calibration[0], relative_angles - discrete_limit, relative_angles + discrete_limit))
+    else:
+      fast_angles.append(angle_factor * advanceSteer * (descaled_output[:,i:i+1] - descaled_output[0,i:i+1]) + cs.steeringAngle)'''
 
   if abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0]) < 3 and cs.vEgo > 10 and cs.torqueRequest != 0:
     '''if l_prob > 0 and r_prob > 0 and cs.camFarLeft.parm2 - cs.camFarRight.parm2 < 1200:
@@ -379,7 +393,10 @@ while 1:
       angle_speed = min(5, max(0, int(10 * float(kegman.conf['polyReact']))))
       use_angle_offset = float(kegman.conf['angleOffset'])
       lateral_offset = float(kegman.conf['lateralOffset'])
-      use_discrete_angle = True if kegman.conf['useDiscreteAngle'] == "1" else False
+      use_discrete_angle = True if float(kegman.conf['useDiscreteAngle']) > 0 else False
+      if use_discrete_angle and float(kegman.conf['useDiscreteAngle']) < 1:
+        discrete_limit = float(kegman.conf['useDiscreteAngle'])
+        print(use_discrete_angle, discrete_limit)
       use_optimize = True if kegman.conf['useOptimize'] == '1' else False
       use_minimize = True if kegman.conf['useMinimize'] == '1' else False
     profiler.checkpoint('kegman')

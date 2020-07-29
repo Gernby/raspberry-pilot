@@ -240,7 +240,6 @@ try:
         print("resetting calibration")
   lane_width = calibration_data['lane_width']
   angle_bias = calibration_data['angle_bias']
-  center_bias = 0
   print(calibration)
 except:
   # TODO: Remove this after user's calibrations have been moved to params
@@ -254,7 +253,6 @@ except:
         print("resetting calibration")
     lane_width = calibration_data['lane_width']
     angle_bias = calibration_data['angle_bias']
-    center_bias = 0
   except:
     calibrated = False
     print("resetting calibration")
@@ -322,6 +320,8 @@ while 1:
   else:
     fast_angles = angle_factor * advanceSteer * (descaled_output[:,:angle_speed_count] - descaled_output[0,:angle_speed_count]) + cs.steeringAngle
   
+  fast_angles = np.reshape(fast_angles, (angle_speed_count, OUTPUT_ROWS))
+
   '''for i in range(angle_speed_count):
     if use_discrete_angle:
       if discrete_limit == 1: 
@@ -372,11 +372,11 @@ while 1:
 
   if frame % 60 == 0:
     #print(calibration_factor, np.round(calibration, 2))
-    print('lane_width: %0.1f angle bias: %0.2f  center_bias: %0.2f  lateral_offset:  %d   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs  angle_speed:  %0.1f' % (lane_width, angle_bias, center_bias, lateral_adjust, calc_center[0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,0], descaled_output[1,1], execution_time_avg, angle_speed))
+    print('lane_width: %0.1f angle bias: %0.2f  lateral_offset:  %d   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs  angle_speed:  %0.1f' % (lane_width, angle_bias, lateral_adjust, calc_center[0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,0], descaled_output[1,1], execution_time_avg, angle_speed))
 
   if frame % 3000 == 0:
     print(np.round(calibration,2))
-    params.put("CalibrationParams", json.dumps({'calibration': list(calibration),'lane_width': lane_width,'angle_bias': angle_bias,'center_bias': center_bias}))
+    params.put("CalibrationParams", json.dumps({'calibration': list(calibration),'lane_width': lane_width,'angle_bias': angle_bias}))
     #os.remove(os.path.expanduser('~/calibration.json'))
     profiler.checkpoint('save_cal')
 

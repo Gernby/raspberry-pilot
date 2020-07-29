@@ -46,11 +46,11 @@ for file in upload_list:
     #print(directory, filename)
     with open(os.path.join('/data/upload/', filename)) as myfile:
       inString = myfile.read()
-      print("characters sent: %d" % len(inString))
       if len(inString) > 0:
         file_data.update({"file_name": filename, "file_content": inString.replace('carState', user_id)})
         file_list.append(filename)
         dataPush.send_string(json.dumps(file_data))
+        print("characters sent: %d" % len(inString))
         time.sleep(1)
         if len(file_list) > 5:
           #print(dataSub.recv_string())
@@ -59,21 +59,24 @@ for file in upload_list:
           return_data = json.loads(reply[1])
           file_to_delete = file_list.pop(file_list.index(return_data['filename']))
           if return_data['statuscode'] == 204:
-            print("successfully processed: %s  files in queue: %d  response length: %d  files remaining: %d" % (file_to_delete, len(file_list), len(reply), file_count))
+            print("successfully processed: %s  files remaining: %d" % (file_to_delete, file_count))
             #os.rename('/data/upload/%s' % file_to_delete, '/data/upload/%s' % file_to_delete.replace('.dat','.bak'))
             os.remove('/data/upload/%s' % file_to_delete)
           else:
-            print(" Oops!  status_code: %d    NOT successful with file: %s" % (return_data['statuscode'], file_to_delete))
+            print(" Oops!  status_code: %s    NOT successful with file: %s" % (str(return_data['statuscode']), file_to_delete))
           file_count -= 1
+      else:
+        os.remove('/data/upload/%s' % filename)
+        print("empty file deleted:  %s" % filename)
 
 for i in range(len(file_list)):
   reply = dataSub.recv_multipart()
   return_data = json.loads(reply[1])
   file_to_delete = file_list.pop(file_list.index(return_data['filename']))
   if return_data['statuscode'] == 204:
-    print("successfully processed: %s  files in queue: %d  response length: %d" % (file_to_delete, len(file_list), len(reply)))
+    print("successfully processed: %s" % (file_to_delete))
     #os.rename('/data/upload/%s' % file_to_delete, '/data/upload/%s' % file_to_delete.replace('.dat','.bak'))
     os.remove('/data/upload/%s' % file_to_delete)
   else:
-    print(" Oops!  status_code: %d    NOT successful with file: %s" % (return_data['statuscode'], file_to_delete))
+    print(" Oops!  status_code: %s    NOT successful with file: %s" % (str(return_data['statuscode']), file_to_delete))
         #time.sleep(10)

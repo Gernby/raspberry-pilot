@@ -271,9 +271,8 @@ bool can_recv(void *s, bool force_send) {
   force_send = false;
   int j = 0;
   for (int i = 0; i<(recv/0x10); i++) {
-    //if ((index_initialized == false) | (message_index.find(data[i*4] >> 21) != message_index.end())) {
     auto message = message_index.find(data[i*4] >> 21);
-    if (message != message_index.end()) {
+    if ((message != message_index.end()) | (index_initialized == false)) {
       if (data[i*4] >> 21 == 330) force_send = true;
       big_data[(big_index + j)*4] = data[i*4];
       big_data[(big_index + j)*4+1] = data[i*4+1];

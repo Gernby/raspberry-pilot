@@ -48,24 +48,24 @@ class Lateral(object):
     self.vehicle_array.append([cs.vEgo, cs.steeringAngle, cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN])
 
     if cs.camLeft.frame != self.stock_cam_frame_prev and cs.camLeft.frame == cs.camFarLeft.frame:
-
-      sm.update(0)
-      cs.gpsLocation.longitude = sm['gpsLocationExternal'].longitude
-      cs.gpsLocation.latitude = sm['gpsLocationExternal'].latitude
-      cs.gpsLocation.altitude = sm['gpsLocationExternal'].altitude
-      cs.gpsLocation.flags = sm['gpsLocationExternal'].flags
-      vNED = [float(x) for x in sm['gpsLocationExternal'].vNED]
-      #print( sm['gpsLocationExternal'])
+      self.stock_cam_frame_prev = cs.camLeft.frame
+      gps = sm['gpsLocationExternal']
+      #sm.update(0)
+      cs.gpsLocation.longitude = gps.longitude
+      cs.gpsLocation.latitude = gps.latitude
+      cs.gpsLocation.altitude = gps.altitude
+      cs.gpsLocation.flags = gps.flags
+      vNED = [float(x) for x in gps.vNED]
       if len(vNED) == 0:
         vNED = [0,0,0]
       cs.gpsLocation.vNED = vNED
-      cs.gpsLocation.bearing = sm['gpsLocationExternal'].bearing
-      cs.gpsLocation.speed = sm['gpsLocationExternal'].speed
-      cs.gpsLocation.accuracy = sm['gpsLocationExternal'].accuracy
-      cs.gpsLocation.verticalAccuracy = sm['gpsLocationExternal'].verticalAccuracy
-      cs.gpsLocation.bearingAccuracy = sm['gpsLocationExternal'].bearingAccuracy
-      cs.gpsLocation.speedAccuracy = sm['gpsLocationExternal'].speedAccuracy
-      cs.gpsLocation.timestamp = sm['gpsLocationExternal'].timestamp
+      cs.gpsLocation.bearing = gps.bearing
+      cs.gpsLocation.speed = gps.speed
+      cs.gpsLocation.accuracy = gps.accuracy
+      cs.gpsLocation.verticalAccuracy = gps.verticalAccuracy
+      cs.gpsLocation.bearingAccuracy = gps.bearingAccuracy
+      cs.gpsLocation.speedAccuracy = gps.speedAccuracy
+      cs.gpsLocation.timestamp = gps.timestamp
 
       cs_send.carState = cs
       self.cs_prev.append(cs_send.to_bytes())
@@ -81,7 +81,7 @@ class Lateral(object):
                                     far_left_missing,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm8, 
                                     right_missing,     cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm8, 
                                     far_right_missing, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm8], BIT_MASK)
-
+      
       if self.combine_flags:
         for i in range(2):
           camera_flags[3+i*16] += (camera_flags[2+i*16] + camera_flags[1+i*16])
@@ -95,13 +95,12 @@ class Lateral(object):
                                                 [cs.camRight.parm10,    cs.camRight.parm2,    cs.camRight.parm1,    cs.camRight.parm3,    cs.camRight.parm4,    cs.camRight.parm5,    cs.camRight.parm7,    cs.camRight.parm9]),axis=0))
 
       if len(self.camera_array) > HISTORY_ROWS:
-        self.stock_cam_frame_prev = cs.camLeft.frame
         cs.modelData = [float(x) for x in list(np.asarray(np.concatenate((self.vehicle_array[-HISTORY_ROWS:], self.camera_array[-HISTORY_ROWS:]), axis = 1)).reshape(HISTORY_ROWS * INPUTS))]
-        if can_count < 3: 
+        if can_count < 2: 
           self.gernModelInputs.send(cs.to_bytes())
         self.camera_array.pop(0)
         self.vehicle_array.pop(0)
-        
+              
     else:
       cs_send.carState = cs
       self.cs_prev.append(cs_send.to_bytes())

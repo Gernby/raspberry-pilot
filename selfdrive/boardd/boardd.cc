@@ -58,6 +58,8 @@ bool pigeon_needs_init;
 
 int big_recv;
 uint32_t big_data[RECV_SIZE*4];
+std::map<uint32_t, uint64_t> message_index;
+bool index_initialized = false;
 
 void pigeon_init();
 void *pigeon_thread(void *crap);
@@ -77,7 +79,7 @@ void *safety_setter_thread(void *s) {
   //  }
   //  usleep(100*1000);
   //}
-  //printf("got CarVin %s", value_vin);
+  //LOGW("got CarVin %s", value_vin);
 
   //pthread_mutex_lock(&usb_lock);
 
@@ -89,7 +91,7 @@ void *safety_setter_thread(void *s) {
   char *value;
   size_t value_sz = 0;
 
-  printf("waiting for params to set safety model");
+  LOGW("waiting for params to set safety model");
   while (1) {
     if (do_exit) return NULL;
 
@@ -98,7 +100,7 @@ void *safety_setter_thread(void *s) {
     usleep(100*1000);
   }
 
-  printf("got %d bytes CarParams", value_sz);
+  LOGW("got %d bytes CarParams", value_sz);
 
   // format for board, make copy due to alignment issues, will be freed on out of scope
   auto amsg = kj::heapArray<capnp::word>((value_sz / sizeof(capnp::word)) + 1);
@@ -108,9 +110,29 @@ void *safety_setter_thread(void *s) {
   capnp::FlatArrayMessageReader cmsg(amsg);
   cereal::CarParams::Reader car_params = cmsg.getRoot<cereal::CarParams>();
 
+  auto canIDs = car_params.getCanIds();
+  for (int i=0; i<canIDs.size(); i++) {
+    for (int j=0; j<canIDs[i].size(); j++) {
+      message_index[canIDs[i][j]] = 0;
+      LOGW("message id %d added", canIDs[i][j]);
+    }
+  }
+  index_initialized = true;
+
+/*  for (int i=0; i<canIDs->; i++) {
+    const Msg* msg = &dbc->msgs[i];
+    message_lookup[msg->address] = *msg;
+    for (int j=0; j<msg->num_sigs; j++) {
+      const Signal* sig = &msg->sigs[j];
+      signal_lookup[std::make_pair(msg->address, std::string(sig->name))] = *sig;
+    }
+  }
+*/
+
+
   auto safety_model = car_params.getSafetyModel();
   auto safety_param = car_params.getSafetyParam();
-  printf("setting safety model: %d with param %d", safety_model, safety_param);
+  LOGW("setting safety model: %d with param %d", safety_model, safety_param);
 
   pthread_mutex_lock(&usb_lock);
 
@@ -159,7 +181,7 @@ bool usb_connect() {
     serial = (const char *)serial_buf;
     serial_sz = strnlen(serial, err);
     write_db_value(NULL, "PandaDongleId", serial, serial_sz);
-    printf("panda serial: %.*s\n", serial_sz, serial);
+    LOGW("panda serial: %.*s\n", serial_sz, serial);
   }
 
   // power on charging, only the first time. Panda can also change mode and it causes a brief disconneciton
@@ -176,7 +198,7 @@ bool usb_connect() {
   is_pigeon = (hw_type == cereal::HealthData::HwType::GREY_PANDA) ||
               (hw_type == cereal::HealthData::HwType::BLACK_PANDA); 
   if (is_pigeon) {
-    printf("panda with gps detected");
+    LOGW("panda with gps detected");
     pigeon_needs_init = true;
     if (pigeon_thread_handle == -1) {
       err = pthread_create(&pigeon_thread_handle, NULL, pigeon_thread, NULL);
@@ -191,9 +213,9 @@ fail:
 
 
 void usb_retry_connect() {
-  LOG("attempting to connect");
+  LOGW("attempting to connect");
   while (!usb_connect()) { usleep(100*1000); }
-  printf("connected to board");
+  LOGW("connected to board");
 }
 
 void handle_usb_issue(int err, const char func[]) {
@@ -231,7 +253,7 @@ bool can_recv(void *s, bool force_send) {
   do {
     err = libusb_bulk_transfer(dev_handle, 0x81, (uint8_t*)data, RECV_SIZE, &recv, TIMEOUT);
     if (err != 0) { handle_usb_issue(err, __func__); }
-    if (err == -8) { LOGE_100("overflow got 0x%x", recv); };
+    if (err == -8) { LOGW("overflow got 0x%x", recv); };
 
     // timeout is okay to exit, recv still happened
     if (err == -7) { break; }
@@ -245,19 +267,19 @@ bool can_recv(void *s, bool force_send) {
   }
 
   // TODO: Split bus 0 and 1 into separate packets synced to 330 for bus 0 and 586 for bus 1
-  // TODO: Add CAN filter
   big_index = big_recv/0x10;
   force_send = false;
   int j = 0;
   for (int i = 0; i<(recv/0x10); i++) {
-    if (data[i*4] >> 21 <= 927) {
+    //if ((index_initialized == false) | (message_index.find(data[i*4] >> 21) != message_index.end())) {
+    auto message = message_index.find(data[i*4] >> 21);
+    if (message != message_index.end()) {
+      if (data[i*4] >> 21 == 330) force_send = true;
       big_data[(big_index + j)*4] = data[i*4];
       big_data[(big_index + j)*4+1] = data[i*4+1];
       big_data[(big_index + j)*4+2] = data[i*4+2];
       big_data[(big_index + j)*4+3] = data[i*4+3];
       big_recv += 0x10;    
-      //if (data[i*4] >> 21 == 229 && (data[i*4+1] >> 4) & 0xff == 1) force_send = true;
-      if (data[i*4] >> 21 == 330) force_send = true;
       j++;
     }
   }
@@ -267,18 +289,15 @@ bool can_recv(void *s, bool force_send) {
     capnp::MallocMessageBuilder msg;
     cereal::Event::Builder event = msg.initRoot<cereal::Event>();
     event.setLogMonoTime(nanos_since_boot());
-    //std::map<std::pair<uint32_t, std::string>, Signal> signal_lookup;
-    std::map<std::pair<uint32_t, uint64_t>, int> message_index;
 
     auto can_data = event.initCan(big_recv/0x10);
-    int dup_count = 0;
 
     // populate message
     for (int i = 0; i<(big_recv/0x10); i++) {
       if (big_data[i*4] & 4) {
         // extended
         can_data[i].setAddress(big_data[i*4] >> 3);
-        //printf("got extended: %x\n", big_data[i*4] >> 3);
+        //LOGW("got extended: %x\n", big_data[i*4] >> 3);
       } else {
         // normal
         can_data[i].setAddress(big_data[i*4] >> 21);
@@ -287,17 +306,6 @@ bool can_recv(void *s, bool force_send) {
       int len = big_data[i*4+1]&0xF;
       can_data[i].setDat(kj::arrayPtr((uint8_t*)&big_data[i*4+2], len));
       can_data[i].setSrc((big_data[i*4+1] >> 4) & 0xff);
-
-      uint8_t dat[8] = {0};
-      memcpy(dat, can_data[i].getDat().begin(), can_data[i].getDat().size());
-      uint64_t dat2 = read_u64_be(dat);
-      auto val_index = message_index.find(std::make_pair(big_data[i*4] >> 21, dat2));
-      if (val_index == message_index.end()) {
-        message_index[std::make_pair(big_data[i*4] >> 21, dat2)] = 0;
-      }
-      else {
-        dup_count++;
-      }      
     }
 
     // send to can
@@ -305,8 +313,6 @@ bool can_recv(void *s, bool force_send) {
     auto bytes = words.asBytes();
     zmq_send(s, bytes.begin(), bytes.size(), 0);
     big_recv = 0;
-    //if (dup_count > 10) printf("%d Dups found in %d!\n", dup_count, big);         
-
   }
 
   return frame_sent;
@@ -350,7 +356,7 @@ void can_health(void *s) {
 
 //#ifndef __x86_64__
 //  if ((no_ignition_cnt > NO_IGNITION_CNT_MAX) && (health.usb_power_mode == (uint8_t)(cereal::HealthData::UsbPowerMode::CDP))) {
-//    printf("TURN OFF CHARGING!\n");
+//    LOGW("TURN OFF CHARGING!\n");
 //    pthread_mutex_lock(&usb_lock);
 //    libusb_control_transfer(dev_handle, 0xc0, 0xe6, (uint16_t)(cereal::HealthData::UsbPowerMode::CLIENT), 0, NULL, 0, TIMEOUT);
 //    pthread_mutex_unlock(&usb_lock);
@@ -477,7 +483,7 @@ void can_send(void *s) {
 // **** threads ****
 
 void *can_send_thread(void *crap) {
-  LOGD("start send thread");
+  LOGW("start send thread");
 
   // sendcan = 8017
   void *context = zmq_ctx_new();
@@ -499,7 +505,7 @@ void *can_send_thread(void *crap) {
 }
 
 void *can_recv_thread(void *crap) {
-  LOGD("start recv thread");
+  LOGW("start recv thread");
 
   // can = 8006
   void *context = zmq_ctx_new();
@@ -542,7 +548,7 @@ void *can_recv_thread(void *crap) {
               usleep(wake_time - last_long_sleep);
             }
             //else {
-            //  printf("   boardd lagged, skip sleep! %d\n", recv_state);
+            //  LOGW("   boardd lagged, skip sleep! %d\n", recv_state);
             //}
           }
         }
@@ -562,7 +568,7 @@ void *can_recv_thread(void *crap) {
 }
 
 void *can_health_thread(void *crap) {
-  LOGD("start health thread");
+  LOGW("start health thread");
   // health = 8011
   void *context = zmq_ctx_new();
   void *publisher = zmq_socket(context, ZMQ_PUB);
@@ -623,7 +629,7 @@ void pigeon_set_baud(int baud) {
 
 void pigeon_init() {
   usleep(1000*1000);
-  printf("panda GPS start");
+  LOGW("panda GPS start");
 
   // power off pigeon
   pigeon_set_power(0);
@@ -664,7 +670,7 @@ void pigeon_init() {
   pigeon_send("\xB5\x62\x06\x01\x03\x00\x02\x15\x01\x22\x70");
   pigeon_send("\xB5\x62\x06\x01\x03\x00\x02\x13\x01\x20\x6C");
 
-  printf("panda GPS on");
+  LOGW("panda GPS on");
 }
 
 static void pigeon_publish_raw(void *publisher, unsigned char *dat, int alen) {
@@ -709,12 +715,12 @@ void *pigeon_thread(void *crap) {
       pthread_mutex_unlock(&usb_lock);
       if (len <= 0) break;
 
-      //printf("got %d\n", len);
+      //("got %d\n", len);
       alen += len;
     }
     if (alen > 0) {
       if (dat[0] == (char)0x00){
-        printf("received invalid ublox message, resetting panda GPS");
+        LOGW("received invalid ublox message, resetting panda GPS");
         pigeon_init();
       } else {
         pigeon_publish_raw(publisher, dat, alen);
@@ -741,11 +747,11 @@ int set_realtime_priority(int level) {
 
 int main() {
   int err;
-  printf("starting boardd");
+  LOGW("starting boardd");
 
   // set process priority
   //err = set_realtime_priority(4);
-  //LOG("setpriority returns %d", err);
+  //LOGW("setpriority returns %d", err);
 
   // check the environment
   if (getenv("STARTED")) {

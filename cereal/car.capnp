@@ -150,7 +150,6 @@ struct CarState {
   blinkers @51 :Bool;
   gpsLocation @53 :GpsLocationData;
 
-
   # lock info
   doorOpen @24 :Bool;
   seatbeltUnlatched @25 :Bool;
@@ -185,7 +184,6 @@ struct CarState {
     low @6;
     brake @7;
   }
-
 
   # android struct GpsLocation
   struct GpsLocationData {
@@ -482,12 +480,13 @@ struct CarParams {
   steerControlType @34 :SteerControlType;
   radarOffCan @35 :Bool; # True when radar objects aren't visible on CAN
 
+  canIds @43 :List(List(UInt32));
   epsSteerRateFactor @42 :Float32;
   steerActuatorDelay @36 :Float32; # Steering wheel actuator delay in seconds
   steerAdvanceCycles @41 :Int16;
   openpilotLongitudinalControl @37 :Bool; # is openpilot doing the longitudinal control?
   carVin @38 :Text; # VIN number queried during fingerprinting
-  isPandaBlack @39: Bool;
+  isPandaBlack @39 :Bool;
 
   struct LateralPIDTuning {
     kpBP @0 :List(Float32);

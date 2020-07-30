@@ -58,7 +58,7 @@ def data_sample(CI, CC, can_sock, carstate, lac_log, lateral, sm, profiler):
   lateral.update(CS, sm, 0, 1)
   profiler.checkpoint('lateral')
   if CS.canTime + 20 < CS.sysTime: 
-    can_strs = messaging.drain_sock_raw(can_sock, wait_for_one=False, limit=3)
+    can_strs = messaging.drain_sock_raw(can_sock, wait_for_one=False, limit=2)
     profiler.checkpoint('drain_can')
     if len(can_strs) > 0: 
       print("  Controls lagged by %d CAN packets!" % (len(can_strs)), [len(x) for x in can_strs])

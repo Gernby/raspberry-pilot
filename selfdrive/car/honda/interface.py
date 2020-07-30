@@ -87,13 +87,7 @@ class CarInterface(CarInterfaceBase):
 
     self.cp = get_can_parser(CP)
     self.cp_cam = get_cam_can_parser(CP.isPandaBlack)
-    #cpids = []
-    #cpcamids = []
-    #for cpid in self.cp.addr:
-    #  cpids.append(cpid)
-    print([[x for x in self.cp.addr], [x for x in self.cp_cam.addr]])
-    print(len(self.cp.addr) + len(self.cp_cam.addr))
-    #self.CP.CANids = [cpids, cpcamids]
+    self.CP.canIds = [[int(x) for x in self.cp.addr], [int(x) for x in self.cp_cam.addr]]
 
     # *** init the major players ***
     self.CS = CarState(CP)
@@ -102,7 +96,6 @@ class CarInterface(CarInterfaceBase):
     self.CC = None
     if CarController is not None:
       self.CC = CarController(self.cp.dbc_name)
-
     if self.CS.CP.carFingerprint == CAR.ACURA_ILX:
       self.compute_gb = get_compute_gb_acura()
     else:
@@ -514,86 +507,95 @@ class CarInterface(CarInterfaceBase):
     ret.lkMode = self.CS.lkMode
 
     if not self.cp_cam is None:
-      ret.camLeft.frame = self.cp_cam.vl["CUR_LANE_LEFT_1"]['FRAME_ID'] + self.cp_cam.vl["CUR_LANE_LEFT_2"]['FRAME_ID']
-      ret.camRight.frame = self.cp_cam.vl["CUR_LANE_RIGHT_1"]['FRAME_ID'] + self.cp_cam.vl["CUR_LANE_RIGHT_2"]['FRAME_ID']
-      ret.camFarLeft.frame = self.cp_cam.vl["ADJ_LANE_LEFT_1"]['FRAME_ID'] + self.cp_cam.vl["ADJ_LANE_LEFT_2"]['FRAME_ID']
-      ret.camFarRight.frame = self.cp_cam.vl["ADJ_LANE_RIGHT_1"]['FRAME_ID'] + self.cp_cam.vl["ADJ_LANE_RIGHT_2"]['FRAME_ID']
+      camLeft1 = self.cp_cam.vl["CUR_LANE_LEFT_1"]
+      camLeft2 = self.cp_cam.vl["CUR_LANE_LEFT_2"]
+      camFarLeft1 = self.cp_cam.vl["ADJ_LANE_LEFT_1"]
+      camFarLeft2 = self.cp_cam.vl["ADJ_LANE_LEFT_2"]
+      ret.camLeft.frame = camLeft1['FRAME_ID'] + camLeft2['FRAME_ID']
+      ret.camFarLeft.frame = camFarLeft1['FRAME_ID'] + camFarLeft2['FRAME_ID']
       if ret.camLeft.frame != self.stock_cam_frame_prev and ret.camLeft.frame == ret.camFarLeft.frame:
         self.stock_cam_frame_prev = ret.camLeft.frame
-        ret.camLeft.full1 = self.cp_cam.vl["CUR_LANE_LEFT_1"]['FULL']
-        ret.camLeft.full2 = self.cp_cam.vl["CUR_LANE_LEFT_2"]['FULL']
-        ret.camRight.full1 = self.cp_cam.vl["CUR_LANE_RIGHT_1"]['FULL']
-        ret.camRight.full2 = self.cp_cam.vl["CUR_LANE_RIGHT_2"]['FULL']
-        ret.camFarLeft.full1 = self.cp_cam.vl["ADJ_LANE_LEFT_1"]['FULL']
-        ret.camFarLeft.full2 = self.cp_cam.vl["ADJ_LANE_LEFT_2"]['FULL']
-        ret.camFarRight.full1 = self.cp_cam.vl["ADJ_LANE_RIGHT_1"]['FULL']
-        ret.camFarRight.full2 = self.cp_cam.vl["ADJ_LANE_RIGHT_2"]['FULL']
-        ret.camLeft.parm1 = self.cp_cam.vl["CUR_LANE_LEFT_1"]['PARM_1']
-        ret.camLeft.parm2 = self.cp_cam.vl["CUR_LANE_LEFT_1"]['PARM_2']
-        ret.camLeft.parm3 = self.cp_cam.vl["CUR_LANE_LEFT_1"]['PARM_3']
-        ret.camLeft.parm4 = self.cp_cam.vl["CUR_LANE_LEFT_1"]['PARM_4']
-        ret.camLeft.parm5 = self.cp_cam.vl["CUR_LANE_LEFT_1"]['PARM_5']
-        ret.camLeft.parm6 = self.cp_cam.vl["CUR_LANE_LEFT_2"]['PARM_6']
-        ret.camLeft.parm7 = self.cp_cam.vl["CUR_LANE_LEFT_2"]['PARM_7']
-        ret.camLeft.parm8 = self.cp_cam.vl["CUR_LANE_LEFT_2"]['PARM_8']
-        ret.camLeft.parm9 = self.cp_cam.vl["CUR_LANE_LEFT_2"]['PARM_9']
-        ret.camLeft.parm10 = self.cp_cam.vl["CUR_LANE_LEFT_2"]['PARM_10']
-        ret.camLeft.parm11 = self.cp_cam.vl["CUR_LANE_LEFT_2"]['PARM_11']
-        ret.camLeft.parm12 = self.cp_cam.vl["CUR_LANE_LEFT_2"]['PARM_12']
-        ret.camLeft.parm13 = self.cp_cam.vl["CUR_LANE_LEFT_2"]['PARM_13']
-        ret.camLeft.dashed = self.cp_cam.vl["CUR_LANE_LEFT_2"]['DASHED_LINE']
-        ret.camLeft.solid = self.cp_cam.vl["CUR_LANE_LEFT_2"]['SOLID_LINE']
-        ret.camRight.parm1 = self.cp_cam.vl["CUR_LANE_RIGHT_1"]['PARM_1']
-        ret.camRight.parm2 = self.cp_cam.vl["CUR_LANE_RIGHT_1"]['PARM_2']
-        ret.camRight.parm3 = self.cp_cam.vl["CUR_LANE_RIGHT_1"]['PARM_3']
-        ret.camRight.parm4 = self.cp_cam.vl["CUR_LANE_RIGHT_1"]['PARM_4']
-        ret.camRight.parm5 = self.cp_cam.vl["CUR_LANE_RIGHT_1"]['PARM_5']
-        ret.camRight.parm6 = self.cp_cam.vl["CUR_LANE_RIGHT_2"]['PARM_6']
-        ret.camRight.parm7 = self.cp_cam.vl["CUR_LANE_RIGHT_2"]['PARM_7']
-        ret.camRight.parm8 = self.cp_cam.vl["CUR_LANE_RIGHT_2"]['PARM_8']
-        ret.camRight.parm9 = self.cp_cam.vl["CUR_LANE_RIGHT_2"]['PARM_9']
-        ret.camRight.parm10 = self.cp_cam.vl["CUR_LANE_RIGHT_2"]['PARM_10']
-        ret.camRight.parm11 = self.cp_cam.vl["CUR_LANE_RIGHT_2"]['PARM_11']
-        ret.camRight.parm12 = self.cp_cam.vl["CUR_LANE_RIGHT_2"]['PARM_12']
-        ret.camRight.parm13 = self.cp_cam.vl["CUR_LANE_RIGHT_2"]['PARM_13']
-        ret.camRight.dashed = self.cp_cam.vl["CUR_LANE_RIGHT_2"]['DASHED_LINE']
-        ret.camRight.solid = self.cp_cam.vl["CUR_LANE_RIGHT_2"]['SOLID_LINE']
-        ret.camFarLeft.parm1 = self.cp_cam.vl["ADJ_LANE_LEFT_1"]['PARM_1']
-        ret.camFarLeft.parm2 = self.cp_cam.vl["ADJ_LANE_LEFT_1"]['PARM_2']
-        ret.camFarLeft.parm3 = self.cp_cam.vl["ADJ_LANE_LEFT_1"]['PARM_3']
-        ret.camFarLeft.parm4 = self.cp_cam.vl["ADJ_LANE_LEFT_1"]['PARM_4']
-        ret.camFarLeft.parm5 = self.cp_cam.vl["ADJ_LANE_LEFT_1"]['PARM_5']
-        ret.camFarLeft.parm6 = self.cp_cam.vl["ADJ_LANE_LEFT_2"]['PARM_6']
-        ret.camFarLeft.parm7 = self.cp_cam.vl["ADJ_LANE_LEFT_2"]['PARM_7']
-        ret.camFarLeft.parm8 = self.cp_cam.vl["ADJ_LANE_LEFT_2"]['PARM_8']
-        ret.camFarLeft.parm9 = self.cp_cam.vl["ADJ_LANE_LEFT_2"]['PARM_9']
-        ret.camFarLeft.parm10 = self.cp_cam.vl["ADJ_LANE_LEFT_2"]['PARM_10']
-        ret.camFarLeft.parm11 = self.cp_cam.vl["ADJ_LANE_LEFT_2"]['PARM_11']
-        ret.camFarLeft.parm12 = self.cp_cam.vl["ADJ_LANE_LEFT_2"]['PARM_12']
-        ret.camFarLeft.parm13 = self.cp_cam.vl["ADJ_LANE_LEFT_2"]['PARM_13']
-        ret.camFarRight.parm1 = self.cp_cam.vl["ADJ_LANE_RIGHT_1"]['PARM_1']
-        ret.camFarRight.parm2 = self.cp_cam.vl["ADJ_LANE_RIGHT_1"]['PARM_2']
-        ret.camFarRight.parm3 = self.cp_cam.vl["ADJ_LANE_RIGHT_1"]['PARM_3']
-        ret.camFarRight.parm4 = self.cp_cam.vl["ADJ_LANE_RIGHT_1"]['PARM_4']
-        ret.camFarRight.parm5 = self.cp_cam.vl["ADJ_LANE_RIGHT_1"]['PARM_5']
-        ret.camFarRight.parm6 = self.cp_cam.vl["ADJ_LANE_RIGHT_2"]['PARM_6']
-        ret.camFarRight.parm7 = self.cp_cam.vl["ADJ_LANE_RIGHT_2"]['PARM_7']
-        ret.camFarRight.parm8 = self.cp_cam.vl["ADJ_LANE_RIGHT_2"]['PARM_8']
-        ret.camFarRight.parm9 = self.cp_cam.vl["ADJ_LANE_RIGHT_2"]['PARM_9']
-        ret.camFarRight.parm10 = self.cp_cam.vl["ADJ_LANE_RIGHT_2"]['PARM_10']
-        ret.camFarRight.parm11 = self.cp_cam.vl["ADJ_LANE_RIGHT_2"]['PARM_11']
-        ret.camFarRight.parm12 = self.cp_cam.vl["ADJ_LANE_RIGHT_2"]['PARM_12']
-        ret.camFarRight.parm13 = self.cp_cam.vl["ADJ_LANE_RIGHT_2"]['PARM_13']
+        camRight1 = self.cp_cam.vl["CUR_LANE_RIGHT_1"]
+        camRight2 = self.cp_cam.vl["CUR_LANE_RIGHT_2"]
+        camFarRight1 = self.cp_cam.vl["ADJ_LANE_RIGHT_1"]
+        camFarRight2 = self.cp_cam.vl["ADJ_LANE_RIGHT_2"]
+
+        ret.camRight.frame = camRight1['FRAME_ID'] + camRight2['FRAME_ID']
+        ret.camFarRight.frame = camFarRight1['FRAME_ID'] + camFarRight2['FRAME_ID']
+        ret.camLeft.full1 = camLeft1['FULL']
+        ret.camLeft.full2 = camLeft2['FULL']
+        ret.camRight.full1 = camRight1['FULL']
+        ret.camRight.full2 = camRight2['FULL']
+        ret.camFarLeft.full1 = camFarLeft1['FULL']
+        ret.camFarLeft.full2 = camFarLeft2['FULL']
+        ret.camFarRight.full1 = camFarRight1['FULL']
+        ret.camFarRight.full2 = camFarRight2['FULL']
+        ret.camLeft.parm1 = camLeft1['PARM_1']
+        ret.camLeft.parm2 = camLeft1['PARM_2']
+        ret.camLeft.parm3 = camLeft1['PARM_3']
+        ret.camLeft.parm4 = camLeft1['PARM_4']
+        ret.camLeft.parm5 = camLeft1['PARM_5']
+        ret.camLeft.parm6 = camLeft2['PARM_6']
+        ret.camLeft.parm7 = camLeft2['PARM_7']
+        ret.camLeft.parm8 = camLeft2['PARM_8']
+        ret.camLeft.parm9 = camLeft2['PARM_9']
+        ret.camLeft.parm10 = camLeft2['PARM_10']
+        ret.camLeft.parm11 = camLeft2['PARM_11']
+        ret.camLeft.parm12 = camLeft2['PARM_12']
+        ret.camLeft.parm13 = camLeft2['PARM_13']
+        ret.camLeft.dashed = camLeft2['DASHED_LINE']
+        ret.camLeft.solid = camLeft2['SOLID_LINE']
+        ret.camRight.parm1 = camRight1['PARM_1']
+        ret.camRight.parm2 = camRight1['PARM_2']
+        ret.camRight.parm3 = camRight1['PARM_3']
+        ret.camRight.parm4 = camRight1['PARM_4']
+        ret.camRight.parm5 = camRight1['PARM_5']
+        ret.camRight.parm6 = camRight2['PARM_6']
+        ret.camRight.parm7 = camRight2['PARM_7']
+        ret.camRight.parm8 = camRight2['PARM_8']
+        ret.camRight.parm9 = camRight2['PARM_9']
+        ret.camRight.parm10 = camRight2['PARM_10']
+        ret.camRight.parm11 = camRight2['PARM_11']
+        ret.camRight.parm12 = camRight2['PARM_12']
+        ret.camRight.parm13 = camRight2['PARM_13']
+        ret.camRight.dashed = camRight2['DASHED_LINE']
+        ret.camRight.solid = camRight2['SOLID_LINE']
+        ret.camFarLeft.parm1 = camFarLeft1['PARM_1']
+        ret.camFarLeft.parm2 = camFarLeft1['PARM_2']
+        ret.camFarLeft.parm3 = camFarLeft1['PARM_3']
+        ret.camFarLeft.parm4 = camFarLeft1['PARM_4']
+        ret.camFarLeft.parm5 = camFarLeft1['PARM_5']
+        ret.camFarLeft.parm6 = camFarLeft2['PARM_6']
+        ret.camFarLeft.parm7 = camFarLeft2['PARM_7']
+        ret.camFarLeft.parm8 = camFarLeft2['PARM_8']
+        ret.camFarLeft.parm9 = camFarLeft2['PARM_9']
+        ret.camFarLeft.parm10 = camFarLeft2['PARM_10']
+        ret.camFarLeft.parm11 = camFarLeft2['PARM_11']
+        ret.camFarLeft.parm12 = camFarLeft2['PARM_12']
+        ret.camFarLeft.parm13 = camFarLeft2['PARM_13']
+        ret.camFarRight.parm1 = camFarRight1['PARM_1']
+        ret.camFarRight.parm2 = camFarRight1['PARM_2']
+        ret.camFarRight.parm3 = camFarRight1['PARM_3']
+        ret.camFarRight.parm4 = camFarRight1['PARM_4']
+        ret.camFarRight.parm5 = camFarRight1['PARM_5']
+        ret.camFarRight.parm6 = camFarRight2['PARM_6']
+        ret.camFarRight.parm7 = camFarRight2['PARM_7']
+        ret.camFarRight.parm8 = camFarRight2['PARM_8']
+        ret.camFarRight.parm9 = camFarRight2['PARM_9']
+        ret.camFarRight.parm10 = camFarRight2['PARM_10']
+        ret.camFarRight.parm11 = camFarRight2['PARM_11']
+        ret.camFarRight.parm12 = camFarRight2['PARM_12']
+        ret.camFarRight.parm13 = camFarRight2['PARM_13']
 
         # TODO: Fix these values in the DBC
-        ret.camLeft.parm2 = ret.camLeft.parm2 if ret.camLeft.parm2 > -150 else ret.camLeft.parm2 + 1024
+        '''ret.camLeft.parm2 = ret.camLeft.parm2 if ret.camLeft.parm2 > -150 else ret.camLeft.parm2 + 1024
         ret.camLeft.parm10 = ret.camLeft.parm10 if ret.camLeft.parm10 > -10 else ret.camLeft.parm10 + 128
         ret.camFarLeft.parm2 = ret.camFarLeft.parm2 if ret.camFarLeft.parm2 > -150 else ret.camFarLeft.parm2 + 1024
         ret.camFarLeft.parm10 = ret.camFarLeft.parm10 if ret.camFarLeft.parm10 > -10 else ret.camFarLeft.parm10 + 128
         ret.camRight.parm2 = ret.camRight.parm2 if ret.camRight.parm2 < 150 else ret.camRight.parm2 - 1024
         ret.camRight.parm10 = ret.camRight.parm10 if ret.camRight.parm10 < 10 else ret.camRight.parm10 - 128
         ret.camFarRight.parm2 = ret.camFarRight.parm2 if ret.camFarRight.parm2 < 150 else ret.camFarRight.parm2 - 1024
-        ret.camFarRight.parm10 = ret.camFarRight.parm10 if ret.camFarRight.parm10 < 10 else ret.camFarRight.parm10 - 128
+        ret.camFarRight.parm10 = ret.camFarRight.parm10 if ret.camFarRight.parm10 < 10 else ret.camFarRight.parm10 - 128'''
       profiler.checkpoint('update_cam')
       #if self.frame % 1000 == 0: print(self.cp_cam.vl["CUR_LANE_LEFT_1"]['FULL'],self.cp_cam.vl["CUR_LANE_LEFT_2"]['FULL'],self.cp_cam.vl["CUR_LANE_RIGHT_1"]['FULL'],self.cp_cam.vl["CUR_LANE_RIGHT_2"]['FULL'])
       #print(self.cp_cam.vl["CUR_LANE_LEFT_1"]['FRAME_ID'], )

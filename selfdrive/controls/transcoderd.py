@@ -280,6 +280,7 @@ while 1:
   for i in range(len(cal_col)):
     if cal_factor[i] > 0:
       new_input[-1,:,cal_col[i]] -= calibration[i]
+      if i == 0: new_input[-1,:,cal_col[i]] /= angle_factor
   for i in range(4):
     if [cs.camFarLeft.parm4, cs.camFarRight.parm4, cs.camLeft.parm4, cs.camRight.parm4][i] > 0:
       new_input[-1:,:,adj_col[i]] += lateral_adjust

@@ -394,9 +394,9 @@ while 1:
       angle_speed = min(5, max(0, int(10 * float(kegman.conf['polyReact']))))
       use_angle_offset = float(kegman.conf['angleOffset'])
       lateral_offset = float(kegman.conf['lateralOffset'])
-      use_discrete_angle = True if float(kegman.conf['useDiscreteAngle']) > 0 else False
-      if use_discrete_angle and float(kegman.conf['useDiscreteAngle']) < 1:
-        discrete_limit = float(kegman.conf['useDiscreteAngle'])
+      use_discrete_angle = True if float(kegman.conf['discreteAngle']) > 0 else False
+      if use_discrete_angle and float(kegman.conf['discreteAngle']) < 1:
+        discrete_limit = float(kegman.conf['discreteAngle'])
         print(use_discrete_angle, discrete_limit)
       use_optimize = True if kegman.conf['useOptimize'] == '1' else False
       use_minimize = True if kegman.conf['useMinimize'] == '1' else False

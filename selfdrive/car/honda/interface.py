@@ -588,14 +588,14 @@ class CarInterface(CarInterfaceBase):
         ret.camFarRight.parm13 = camFarRight2['PARM_13']
 
         # TODO: Fix these values in the DBC
-        '''ret.camLeft.parm2 = ret.camLeft.parm2 if ret.camLeft.parm2 > -150 else ret.camLeft.parm2 + 1024
+        ret.camLeft.parm2 = ret.camLeft.parm2 if ret.camLeft.parm2 > -150 else ret.camLeft.parm2 + 1024
         ret.camLeft.parm10 = ret.camLeft.parm10 if ret.camLeft.parm10 > -10 else ret.camLeft.parm10 + 128
         ret.camFarLeft.parm2 = ret.camFarLeft.parm2 if ret.camFarLeft.parm2 > -150 else ret.camFarLeft.parm2 + 1024
         ret.camFarLeft.parm10 = ret.camFarLeft.parm10 if ret.camFarLeft.parm10 > -10 else ret.camFarLeft.parm10 + 128
         ret.camRight.parm2 = ret.camRight.parm2 if ret.camRight.parm2 < 150 else ret.camRight.parm2 - 1024
         ret.camRight.parm10 = ret.camRight.parm10 if ret.camRight.parm10 < 10 else ret.camRight.parm10 - 128
         ret.camFarRight.parm2 = ret.camFarRight.parm2 if ret.camFarRight.parm2 < 150 else ret.camFarRight.parm2 - 1024
-        ret.camFarRight.parm10 = ret.camFarRight.parm10 if ret.camFarRight.parm10 < 10 else ret.camFarRight.parm10 - 128'''
+        ret.camFarRight.parm10 = ret.camFarRight.parm10 if ret.camFarRight.parm10 < 10 else ret.camFarRight.parm10 - 128
       profiler.checkpoint('update_cam')
       #if self.frame % 1000 == 0: print(self.cp_cam.vl["CUR_LANE_LEFT_1"]['FULL'],self.cp_cam.vl["CUR_LANE_LEFT_2"]['FULL'],self.cp_cam.vl["CUR_LANE_RIGHT_1"]['FULL'],self.cp_cam.vl["CUR_LANE_RIGHT_2"]['FULL'])
       #print(self.cp_cam.vl["CUR_LANE_LEFT_1"]['FRAME_ID'], )

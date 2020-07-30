@@ -132,6 +132,9 @@ class LatControlPID(object):
         self.lane_change_adjustment = 1.0
     elif blinker_on:
       self.lane_change_adjustment = 0.0
+    else:
+      self.lane_change_adjustment = 1.0
+      
 
   def reset(self):
     self.pid.reset()

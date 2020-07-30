@@ -119,17 +119,6 @@ void *safety_setter_thread(void *s) {
   }
   index_initialized = true;
 
-/*  for (int i=0; i<canIDs->; i++) {
-    const Msg* msg = &dbc->msgs[i];
-    message_lookup[msg->address] = *msg;
-    for (int j=0; j<msg->num_sigs; j++) {
-      const Signal* sig = &msg->sigs[j];
-      signal_lookup[std::make_pair(msg->address, std::string(sig->name))] = *sig;
-    }
-  }
-*/
-
-
   auto safety_model = car_params.getSafetyModel();
   auto safety_param = car_params.getSafetyParam();
   LOGW("setting safety model: %d with param %d", safety_model, safety_param);

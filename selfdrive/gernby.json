@@ -14,7 +14,7 @@
   "_angleBias_note": "This is the long-term average difference between the model's desired angle and the actual angle",
   "_useOptimize_note": "This is an option (1 or 0) to consider the direction of the last torque request in the blending of the lane center values.",
   "_useMinimize_note": "This is an option (1 or 0) to consider the noise level from left and right in the blending of the lane center values.",
-  "_useDiscreteAngle": "This is an option to use EITHER the discrete desired angle from the model OR the relative desired angle (ie. '5.2 degrees' vs 'move 0.1 degree to the left')",
+  "_discreteAngle": "This is an option to use EITHER the discrete desired angle from the model OR the relative desired angle (ie. '5.2 degrees' vs 'move 0.1 degree to the left')",
   "_wiggleAngle": "This is the amount of desired angle that is allowed to pass straight through to PID without any damping or limits.  This helps reduce oscillation, but if it's too high, it will cause jerky steering.", 
   "ACCORD": {
     "dampMPC": "0.17",
@@ -30,7 +30,7 @@
     "angleBias": "1",
     "useOptimize": "0",
     "useMinimize": "1",
-    "useDiscreteAngle": "1",
+    "discreteAngle": "1",
     "useCombineFlags": "1",
     "wiggleAngle": "0.2",
     "accelLimit": "0.1"
@@ -49,7 +49,7 @@
     "angleBias": "1",
     "useOptimize": "0",
     "useMinimize": "1",
-    "useDiscreteAngle": "1",
+    "discreteAngle": "1",
     "useCombineFlags": "1",
     "wiggleAngle": "0.2",
     "accelLimit": "0.1"
@@ -68,7 +68,7 @@
     "angleBias": "1",
     "useOptimize": "0",
     "useMinimize": "1",
-    "useDiscreteAngle": "1",
+    "discreteAngle": "1",
     "useCombineFlags": "1",
     "wiggleAngle": "0.2",
     "accelLimit": "0.1"
@@ -87,7 +87,7 @@
     "angleBias": "1",
     "useOptimize": "0",
     "useMinimize": "1",
-    "useDiscreteAngle": "1",
+    "discreteAngle": "1",
     "useCombineFlags": "1",
     "wiggleAngle": "0.25",
     "accelLimit": "0.1"

@@ -401,7 +401,7 @@ class CarState():
     self.cruise_buttons = cp.vl["SCM_BUTTONS"]['CRUISE_BUTTONS']
 
     if cp.vl["SCM_FEEDBACK"]['LEFT_BLINKER'] or cp.vl["SCM_FEEDBACK"]['RIGHT_BLINKER']:
-      self.blinker_on = 150
+      self.blinker_on = 250
       self.left_blinker_on = cp.vl["SCM_FEEDBACK"]['LEFT_BLINKER']
       self.right_blinker_on = cp.vl["SCM_FEEDBACK"]['RIGHT_BLINKER']
     elif self.blinker_on == 0:
@@ -520,7 +520,7 @@ class CarState():
 
     # TODO: discover the CAN msg that has the imperial unit bit for all other cars
     self.is_metric = not cp.vl["HUD_SETTING"]['IMPERIAL_UNIT'] if self.CP.carFingerprint in (CAR.CIVIC) else False
-    if not cp_cam is None:
+    '''if not cp_cam is None:
       self.cam_left_1 = cp_cam.vl["CUR_LANE_LEFT_1"]
       self.cam_left_2 = cp_cam.vl["CUR_LANE_LEFT_2"]
       self.cam_right_1 = cp_cam.vl["CUR_LANE_RIGHT_1"]
@@ -530,7 +530,7 @@ class CarState():
       self.cam_far_right_1 = cp_cam.vl["ADJ_LANE_RIGHT_1"]
       self.cam_far_right_2 = cp_cam.vl["ADJ_LANE_RIGHT_2"]
     else:
-      self.cam_left_1 = None
+      self.cam_left_1 = None'''
 
 
 # carstate standalone tester

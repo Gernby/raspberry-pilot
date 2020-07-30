@@ -99,8 +99,8 @@ class kegman_conf():
         self.config.update({key: value})
         self.element_updated = True
 
-    if "useDiscreteAngle" not in self.config:
-      self.config.update({"useDiscreteAngle": "1"})
+    if "discreteAngle" not in self.config:
+      self.config.update({"discreteAngle": "1"})
       self.element_updated = True
 
     if "useOptimize" not in self.config:

@@ -212,7 +212,7 @@ class LatControlPID(object):
           #steer_speed_ratio = self.polyReact * min(1, v_ego / 30)
           #self.angle_steers_des = steer_speed_ratio * interp(self.angle_index, self.path_index, path_plan.fastAngles) + (1 - steer_speed_ratio) * interp(self.angle_index, self.path_index, path_plan.slowAngles)
           self.react_index += 0.02 * (self.polyReact * (v_ego/30) * path_plan.cProb - self.react_index)
-          self.angle_steers_des = interp(self.angle_index, self.path_index, self.fast_angles[int(self.react_index)])
+          self.angle_steers_des = interp(self.angle_index, self.path_index, self.fast_angles[min(len(self.fast_angles)-1, int(self.react_index))])
           self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des) / max(1.0, self.damp_mpc * 100.)
           #self.damp_rate_steers_des += ((path_plan.slowAngles[4] - path_plan.slowAngles[3]) - self.damp_rate_steers_des) / max(1.0, self.damp_mpc * 100.)
           #accel_limit = min(0.2, max(0.1, abs(angle_steers_rate) * 0.1, abs(angle_steers - path_plan.angleOffset) * 0.1))

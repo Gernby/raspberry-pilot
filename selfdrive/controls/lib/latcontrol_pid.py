@@ -59,7 +59,7 @@ class LatControlPID(object):
     self.angle_rate_des = 0.0    # degrees/sec, rate dynamically limited by accel_limit
     self.fast_angles = [[]]
     self.live_tune(CP)
-
+    self.react_index = 0.0
 
     try:
       lateral_params = self.params.get("LateralGain")
@@ -159,8 +159,7 @@ class LatControlPID(object):
       self.avg_plan_age += 0.01 * (path_age - self.avg_plan_age)
       self.fast_angles = np.array(path_plan.fastAngles)
       self.c_prob = path_plan.cProb
-      #self.projected_lane_error = (self.c_prob / max(1, v_ego)) * self.poly_factor * sum(np.array(path_plan.cPoly))
-      self.projected_lane_error = self.c_prob * self.poly_factor * sum(np.array(path_plan.cPoly))
+      self.projected_lane_error = (v_ego/30) * self.c_prob * self.poly_factor * sum(np.array(path_plan.cPoly))
       if blinker_on or abs(self.projected_lane_error) < abs(self.prev_projected_lane_error) and (self.projected_lane_error > 0) == (self.prev_projected_lane_error > 0):
         self.projected_lane_error *= gernterp(angle_steers - path_plan.angleOffset, [1, 4], [0.25, 1.0])
       self.prev_projected_lane_error = self.projected_lane_error
@@ -212,7 +211,8 @@ class LatControlPID(object):
           #self.damp_angle_rate += (angle_steers_rate - self.damp_angle_rate) / max(1.0, self.damp_time * 100.)
           #steer_speed_ratio = self.polyReact * min(1, v_ego / 30)
           #self.angle_steers_des = steer_speed_ratio * interp(self.angle_index, self.path_index, path_plan.fastAngles) + (1 - steer_speed_ratio) * interp(self.angle_index, self.path_index, path_plan.slowAngles)
-          self.angle_steers_des = interp(self.angle_index, self.path_index, self.fast_angles[int(self.polyReact)])
+          self.react_index += 0.02 * (self.polyReact * (v_ego/30) * path_plan.cProb - self.react_index)
+          self.angle_steers_des = interp(self.angle_index, self.path_index, self.fast_angles[int(self.react_index)])
           self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des) / max(1.0, self.damp_mpc * 100.)
           #self.damp_rate_steers_des += ((path_plan.slowAngles[4] - path_plan.slowAngles[3]) - self.damp_rate_steers_des) / max(1.0, self.damp_mpc * 100.)
           #accel_limit = min(0.2, max(0.1, abs(angle_steers_rate) * 0.1, abs(angle_steers - path_plan.angleOffset) * 0.1))

@@ -15,7 +15,7 @@ from selfdrive.kegman_conf import kegman_conf
 import requests
 
 SERVER_ADDRESS = "gernstation.synology.me"
-#SERVER_ADDRESS = '192.168.1.3'   #"gernstation.synology.me"
+#SERVER_ADDRESS = '192.168.1.3'   
 
 setproctitle('dashboard')
 
@@ -58,8 +58,8 @@ if pathPlan != None: poller.register(pathPlan, zmq.POLLIN)
 if carState != None: poller.register(carState, zmq.POLLIN)
 if heartBeatSub != None: poller.register(heartBeatSub, zmq.POLLIN)
 
-serverKegmanFormatString = "tuneData,user=" + user_id + " %s ;~"
-serverCanFormatString="CANData,user=" + user_id + ",src=;pid=; d1=;i,d2=;i ;~"
+serverKegmanFormatString = ""
+serverCanFormatString="CANData,user=" + user_id + ",src=;pid=; d1=;i,d2=;i; ~"
 serverPathFormatString = "pathPlan,user=" + user_id + " l0=;l1=;l2=;l3=;l4=;l5=;l6=;l7=;l8=;l9=;l10=;l11=;l12=;l13=;l14=;r0=;r1=;r2=;r3=;r4=;r5=;r6=;r7=;r8=;r9=;r10=;r11=;r12=;r13=;r14=;c0=;c1=;c2=;c3=;c4=;c5=;c6=;c7=;c8=;c9=;c10=;c11=;c12=;c13=;c14=;a0=;a1=;a3=;a5=;a7=;a14=;fa0=;fa1=;fa3=;fa5=;fa7=;fa14=;lprob=;rprob=;cprob=;lane_width=;angle=;rate=;angle_offset=;lateral_offset=;actual_angle=;plan_age=; ~"
 serverPathDataFormatString = "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d|"
 serverPolyDataFormatString = "%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,"
@@ -100,18 +100,27 @@ stock_cam_frame_prev = 0
 cs = None
 lastHeartBeat = 0
 gpsCount = 0
+kegtime_prev = 0
 
-'''messaging.drain_sock(carState, True)
+messaging.drain_sock(carState, True)
 messaging.drain_sock(pathPlan, False)
-messaging.drain_sock(carState, False)'''
+messaging.drain_sock(carState, False)
 
 previous_minute = 0
 logfile = None
 if not os.path.exists('/data/upload/'):
   os.mkdir('/data/upload')
 
+def is_number(string):
+  try:
+    float(string)
+    return True
+  except ValueError:
+    return False
+        
+print(is_number("10.5"))
+
 while 1:
-  #do_send_live = time.time() - lastHeartBeat < 60
 
   for socket, event in poller.poll(3000):
     profiler.checkpoint('poller', True)
@@ -238,17 +247,6 @@ while 1:
         profiler.reset(True)
 
 
-      #with open(os.path.expanduser('~/kegman.json'), 'rw') as f:
-      #  keg
-      #  json.dump(config, f, indent=2, sort_keys=True)
-        #os.chmod(os.path.expanduser("~/kegman.json"), 0o764)
-    
-    '''if socket is heartBeatSub:
-      do_send_live = True
-      print("         Heartbeat!")
-      messaging.recv_one(heartBeatSub)
-      lastHeartBeat = time.time()'''
-
   if do_influx and len(localCarStateDataString2) >= 45:
     frame += 1
     insertString = "".join(["".join(localCarStateDataString2), "".join(localCarStateDataString1), "".join(localPathDataString)])
@@ -277,19 +275,29 @@ while 1:
       profiler.reset(True)
 
   elif do_send_live and ((vEgo > 0 and len(serverCarStateDataString2) >= 45) or (vEgo == 0 and len(serverCarStateDataString2) > 0)):
-    insertString = [serverCarStateFormatString2, "".join(serverCarStateDataString2), "!", serverCarStateFormatString1, "".join(serverCarStateDataString1), "!", serverPathFormatString, "".join(serverPathDataString), "!"]
-    #insertString.extend([serverPathFormatString, "".join(serverPathDataString), "!"])
-    if False and kegman_valid:
+    if kegman_valid:
       try:
-        if os.path.isfile(os.path.expanduser('~/kegman.json')):
-          with open(os.path.expanduser('~/kegman.json'), 'r') as f:
-            config = json.load(f)
-
-            insertString.append(serverKegmanFormatString, "~", "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s|" % \
-                  (reactRate, dampRate, longOffset, backlash, dampMPC, reactMPC, dampSteer, reactSteer, steerKpV, steerKiV, rateFF, cs.angleFFGain, delaySteer,
-                  oscFactor, centerFactor, polyReact, polyDamp, polyScale, cs.canTime), "!")
+        (mode, ino, dev, nlink, uid, gid, size, atime, mtime, kegtime) = os.stat(os.path.expanduser('~/kegman.json'))
+        if kegtime != kegtime_prev:
+          kegtime_prev = kegtime
+          kegman = kegman_conf() 
+          kegstrings = []
+          kegparams = []
+          for key in kegman.conf:
+            if is_number(str(kegman.conf[key])) and key not in ['identifier']:
+              kegstrings.append(str(kegman.conf[key]))
+              kegstrings.append(",")
+              if serverKegmanFormatString == "":
+                kegparams.append(key)
+                kegparams.append("=;")
+          kegstrings.append(str(int(cs.canTime)))
+          kegstrings.append("|!")
+          if serverKegmanFormatString == "":
+            kegparams.append(" ~")
+            serverKegmanFormatString = "tuneData,user=" + user_id + " " + "".join(kegparams) 
       except:
         kegman_valid = False
+    insertString = [serverCarStateFormatString2, "".join(serverCarStateDataString2), "!", serverCarStateFormatString1, "".join(serverCarStateDataString1), "!", serverPathFormatString, "".join(serverPathDataString), "!", serverKegmanFormatString, "".join(kegstrings)]
     insertString = "".join(insertString)
     serverPush.send_string(insertString)
     print(len(insertString), "  server sent")
@@ -297,6 +305,8 @@ while 1:
     serverCarStateDataString1 = []
     serverCarStateDataString2 = []
     serverPathDataString = []
+    kegstrings = []
+    kegparams = []
     profiler.checkpoint('server_push')
 
   if kegman_valid and time.time() > next_beat_check:

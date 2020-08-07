@@ -321,7 +321,7 @@ while 1:
   else:
     fast_angles = angle_factor * advanceSteer * (descaled_output[:,:angle_speed_count] - descaled_output[0,:angle_speed_count]) + cs.steeringAngle
   
-  fast_angles = np.reshape(fast_angles, (angle_speed_count, OUTPUT_ROWS))
+  fast_angles = np.transpose(fast_angles)
 
   '''for i in range(angle_speed_count):
     if use_discrete_angle:

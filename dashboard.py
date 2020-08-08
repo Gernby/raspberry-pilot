@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import zmq
 import time
+import gc
 import os
 import sys
 import json
@@ -123,16 +124,21 @@ print(is_number("10.5"))
 while 1:
 
   for socket, event in poller.poll(3000):
-    profiler.checkpoint('poller', True)
+    profiler.checkpoint('poller', False)
 
     if socket is carState:
+      time.sleep(0.02)
       for _cs in carState.recv_multipart():
         cs = log.Event.from_bytes(_cs).carState
-        vEgo = cs.vEgo
+        vEgo = cs.vEgo + 0.001
         if vEgo > 0 and time.time()//60 > previous_minute:
+          profiler.checkpoint('carstate')
+          time.sleep(0.00001)
           if not logfile is None: logfile.close()
           previous_minute = time.time()//60
           logfile = open('/data/upload/%s_%0.0f.dat' % (user_id, time.time()//60), "a")
+          profiler.checkpoint('create_file')
+          time.sleep(0.00001)
 
         if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
           gps = cs.gpsLocation
@@ -154,9 +160,12 @@ while 1:
                             
           if do_influx:
             localCarStateDataString2.append(localCarStateFormatString2 % send_data)
+          profiler.checkpoint('carstate')
           if vEgo > 0:
-            fileStrings.append(localCarStateFormatString2 % send_data)
-            #logfile.write(localCarStateFormatString2 % send_data)
+            #fileStrings.append(localCarStateFormatString2 % send_data)
+            logfile.write(localCarStateFormatString2 % send_data)
+            profiler.checkpoint('write_file')
+            time.sleep(0.00001)
           if do_send_live and (vEgo > 0 or frame % 45 == 0):
             serverCarStateDataString2.append(serverCarStateDataFormatString2 % send_data)
 
@@ -165,23 +174,20 @@ while 1:
                             cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
                             cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, cs.camLeft.frame, cs.camFarRight.frame, cs.canTime - cs.sysTime, cs.canTime)
         
-          fileStrings.append(localCarStateFormatString1 % send_data)
-          #logfile.write(localCarStateFormatString1 % send_data)
+          profiler.checkpoint('carstate')
+          #fileStrings.append(localCarStateFormatString1 % send_data)
+          logfile.write(localCarStateFormatString1 % send_data)
+          profiler.checkpoint('write_file')
+          time.sleep(0.00001)
           if do_influx:
             localCarStateDataString1.append(localCarStateFormatString1 % send_data)
           if do_send_live: 
             serverCarStateDataString1.append(serverCarStateDataFormatString1 % send_data)
       profiler.checkpoint('carstate')
-      if vEgo > 0 and len(fileStrings) > 0: 
-        #time.sleep(0.00001)
-        logfile.write("".join(fileStrings))
-        profiler.checkpoint('write_file')
       frame += 1
-
-        #time.sleep(0.00001)
-      fileStrings.clear()
-
+  
     if socket is pathPlan:
+      time.sleep(0.01)
       pp = log.Event.from_bytes(pathPlan.recv()).pathPlan
       if not cs is None and not logfile is None:
         send_data0 = tuple(float(x) for x in tuple(pp.lPoly)[::1])
@@ -224,27 +230,23 @@ while 1:
 
     if socket is heartBeatSub:
       heartBeatSub.recv()
-      print("  Got heart beat!")
+      #print("  Got heart beat!")
       next_beat_check = time.time() + 20
       if not do_send_live:
         identifier = np.random.randint(0, high=10000)
         tuneSub = context.socket(zmq.SUB)
-        tuneSub.connect("tcp://" + SERVER_ADDRESS + ":8596")
-        tuneSub.setsockopt_string(zmq.SUBSCRIBE, str(identifier))
-        tuneSub.RCVTIMEO = 20000
-        poller.register(tuneSub, zmq.POLLIN)
         tunePush = context.socket(zmq.PUSH)
         serverPush = context.socket(zmq.PUSH)
         tuneSub.connect("tcp://" + SERVER_ADDRESS + ":8596")
         tuneSub.setsockopt_string(zmq.SUBSCRIBE, str(identifier))
+        tuneSub.RCVTIMEO = 20000
+        poller.register(tuneSub, zmq.POLLIN)
         tunePush.connect("tcp://" + SERVER_ADDRESS + ":8595")
         kegman.conf.update({'identifier': identifier, 'userID': user_id})
         tunePush.send_json(kegman.conf)
         serverPush.connect("tcp://" + SERVER_ADDRESS + ":8601")
+      time.sleep(0.00001)
       profiler.checkpoint('live_tune')
-      if profiler.enabled:
-        profiler.display()
-        profiler.reset(True)
 
 
   if do_influx and len(localCarStateDataString2) >= 45:
@@ -260,9 +262,9 @@ while 1:
         time.sleep(0.00001)
         dashPub.send_string(insertString)
         if r.status_code == 404:
-          print(r)
+          #print(r)
           r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')
-          print(r)
+          #print(r)
         if frame % 3 == 0: print(len(insertString), r)
       except:
         try:
@@ -270,9 +272,6 @@ while 1:
         except:
           r = requests.post(target_URL, data='create database carDB')
     profiler.checkpoint('influx')
-    if frame % 10 == 0 and profiler.enabled:
-      profiler.display()
-      profiler.reset(True)
 
   elif do_send_live and ((vEgo > 0 and len(serverCarStateDataString2) >= 45) or (vEgo == 0 and len(serverCarStateDataString2) > 0)):
     if kegman_valid:
@@ -300,32 +299,42 @@ while 1:
     insertString = [serverCarStateFormatString2, "".join(serverCarStateDataString2), "!", serverCarStateFormatString1, "".join(serverCarStateDataString1), "!", serverPathFormatString, "".join(serverPathDataString), "!", serverKegmanFormatString, "".join(kegstrings)]
     insertString = "".join(insertString)
     serverPush.send_string(insertString)
-    print(len(insertString), "  server sent")
+    #print(len(insertString), "  server sent")
     insertString = None
     serverCarStateDataString1 = []
     serverCarStateDataString2 = []
     serverPathDataString = []
     kegstrings = []
     kegparams = []
+    time.sleep(0.00001)
     profiler.checkpoint('server_push')
 
   if kegman_valid and time.time() > next_beat_check:
     poller.unregister(heartBeatSub)
     heartBeatSub = messaging.sub_sock(8597, addr=SERVER_ADDRESS, conflate=True)
     poller.register(heartBeatSub, zmq.POLLIN)
+    time.sleep(0.00001)
     if do_send_live:
       print('       Lost heart beat!')
       poller.unregister(tuneSub)
       tuneSub.close()
       serverPush.close()
       tunePush.close()
+      tuneSub = None
+      serverPush = None
+      tunePush = None
       do_send_live = False
-    else:
-      print('    Heart beat check!')
+      gc.collect()
+    #else:
+    #  print('    Heart beat check!')
     next_beat_check = time.time() + 20
     profiler.checkpoint('live_tune')
 
-    
+  if frame % 100 == 0 and profiler.enabled:
+    frame += 1
+    profiler.display()
+    profiler.reset(True)
+  
   #  time.sleep(0.02)
   #time.sleep(3)
   #tunePush.send_json(config)

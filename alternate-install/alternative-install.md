@@ -1,5 +1,7 @@
 # Alternate Raspberry Pilot Installation Steps
 
+## (Note: These instructions are outdated. The experimental techniques developed here have been moved to the primary installation instructions. Please use those instead.)
+
 ## Requirements
 
 1. A laptop capable of burning microSD cards and has a decent battery life (min. 30 minutes)

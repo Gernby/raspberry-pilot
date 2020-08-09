@@ -61,7 +61,7 @@ def data_sample(CI, CC, can_sock, carstate, lac_log, lateral, sm, profiler):
     can_strs = messaging.drain_sock_raw(can_sock, wait_for_one=False, limit=1)
     profiler.checkpoint('drain_can')
     if len(can_strs) > 0: 
-      print("  Controls lagged by %d CAN packets at %d!" % (len(can_strs), CS.sysTime), [len(x) for x in can_strs])
+      print("  Controls lagged by %d CAN packets at %d at %0.2f m/s!" % (len(can_strs), int(time.time()*1000), CS.vEgo), [len(x) for x in can_strs])
       for i in range(len(can_strs[-40:])):
         #time.sleep(0.00001)
         CS = CI.update(CC, [can_strs[i]], lac_log, profiler)

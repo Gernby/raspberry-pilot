@@ -1,6 +1,7 @@
 from selfdrive.controls.lib.pid import PIController
 from selfdrive.kegman_conf import kegman_conf
 from common.numpy_fast import gernterp, interp, clip
+from common.profiler import Profiler
 import numpy as np
 import os
 import time
@@ -14,7 +15,7 @@ class LatControlPID(object):
   def __init__(self, CP):
     self.kegman = kegman_conf(CP)
     self.kegtime_prev = 0
-
+    self.profiler = Profiler(False, 'LaC')
     self.frame = 0
     self.pid = PIController((CP.lateralTuning.pid.kpBP, CP.lateralTuning.pid.kpV),
                             (CP.lateralTuning.pid.kiBP, CP.lateralTuning.pid.kiV),
@@ -60,6 +61,7 @@ class LatControlPID(object):
     self.fast_angles = [[]]
     self.live_tune(CP)
     self.react_index = 0.0
+    self.next_params_put = 36000
 
     try:
       lateral_params = self.params.get("LateralGain")
@@ -69,8 +71,6 @@ class LatControlPID(object):
       self.angle_ff_gain = 1.0
 
   def live_tune(self, CP):
-    if self.frame % 3600 == 0:
-      self.params.put("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
     if self.frame % 300 == 0:
       (mode, ino, dev, nlink, uid, gid, size, atime, mtime, self.kegtime) = os.stat(os.path.expanduser('~/kegman.json'))
       if self.kegtime != self.kegtime_prev:
@@ -135,7 +135,6 @@ class LatControlPID(object):
     else:
       self.lane_change_adjustment = 1.0
       
-
   def reset(self):
     self.pid.reset()
 
@@ -147,6 +146,7 @@ class LatControlPID(object):
     self.previous_integral = self.pid.i
 
   def update(self, active, v_ego, angle_steers, angle_steers_rate, steer_override, CP, path_plan, canTime, blinker_on):
+    self.profiler.checkpoint('controlsd')
     pid_log = car.CarState.LateralPIDState.new_message()
     if path_plan.canTime != self.last_plan_time and len(path_plan.fastAngles) > 1:
       time.sleep(0.00001)
@@ -159,11 +159,12 @@ class LatControlPID(object):
       self.avg_plan_age += 0.01 * (path_age - self.avg_plan_age)
       self.fast_angles = np.array(path_plan.fastAngles)
       self.c_prob = path_plan.cProb
-      self.projected_lane_error = (v_ego/30) * self.c_prob * self.poly_factor * sum(np.array(path_plan.cPoly))
+      self.projected_lane_error = self.c_prob * self.poly_factor * sum(np.array(path_plan.cPoly))
       if blinker_on or abs(self.projected_lane_error) < abs(self.prev_projected_lane_error) and (self.projected_lane_error > 0) == (self.prev_projected_lane_error > 0):
         self.projected_lane_error *= gernterp(angle_steers - path_plan.angleOffset, [1, 4], [0.25, 1.0])
       self.prev_projected_lane_error = self.projected_lane_error
       self.angle_index = max(0., 100. * (self.react_mpc + path_age))
+      self.profiler.checkpoint('path_plan')
     else:
       self.angle_index += 1.0
 
@@ -175,11 +176,16 @@ class LatControlPID(object):
       self.min_index = 100
       self.max_index = 0
 
+    self.profiler.checkpoint('update')
     self.frame += 1
     self.live_tune(CP)
+    self.profiler.checkpoint('live_tune')
 
     if v_ego < 0.3 or not path_plan.paramsValid:
-
+      if self.frame > self.next_params_put and v_ego == 0:
+        self.next_params_put = self.frame + 36000
+        self.params.put("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
+        self.profiler.checkpoint('params_put')
       output_steer = 0.0
       self.stage = "0"
       self.lane_changing = 0.0
@@ -191,6 +197,7 @@ class LatControlPID(object):
       self.damp_angle_steers_des = 0.0
       pid_log.active = False
       self.pid.reset()
+      self.profiler.checkpoint('pid_reset')
     else:
       try:
         pid_log.active = True
@@ -239,10 +246,14 @@ class LatControlPID(object):
           p_scale = 1.0 
         else:
           p_scale = max(0.2, min(1.0, 1 / abs(angle_feedforward)))
+        self.profiler.checkpoint('pre-pid')
+
 
         #requested_angle = max(self.damp_angle_steers_des - 0.05, min(self.damp_angle_steers_des + 0.05, path_plan.angleSteers))
         output_steer = self.pid.update(requested_angle, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override, p_scale=p_scale,
                                       add_error=0, feedforward=steer_feedforward, speed=v_ego, deadzone=deadzone)
+        self.profiler.checkpoint('pid_update')
+
 
       except:
         output_steer = 0
@@ -251,6 +262,8 @@ class LatControlPID(object):
     
       driver_opposing_op = steer_override and (angle_steers - self.prev_angle_steers) * output_steer < 0
       self.update_lane_state(angle_steers, driver_opposing_op, blinker_on, path_plan)
+      self.profiler.checkpoint('lane_change')
+
       #output_steer *= self.lane_change_adjustment
 
     output_factor = self.lane_change_adjustment if pid_log.active else 0
@@ -278,7 +291,13 @@ class LatControlPID(object):
     pid_log.angleFFRatio = self.angle_ff_ratio
     pid_log.steerAngle = float(self.damp_angle_steers)
     pid_log.steerAngleDes = float(self.damp_angle_steers_des)
-
     self.sat_flag = self.pid.saturated
+    self.profiler.checkpoint('post_update')
+
+
+    if self.frame % 5000 == 1000 and self.profiler.enabled:
+      self.profiler.display()
+      self.profiler.reset(True)
+
 
     return output_steer, float(self.angle_steers_des), pid_log

@@ -130,12 +130,12 @@ while 1:
       time.sleep(0.02)
       for _cs in carState.recv_multipart():
         cs = log.Event.from_bytes(_cs).carState
-        vEgo = cs.vEgo + 0.001
-        if vEgo > 0 and time.time()//60 > previous_minute:
+        vEgo = cs.vEgo
+        if vEgo > 0 and cs.canTime//60000 > previous_minute:
           profiler.checkpoint('carstate')
           time.sleep(0.00001)
           if not logfile is None: logfile.close()
-          previous_minute = time.time()//60
+          previous_minute = cs.canTime//60000
           logfile = open('/data/upload/%s_%0.0f.dat' % (user_id, time.time()//60), "a")
           profiler.checkpoint('create_file')
           time.sleep(0.00001)

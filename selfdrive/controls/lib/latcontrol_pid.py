@@ -145,7 +145,7 @@ class LatControlPID(object):
       self.angle_ff_gain *= 0.9999
     self.previous_integral = self.pid.i
 
-  def update(self, active, v_ego, angle_steers, angle_steers_rate, steer_override, CP, path_plan, canTime, blinker_on):
+  def update(self, active, brake_pressed, v_ego, angle_steers, angle_steers_rate, steer_override, CP, path_plan, canTime, blinker_on):
     self.profiler.checkpoint('controlsd')
     pid_log = car.CarState.LateralPIDState.new_message()
     if path_plan.canTime != self.last_plan_time and len(path_plan.fastAngles) > 1:
@@ -182,7 +182,7 @@ class LatControlPID(object):
     self.profiler.checkpoint('live_tune')
 
     if v_ego < 0.3 or not path_plan.paramsValid:
-      if self.frame > self.next_params_put and v_ego == 0:
+      if self.frame > self.next_params_put and v_ego == 0 and brake_pressed:
         self.next_params_put = self.frame + 36000
         self.params.put("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
         self.profiler.checkpoint('params_put')

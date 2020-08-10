@@ -6,7 +6,8 @@ import numpy as np
 import os
 import time
 from cereal import car
-from common.params import Params
+
+from common.params import Params, put_nonblocking
 from numpy import array
 
 import json
@@ -35,7 +36,6 @@ class LatControlPID(object):
     self.angle_ff_gain = 1.0
     self.rate_ff_gain = CP.lateralTuning.pid.rateFFGain
     self.angle_ff_bp = [[0.5, 5.0],[0.0, 1.0]]
-    self.params = Params()
     self.lateral_offset = 0.0
     self.previous_integral = 0.0
     self.damp_angle_steers= 0.0
@@ -64,7 +64,8 @@ class LatControlPID(object):
     self.next_params_put = 36000
 
     try:
-      lateral_params = self.params.get("LateralGain")
+      params = Params()
+      lateral_params = params.get("LateralGain")
       lateral_params = json.loads(lateral_params)
       self.angle_ff_gain = max(1.0, float(lateral_params['angle_ff_gain']))
     except:
@@ -150,7 +151,7 @@ class LatControlPID(object):
     pid_log = car.CarState.LateralPIDState.new_message()
     if path_plan.canTime != self.last_plan_time and len(path_plan.fastAngles) > 1:
       time.sleep(0.00001)
-      path_age = (canTime - path_plan.canTime) * 1e-3
+      path_age = (time.time() * 1000 - path_plan.sysTime) * 1e-3
       if path_age > 0.23: self.old_plan_count += 1
       if self.path_index is None:
         self.avg_plan_age = path_age
@@ -161,7 +162,7 @@ class LatControlPID(object):
       self.c_prob = path_plan.cProb
       self.projected_lane_error = self.c_prob * self.poly_factor * sum(np.array(path_plan.cPoly))
       if blinker_on or abs(self.projected_lane_error) < abs(self.prev_projected_lane_error) and (self.projected_lane_error > 0) == (self.prev_projected_lane_error > 0):
-        self.projected_lane_error *= gernterp(angle_steers - path_plan.angleOffset, [1, 4], [0.25, 1.0])
+        self.projected_lane_error *= gernterp(angle_steers - path_plan.angleOffset, [1, 4], [0.1, 1.0])
       self.prev_projected_lane_error = self.projected_lane_error
       self.angle_index = max(0., 100. * (self.react_mpc + path_age))
       self.profiler.checkpoint('path_plan')
@@ -184,7 +185,7 @@ class LatControlPID(object):
     if v_ego < 0.3 or not path_plan.paramsValid:
       if self.frame > self.next_params_put and v_ego == 0 and brake_pressed:
         self.next_params_put = self.frame + 36000
-        self.params.put("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
+        put_nonblocking("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
         self.profiler.checkpoint('params_put')
       output_steer = 0.0
       self.stage = "0"

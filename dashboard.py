@@ -119,8 +119,6 @@ def is_number(string):
   except ValueError:
     return False
         
-print(is_number("10.5"))
-
 while 1:
 
   for socket, event in poller.poll(3000):
@@ -147,6 +145,7 @@ while 1:
           else:
             vNED = gps.vNED
           stock_cam_frame_prev = cs.camLeft.frame
+
           send_data = tuple([cs.vEgo, cs.econMode, cs.adjustedAngle, cs.steeringAngle, cs.steeringRate, cs.steeringTorque, cs.torqueRequest, cs.steeringTorqueEps, cs.yawRateCAN, cs.lateralAccel, cs.longAccel, \
                             cs.lateralControlState.pidState.p2, cs.lateralControlState.pidState.p, cs.lateralControlState.pidState.i, cs.lateralControlState.pidState.f, \
                             cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, cs.camLeft.frame, cs.camFarRight.frame, \

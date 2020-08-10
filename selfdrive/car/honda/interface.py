@@ -422,9 +422,9 @@ class CarInterface(CarInterfaceBase):
     # ******************* do can recv *******************
     ret = car.CarState.new_message()
     ret.lateralControlState.init('pidState')
-    ret.sysTime = int(time.time() * 100) * 10
+    ret.sysTime = int(time.time() * 1000)
     if self.canTime == 0: 
-      self.canTime = ret.sysTime
+      self.canTime = int(time.time() * 100) * 10
     elif self.canTime < ret.sysTime + 20:
       self.canTime = self.canTime + 10
     ret.canTime = self.canTime

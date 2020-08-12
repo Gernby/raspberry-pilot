@@ -113,6 +113,12 @@ class kegman_conf():
       self.config.update({"requireBlinker": "1"})
       self.element_updated = True
 
+    if "advCenter0" not in self.config:
+      self.config.update({"advCenter0": "0.04"})
+      self.config.update({"advCenter1": "0.02"})
+      self.config.update({"advCenter2": "0"})
+      self.element_updated = True
+
     if self.element_updated:
       print("updated")
       self.write_config(self.config)

@@ -91,6 +91,7 @@ class LatControlPID(object):
           self.poly_factor = max(0.0, float(self.kegman.conf['polyFactor']) * 0.001)
           self.require_blinker = bool(int(self.kegman.conf['requireBlinker']))
           self.require_nudge = bool(int(self.kegman.conf['requireNudge']))
+          self.center_advance = [max(0, float(self.kegman.conf['advCenter0'])),max(0, float(self.kegman.conf['advCenter1'])),max(0, float(self.kegman.conf['advCenter2'])), 0]
           self.kegtime_prev = self.kegtime
         except:
           print("   Kegman error")
@@ -149,9 +150,10 @@ class LatControlPID(object):
   def update(self, active, brake_pressed, v_ego, angle_steers, angle_steers_rate, steer_override, CP, path_plan, canTime, blinker_on):
     self.profiler.checkpoint('controlsd')
     pid_log = car.CarState.LateralPIDState.new_message()
+    path_age = (time.time() * 1000 - path_plan.sysTime) * 1e-3
+
     if path_plan.canTime != self.last_plan_time and len(path_plan.fastAngles) > 1:
       time.sleep(0.00001)
-      path_age = (time.time() * 1000 - path_plan.sysTime) * 1e-3
       if path_age > 0.23: self.old_plan_count += 1
       if self.path_index is None:
         self.avg_plan_age = path_age
@@ -164,16 +166,14 @@ class LatControlPID(object):
       if blinker_on or abs(self.projected_lane_error) < abs(self.prev_projected_lane_error) and (self.projected_lane_error > 0) == (self.prev_projected_lane_error > 0):
         self.projected_lane_error *= gernterp(angle_steers - path_plan.angleOffset, [1, 4], [0.1, 1.0])
       self.prev_projected_lane_error = self.projected_lane_error
-      self.angle_index = max(0., 100. * (self.react_mpc + path_age))
       self.profiler.checkpoint('path_plan')
-    else:
-      self.angle_index += 1.0
 
+    if path_plan.paramsValid: self.angle_index = max(0., 100. * (self.react_mpc + path_age + self.center_advance[min(len(self.center_advance)-1, int(abs(angle_steers - path_plan.angleOffset)))]))
     self.min_index = min(self.min_index, self.angle_index)
     self.max_index = max(self.max_index, self.angle_index)
 
-    if self.frame % 3000 == 0 and self.frame > 0:
-      print("old plans:  %d  avg plan age:  %0.3f   min index:  %d  max_index:  %d   center_steer:  %0.2f" % (self.old_plan_count, self.avg_plan_age, self.min_index, self.max_index, self.path_error_comp))
+    if self.frame % 300 == 0 and self.frame > 0:
+      print("old plans:  %d  avg plan age:  %0.3f   min index:  %d  max_index:  %d   center_steer:  %0.2f   center_advance:  %0.2f" % (self.old_plan_count, self.avg_plan_age, self.min_index, self.max_index, self.path_error_comp, self.center_advance[min(len(self.center_advance)-1, int(abs(angle_steers - path_plan.angleOffset)))]))
       self.min_index = 100
       self.max_index = 0
 
@@ -254,7 +254,6 @@ class LatControlPID(object):
         output_steer = self.pid.update(requested_angle, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override, p_scale=p_scale,
                                       add_error=0, feedforward=steer_feedforward, speed=v_ego, deadzone=deadzone)
         self.profiler.checkpoint('pid_update')
-
 
       except:
         output_steer = 0

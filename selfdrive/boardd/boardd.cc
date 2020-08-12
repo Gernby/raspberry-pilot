@@ -251,8 +251,11 @@ bool can_recv(void *s, bool force_send) {
   pthread_mutex_unlock(&usb_lock);
 
   // return if both buffers are empty
-  if ((big_recv <= 0) && (recv <= 0)) {
-    return true;
+  /*if ((big_recv <= 0) && (recv <= 0)) {
+  return true;~
+  }*/
+  if (recv <= 0) {
+    return false;
   }
 
   // TODO: Split bus 0 and 1 into separate packets synced to 330 for bus 0 and 586 for bus 1

@@ -432,16 +432,11 @@ while 1:
       kegman = kegman_conf()  
       advanceSteer = 1.0 + max(0, float(kegman.conf['advanceSteer']))
       angle_factor = float(kegman.conf['angleFactor'])
-      use_bias = float(kegman.conf['angleBias'])
       angle_speed = min(5, max(0, int(10 * float(kegman.conf['polyReact']))))
-      use_angle_offset = float(kegman.conf['angleOffset'])
-      lateral_offset = float(kegman.conf['lateralOffset'])
       use_discrete_angle = True if float(kegman.conf['discreteAngle']) > 0 else False
       angle_limit = abs(float(kegman.conf['discreteAngle']))
-      use_optimize = True if kegman.conf['useOptimize'] == '1' else False
       use_minimize = True if kegman.conf['useMinimize'] == '1' else False
       center_advance = [min(0, 1000 * float(kegman.conf['advCenter0'])),1000 * min(0, float(kegman.conf['advCenter1'])),1000 * min(0, float(kegman.conf['advCenter2'])), 0]
-  
     profiler.checkpoint('kegman')
       
   execution_time_avg += max(0.0001, time_factor) * ((time.time() - start_time) - execution_time_avg)

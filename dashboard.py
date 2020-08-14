@@ -193,7 +193,7 @@ while 1:
         send_data1 = tuple(float(x) for x in tuple(pp.rPoly)[::1])
         send_data2 = tuple(float(x) for x in tuple(pp.cPoly)[::1])
         #print(len(pp.fastAngles), len(pp.fastAngles[0]), np.round(pp.fastAngles,1))
-        send_data3 = (pp.fastAngles[1][0], pp.fastAngles[1][1], pp.fastAngles[1][3], pp.fastAngles[1][5], pp.fastAngles[1][7], pp.fastAngles[1][14], pp.fastAngles[5][0], pp.fastAngles[5][1], pp.fastAngles[5][3], pp.fastAngles[5][5], pp.fastAngles[5][7], pp.fastAngles[5][14], pp.lProb, pp.rProb, pp.cProb, pp.laneWidth, pp.angleSteers, pp.rateSteers, pp.angleOffset, pp.lateralOffset, cs.steeringAngle, pp.canTime - pp.canTime, cs.canTime)
+        send_data3 = (pp.fastAngles[0][0], pp.fastAngles[0][1], pp.fastAngles[0][3], pp.fastAngles[0][5], pp.fastAngles[0][7], pp.fastAngles[0][14], pp.fastAngles[-1][0], pp.fastAngles[-1][1], pp.fastAngles[-1][3], pp.fastAngles[-1][5], pp.fastAngles[-1][7], pp.fastAngles[-1][14], pp.lProb, pp.rProb, pp.cProb, pp.laneWidth, pp.angleSteers, pp.rateSteers, pp.angleOffset, pp.lateralOffset, cs.steeringAngle, pp.canTime - pp.canTime, cs.canTime)
 
         if do_influx:
           localPathDataString.append("".join([localPathFormatString1 % send_data0, localPathFormatString2 % send_data1, localPathFormatString3 % send_data2, localPathFormatString4 % send_data3]))

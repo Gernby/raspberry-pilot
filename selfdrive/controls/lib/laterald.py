@@ -37,7 +37,7 @@ class Lateral(object):
     cs_send.init('carState')
     cs_send.valid = cs.canValid
 
-    if cs.camLeft.frame != self.stock_cam_frame_prev and cs.camLeft.frame == cs.camFarLeft.frame:
+    if cs.camLeft.frame != self.stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
       self.stock_cam_frame_prev = cs.camLeft.frame
       gps = sm['gpsLocationExternal']
       #sm.update(0)

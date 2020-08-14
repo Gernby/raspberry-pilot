@@ -509,19 +509,20 @@ class CarInterface(CarInterfaceBase):
     if not self.cp_cam is None:
       camLeft1 = self.cp_cam.vl["CUR_LANE_LEFT_1"]
       camLeft2 = self.cp_cam.vl["CUR_LANE_LEFT_2"]
-      camFarLeft1 = self.cp_cam.vl["ADJ_LANE_LEFT_1"]
-      camFarLeft2 = self.cp_cam.vl["ADJ_LANE_LEFT_2"]
+      camFarRight1 = self.cp_cam.vl["ADJ_LANE_RIGHT_1"]
+      camFarRight2 = self.cp_cam.vl["ADJ_LANE_RIGHT_2"]
       ret.camLeft.frame = camLeft1['FRAME_ID'] + camLeft2['FRAME_ID']
-      ret.camFarLeft.frame = camFarLeft1['FRAME_ID'] + camFarLeft2['FRAME_ID']
-      if ret.camLeft.frame != self.stock_cam_frame_prev and ret.camLeft.frame == ret.camFarLeft.frame:
+      ret.camFarRight.frame = camFarRight1['FRAME_ID'] + camFarRight2['FRAME_ID']
+
+      if ret.camLeft.frame != self.stock_cam_frame_prev and ret.camLeft.frame == ret.camFarRight.frame:
         self.stock_cam_frame_prev = ret.camLeft.frame
         camRight1 = self.cp_cam.vl["CUR_LANE_RIGHT_1"]
         camRight2 = self.cp_cam.vl["CUR_LANE_RIGHT_2"]
-        camFarRight1 = self.cp_cam.vl["ADJ_LANE_RIGHT_1"]
-        camFarRight2 = self.cp_cam.vl["ADJ_LANE_RIGHT_2"]
+        camFarLeft1 = self.cp_cam.vl["ADJ_LANE_LEFT_1"]
+        camFarLeft2 = self.cp_cam.vl["ADJ_LANE_LEFT_2"]
 
         ret.camRight.frame = camRight1['FRAME_ID'] + camRight2['FRAME_ID']
-        ret.camFarRight.frame = camFarRight1['FRAME_ID'] + camFarRight2['FRAME_ID']
+        ret.camFarLeft.frame = camFarLeft1['FRAME_ID'] + camFarLeft2['FRAME_ID']
         ret.camLeft.full1 = camLeft1['FULL']
         ret.camLeft.full2 = camLeft2['FULL']
         ret.camRight.full1 = camRight1['FULL']
@@ -540,9 +541,6 @@ class CarInterface(CarInterfaceBase):
         ret.camLeft.parm8 = camLeft2['PARM_8']
         ret.camLeft.parm9 = camLeft2['PARM_9']
         ret.camLeft.parm10 = camLeft2['PARM_10']
-        ret.camLeft.parm11 = camLeft2['PARM_11']
-        ret.camLeft.parm12 = camLeft2['PARM_12']
-        ret.camLeft.parm13 = camLeft2['PARM_13']
         ret.camLeft.dashed = camLeft2['DASHED_LINE']
         ret.camLeft.solid = camLeft2['SOLID_LINE']
         ret.camRight.parm1 = camRight1['PARM_1']
@@ -555,9 +553,6 @@ class CarInterface(CarInterfaceBase):
         ret.camRight.parm8 = camRight2['PARM_8']
         ret.camRight.parm9 = camRight2['PARM_9']
         ret.camRight.parm10 = camRight2['PARM_10']
-        ret.camRight.parm11 = camRight2['PARM_11']
-        ret.camRight.parm12 = camRight2['PARM_12']
-        ret.camRight.parm13 = camRight2['PARM_13']
         ret.camRight.dashed = camRight2['DASHED_LINE']
         ret.camRight.solid = camRight2['SOLID_LINE']
         ret.camFarLeft.parm1 = camFarLeft1['PARM_1']
@@ -570,9 +565,6 @@ class CarInterface(CarInterfaceBase):
         ret.camFarLeft.parm8 = camFarLeft2['PARM_8']
         ret.camFarLeft.parm9 = camFarLeft2['PARM_9']
         ret.camFarLeft.parm10 = camFarLeft2['PARM_10']
-        ret.camFarLeft.parm11 = camFarLeft2['PARM_11']
-        ret.camFarLeft.parm12 = camFarLeft2['PARM_12']
-        ret.camFarLeft.parm13 = camFarLeft2['PARM_13']
         ret.camFarRight.parm1 = camFarRight1['PARM_1']
         ret.camFarRight.parm2 = camFarRight1['PARM_2']
         ret.camFarRight.parm3 = camFarRight1['PARM_3']
@@ -583,9 +575,6 @@ class CarInterface(CarInterfaceBase):
         ret.camFarRight.parm8 = camFarRight2['PARM_8']
         ret.camFarRight.parm9 = camFarRight2['PARM_9']
         ret.camFarRight.parm10 = camFarRight2['PARM_10']
-        ret.camFarRight.parm11 = camFarRight2['PARM_11']
-        ret.camFarRight.parm12 = camFarRight2['PARM_12']
-        ret.camFarRight.parm13 = camFarRight2['PARM_13']
 
         # TODO: Fix these values in the DBC
         ret.camLeft.parm2 = ret.camLeft.parm2 if ret.camLeft.parm2 > -150 else ret.camLeft.parm2 + 1024

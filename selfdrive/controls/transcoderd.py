@@ -49,12 +49,13 @@ for filename in os.listdir('models/'):
       exit()
      #[0]  #'Model-100-2-2-3-3'
 print('loading model: %s' % MODEL_NAME)
-HISTORY_ROWS = 5
+model = load_model(os.path.expanduser('models/%s' % (MODEL_NAME)))
+
+HISTORY_ROWS = model.layers[0].input.shape[1]
 OUTPUT_ROWS = 15
 BATCH_SIZE = 1
 MAX_CENTER_OPPOSE = np.reshape(np.arange(15) * 200, (OUTPUT_ROWS,1))
 
-model = load_model(os.path.expanduser('models/%s' % (MODEL_NAME)))
 lo_res_data = np.zeros((BATCH_SIZE,HISTORY_ROWS, INPUTS-5))
 
 print(model.summary())
@@ -294,7 +295,7 @@ while 1:
     #TO DO: Split hi and low res control scalers
     vehicle_array.append([cs.vEgo, cs.steeringAngle, cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN, cs.vEgo, cs.longAccel,  max(570, lane_width), cs.steeringAngle, cs.lateralAccel, cs.yawRateCAN])
 
-    if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarLeft.frame:
+    if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
       stock_cam_frame_prev = cs.camLeft.frame
 
       left_missing = 1 if cs.camLeft.parm4 == 0 else 0
@@ -324,7 +325,7 @@ while 1:
   r_prob =     min(1, max(0, cs.camRight.parm4 / 127))
   lr_prob =    (l_prob + r_prob) - l_prob * r_prob
 
-  vehicle_array = np.array(vehicle_array[-5:])
+  vehicle_array = np.array(vehicle_array[-HISTORY_ROWS:])
   if cs.vEgo > 10 and abs(cs.steeringAngle - calibration[0]) <= 3 and abs(cs.steeringRate) < 3 and l_prob > 0 and r_prob > 0:
     cal_factor = update_calibration(calibration, np.concatenate((vehicle_array[-1], camera_input), axis=0), cal_col, cs)
 
@@ -437,6 +438,7 @@ while 1:
       angle_limit = abs(float(kegman.conf['discreteAngle']))
       use_minimize = True if kegman.conf['useMinimize'] == '1' else False
       center_advance = [min(0, 1000 * float(kegman.conf['advCenter0'])),1000 * min(0, float(kegman.conf['advCenter1'])),1000 * min(0, float(kegman.conf['advCenter2'])), 0]
+  
     profiler.checkpoint('kegman')
       
   execution_time_avg += max(0.0001, time_factor) * ((time.time() - start_time) - execution_time_avg)

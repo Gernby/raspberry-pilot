@@ -34,8 +34,8 @@ class kegman_conf():
     if self.conf['Kf'] == "-1":
       self.conf['Kf'] = str(round(CP.lateralTuning.pid.kf,5))
       write_conf = True
-    if self.conf['dampTime'] == "-1":
-      self.conf['dampTime'] = str(round(CP.lateralTuning.pid.dampTime,3))
+    if self.conf['dampSteer'] == "-1":
+      self.conf['dampSteer'] = str(round(CP.lateralTuning.pid.dampSteer,3))
       write_conf = True
     if self.conf['reactMPC'] == "-1":
       self.conf['reactMPC'] = str(round(CP.lateralTuning.pid.reactMPC,3))
@@ -119,8 +119,8 @@ class kegman_conf():
       self.config.update({"advCenter2": "0"})
       self.element_updated = True
 
-    if "reactTime" not in self.config:
-      self.config.update({"reactTime": "0.0"})
+    if "reactSteer" not in self.config:
+      self.config.update({"reactSteer": "0.0"})
       self.element_updated = True
 
     if self.element_updated:

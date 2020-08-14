@@ -119,6 +119,10 @@ class kegman_conf():
       self.config.update({"advCenter2": "0"})
       self.element_updated = True
 
+    if "reactTime" not in self.config:
+      self.config.update({"reactTime": "0.0"})
+      self.element_updated = True
+
     if self.element_updated:
       print("updated")
       self.write_config(self.config)

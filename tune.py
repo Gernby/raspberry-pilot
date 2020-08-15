@@ -43,14 +43,14 @@ button_delay = 0.2
 kegman = kegman_conf()
 #kegman.conf['tuneGernby'] = "1"
 #kegman.write_config(kegman.conf)
-param = ["Kp", "Ki", "reactMPC", "dampMPC", "reactSteer", "dampSteer", "polyFactor", "polyReact", "polyDamp", "advanceSteer", "angleFactor", "accelLimit", "wiggleAngle", "discreteAngle"]
+param = ["Kp", "Ki", "reactMPC","dampMPC", "reactSteer", "dampSteer", "reactCenter0", "reactCenter1", "reactCenter2", "polyFactor", "polyReact", "polyDamp", "advanceSteer", "angleFactor", "accelLimit", "wiggleAngle", "discreteAngle"]
 
 j = 0
 while True:
   kegman.conf[param[j]] = str(round(float(kegman.conf[param[j]]),4))
 
   print("")
-  print(print_letters(param[j][0:9]))
+  print(print_letters(param[j][0:12]))
   print("")
   print(print_letters(kegman.conf[param[j]]))
   print("")

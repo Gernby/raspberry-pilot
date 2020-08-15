@@ -93,7 +93,7 @@ class LatControlPID(object):
           self.poly_factor = max(0.0, float(self.kegman.conf['polyFactor']) * 0.001)
           self.require_blinker = bool(int(self.kegman.conf['requireBlinker']))
           self.require_nudge = bool(int(self.kegman.conf['requireNudge']))
-          self.center_advance = [max(0, float(self.kegman.conf['advCenter0'])),max(0, float(self.kegman.conf['advCenter1'])),max(0, float(self.kegman.conf['advCenter2'])), 0]
+          self.react_center = [max(0, float(self.kegman.conf['reactCenter0'])),max(0, float(self.kegman.conf['reactCenter1'])),max(0, float(self.kegman.conf['reactCenter2'])), 0]
           self.kegtime_prev = self.kegtime
         except:
           print("   Kegman error")
@@ -170,12 +170,12 @@ class LatControlPID(object):
       self.prev_projected_lane_error = self.projected_lane_error
       self.profiler.checkpoint('path_plan')
 
-    if path_plan.paramsValid: self.angle_index = max(0., 100. * (self.react_mpc + path_age + self.center_advance[min(len(self.center_advance)-1, int(abs(angle_steers - path_plan.angleOffset)))]))
+    if path_plan.paramsValid: self.angle_index = max(0., 100. * (self.react_mpc + path_age))
     self.min_index = min(self.min_index, self.angle_index)
     self.max_index = max(self.max_index, self.angle_index)
 
     if self.frame % 300 == 0 and self.frame > 0:
-      print("old plans:  %d  avg plan age:  %0.3f   min index:  %d  max_index:  %d   center_steer:  %0.2f   center_advance:  %0.2f" % (self.old_plan_count, self.avg_plan_age, self.min_index, self.max_index, self.path_error_comp, self.center_advance[min(len(self.center_advance)-1, int(abs(angle_steers - path_plan.angleOffset)))]))
+      print("old plans:  %d  avg plan age:  %0.3f   min index:  %d  max_index:  %d   center_steer:  %0.2f" % (self.old_plan_count, self.avg_plan_age, self.min_index, self.max_index, self.path_error_comp))
       self.min_index = 100
       self.max_index = 0
 
@@ -217,6 +217,8 @@ class LatControlPID(object):
             self.path_error_comp *= 0.8
           else:
             self.path_error_comp += (self.projected_lane_error - self.path_error_comp) / self.poly_smoothing
+
+          react_steer = self.react_steer + self.react_center[min(len(self.react_center)-1, int(abs(angle_steers - path_plan.angleOffset)))]
           self.damp_angle_steers += (angle_steers + angle_steers_rate * (self.damp_steer + self.react_steer) - self.damp_angle_steers) / max(1.0, self.damp_steer * 100.)
           #self.damp_angle_rate += (angle_steers_rate - self.damp_angle_rate) / max(1.0, self.damp_steer * 100.)
           #steer_speed_ratio = self.polyReact * min(1, v_ego / 30)

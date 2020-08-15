@@ -125,7 +125,8 @@ while 1:
     profiler.checkpoint('poller', False)
 
     if socket is carState:
-      time.sleep(0.02)
+      # Wait 4 control cycles to let Transcoderd do its good stuff
+      time.sleep(0.04)
       for _cs in carState.recv_multipart():
         cs = log.Event.from_bytes(_cs).carState
         vEgo = cs.vEgo
@@ -186,7 +187,6 @@ while 1:
       frame += 1
   
     if socket is pathPlan:
-      time.sleep(0.01)
       pp = log.Event.from_bytes(pathPlan.recv()).pathPlan
       if not cs is None and not logfile is None:
         send_data0 = tuple(float(x) for x in tuple(pp.lPoly)[::1])

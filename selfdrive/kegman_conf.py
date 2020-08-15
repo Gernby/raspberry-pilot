@@ -84,11 +84,6 @@ class kegman_conf():
       self.config.update({"useInfluxDB":"0"})
       self.element_updated = True
 
-    if "lateralOffset" not in self.config:
-      self.config.update({"lateralOffset":"0"})
-      self.config.update({"angleOffset":"0"})
-      self.element_updated = True
-
     if not CP is None and ("tuneRev" not in self.config or self.config['tuneRev'] != base_config['tuneRev']):
       for car in base_config:
         if car in CP.carFingerprint:
@@ -104,7 +99,6 @@ class kegman_conf():
       self.element_updated = True
 
     if "useOptimize" not in self.config:
-      self.config.update({"useOptimize": "0"})
       self.config.update({"useMinimize": "0"})
       self.element_updated = True
 
@@ -113,10 +107,10 @@ class kegman_conf():
       self.config.update({"requireBlinker": "1"})
       self.element_updated = True
 
-    if "advCenter0" not in self.config:
-      self.config.update({"advCenter0": "0.04"})
-      self.config.update({"advCenter1": "0.02"})
-      self.config.update({"advCenter2": "0"})
+    if "reactCenter0" not in self.config:
+      self.config.update({"reactCenter0": "0.003"})
+      self.config.update({"reactCenter1": "0.002"})
+      self.config.update({"reactCenter2": "0.001"})
       self.element_updated = True
 
     if "reactSteer" not in self.config:

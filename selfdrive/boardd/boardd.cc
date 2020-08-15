@@ -506,7 +506,7 @@ void *can_recv_thread(void *crap) {
   bool frame_sent, skip_once, force_send;
   uint64_t wake_time, cur_time, last_long_sleep;
   int recv_state = 0;
-  int long_sleep_us = 4500;
+  int long_sleep_us = 3333;
   int panda_loops = 2;
   int short_sleep_us =  10000 - (panda_loops * long_sleep_us);
   force_send = true;

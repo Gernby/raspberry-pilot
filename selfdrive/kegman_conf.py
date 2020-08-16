@@ -108,9 +108,9 @@ class kegman_conf():
       self.element_updated = True
 
     if "reactCenter0" not in self.config:
-      self.config.update({"reactCenter0": "0.003"})
-      self.config.update({"reactCenter1": "0.002"})
-      self.config.update({"reactCenter2": "0.001"})
+      self.config.update({"reactCenter0": "0.0"})
+      self.config.update({"reactCenter1": "0.0"})
+      self.config.update({"reactCenter2": "0.0"})
       self.element_updated = True
 
     if "reactSteer" not in self.config:

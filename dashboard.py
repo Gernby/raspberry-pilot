@@ -91,7 +91,7 @@ insertString = []
 fileStrings = []
 canInsertString = []
 next_beat_check = time.time() + 20
-
+live_stream_lag = 10
 angle_offset = 0
 angle_bias = 0
 
@@ -166,7 +166,7 @@ while 1:
             logfile.write(localCarStateFormatString2 % send_data)
             profiler.checkpoint('write_file')
             time.sleep(0.00001)
-          if do_send_live and (vEgo > 0 or frame % 45 == 0):
+          if do_send_live and (frame % 2 == 0 or live_stream_lag < 3) and (vEgo > 0 or frame % 45 == 0):
             serverCarStateDataString2.append(serverCarStateDataFormatString2 % send_data)
 
         elif vEgo > 0:
@@ -181,7 +181,7 @@ while 1:
           time.sleep(0.00001)
           if do_influx:
             localCarStateDataString1.append(localCarStateFormatString1 % send_data)
-          if do_send_live: 
+          if do_send_live and live_stream_lag < 1.5: 
             serverCarStateDataString1.append(serverCarStateDataFormatString1 % send_data)
       profiler.checkpoint('carstate')
       frame += 1
@@ -205,15 +205,21 @@ while 1:
 
     if socket is tuneSub:
       next_beat_check = time.time() + 20
+      if not heartBeatSub is None: poller.unregister(heartBeatSub)
+      heartBeatSub = None
       config = tuneSub.recv_multipart()
       config = json.loads(config[1])
+      if 'time' in config:
+        live_stream_lag = time.time() - float(config['time'])
+        print("live stream lag: %0.1f" % live_stream_lag)
+      else:
+        print(config)
       do_send_live = True
       do_influx = False
-      print(config)
       itemChanged = False
       try:
         for item in kegman.conf:
-          if item in config and str(config[item]) != str(kegman.conf[item]) and float(config[item]) != float(kegman.conf[item]) and not item in ['identifier']:
+          if item in config and str(config[item]) != str(kegman.conf[item]) and float(config[item]) != float(kegman.conf[item]) and not item in ['identifier', 'time']:
             print(item, config[item], kegman.conf[item])
             kegman.conf[item] = str(config[item])
             itemChanged = True
@@ -241,7 +247,7 @@ while 1:
         tuneSub.RCVTIMEO = 20000
         poller.register(tuneSub, zmq.POLLIN)
         tunePush.connect("tcp://" + SERVER_ADDRESS + ":8595")
-        kegman.conf.update({'identifier': identifier, 'userID': user_id})
+        kegman.conf.update({'identifier': identifier, 'userID': user_id, "time": time.time()})
         tunePush.send_json(kegman.conf)
         serverPush.connect("tcp://" + SERVER_ADDRESS + ":8601")
       time.sleep(0.00001)
@@ -297,8 +303,8 @@ while 1:
         kegman_valid = False
     insertString = [serverCarStateFormatString2, "".join(serverCarStateDataString2), "!", serverCarStateFormatString1, "".join(serverCarStateDataString1), "!", serverPathFormatString, "".join(serverPathDataString), "!", serverKegmanFormatString, "".join(kegstrings)]
     insertString = "".join(insertString)
-    serverPush.send_string(insertString)
-    #print(len(insertString), "  server sent")
+    serverPush.send_json({'identifier': identifier, 'userID': user_id, "time": time.time(), "data": insertString})
+    print(len(insertString), "  server sent")
     insertString = None
     serverCarStateDataString1 = []
     serverCarStateDataString2 = []
@@ -309,12 +315,13 @@ while 1:
     profiler.checkpoint('server_push')
 
   if kegman_valid and time.time() > next_beat_check:
-    poller.unregister(heartBeatSub)
+    if not heartBeatSub is None: poller.unregister(heartBeatSub)
     heartBeatSub = messaging.sub_sock(8597, addr=SERVER_ADDRESS, conflate=True)
     poller.register(heartBeatSub, zmq.POLLIN)
     time.sleep(0.00001)
     if do_send_live:
       print('       Lost heart beat!')
+      live_stream_lag = 10
       poller.unregister(tuneSub)
       tuneSub.close()
       serverPush.close()
@@ -324,8 +331,8 @@ while 1:
       tunePush = None
       do_send_live = False
       gc.collect()
-    #else:
-    #  print('    Heart beat check!')
+    else:
+      print('    Heart beat check!')
     next_beat_check = time.time() + 20
     profiler.checkpoint('live_tune')
 

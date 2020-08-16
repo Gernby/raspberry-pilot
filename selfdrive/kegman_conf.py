@@ -98,7 +98,7 @@ class kegman_conf():
       self.config.update({"discreteAngle": "1"})
       self.element_updated = True
 
-    if "useOptimize" not in self.config:
+    if "useMinimize" not in self.config:
       self.config.update({"useMinimize": "0"})
       self.element_updated = True
 
@@ -118,7 +118,6 @@ class kegman_conf():
       self.element_updated = True
 
     if self.element_updated:
-      print("updated")
       self.write_config(self.config)
 
     return self.config

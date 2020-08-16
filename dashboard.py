@@ -213,7 +213,7 @@ while 1:
       itemChanged = False
       try:
         for item in kegman.conf:
-          if item in config and str(config[item]) != str(kegman.conf[item]) and float(config[item]) != float(kegman.conf[item]) and abs(float(config[item])) == float(config[item]) and not item in ['identifier']:
+          if item in config and str(config[item]) != str(kegman.conf[item]) and float(config[item]) != float(kegman.conf[item]) and not item in ['identifier']:
             print(item, config[item], kegman.conf[item])
             kegman.conf[item] = str(config[item])
             itemChanged = True

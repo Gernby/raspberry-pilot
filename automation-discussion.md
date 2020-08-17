@@ -32,7 +32,7 @@ I have four Model buttons, each one corresponding to loading an hdf5 file sittin
 
 ## Changing values in kegman.json
 
-The second approach is a little more complex and must be performed in multiple steps. ~~First, the user clicks a button to choose which parameter they wish to modify. That will store the parameter name in a file called `param`. Next, they will indicate whether the value is going to be increased or decreased. This is stored as either a literal + or - in a file called `plus-minus`. Finally, the user will indicate how much to change the value of that parameter. That amount is stored in a file called `delta`. Once all three selections have been made, the user will then click a button called `Submit change` which calls a backend script, located here:
+The second approach is a little more complex and must be performed in multiple steps. ~~First, the user clicks a button to choose which parameter they wish to modify. That will store the parameter name in a file called `param`. Next, they will indicate whether the value is going to be increased or decreased. This is stored as either a literal + or - in a file called `plus-minus`. Finally, the user will indicate how much to change the value of that parameter. That amount is stored in a file called `delta`. Once all three selections have been made, the user will then click a button called `Submit change` which calls a backend script, located here:~~
 
 https://github.com/Gernby/raspberry-pilot/blob/gh-pages/changevalue.sh
 

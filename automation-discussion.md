@@ -32,11 +32,15 @@ I have four Model buttons, each one corresponding to loading an hdf5 file sittin
 
 ## Changing values in kegman.json
 
-The second approach is a little more complex and must be performed in multiple steps. First, the user clicks a button to choose which parameter they wish to modify. That will store the parameter name in a file called `param`. Next, they will indicate whether the value is going to be increased or decreased. This is stored as either a literal + or - in a file called `plus-minus`. Finally, the user will indicate how much to change the value of that parameter. That amount is stored in a file called `delta`. Once all three selections have been made, the user will then click a button called `Submit change` which calls a backend script, located here:
+The second approach is a little more complex and must be performed in multiple steps. ~~First, the user clicks a button to choose which parameter they wish to modify. That will store the parameter name in a file called `param`. Next, they will indicate whether the value is going to be increased or decreased. This is stored as either a literal + or - in a file called `plus-minus`. Finally, the user will indicate how much to change the value of that parameter. That amount is stored in a file called `delta`. Once all three selections have been made, the user will then click a button called `Submit change` which calls a backend script, located here:
 
 https://github.com/Gernby/raspberry-pilot/blob/gh-pages/changevalue.sh
 
-The script will read the three files that were created and populated by the first three user actions. It will find the current value stored in kegman.json, perform some string manipulation and some basic math to derive a new value, then replace the value of the parameter in a temporary copy of kegman.json. Then, the script backs up the current version of kegman.json before overwriting it with the new version just updated. The script then deletes all temporary files used during the update to prevent accidentally reusing any values left over from prior changes.
+As Gernby has been fine-tuning the kegman.json files for us, I took note of the settings he changes and the typical amounts by which he tends to change them. This means I now have two buttons for each of the popular settings; one to increase the value by the recommended amount and one to decrease the value by that same amount. For example, a button called "dampMPC -" would have the following command attached to it:
+
+`/bin/echo Changing dampMPC && /bin/echo dampMPC > /home/ubuntu/changeparam/param && /bin/echo 0.01 > /home/ubuntu/changeparam/delta && /bin/echo - > /home/ubuntu/changeparam/plus-minus && /home/ubuntu/changeparam/changevalue.sh`
+
+Pressing the button will trigger the changevalue.sh script to read the three files that together specify the change to be made. It will find the current value stored in kegman.json, perform some string manipulation and some basic math to derive a new value, then replace the value of the parameter in a temporary copy of kegman.json. Then, the script backs up the current version of kegman.json before overwriting it with the new version just updated. The script then deletes all temporary files used during the update to prevent accidentally reusing any values left over from prior changes.
 
 ## Recommended values for key parameters
 

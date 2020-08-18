@@ -110,9 +110,14 @@ sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.7 2
 
 # start grafana and influxdb (installed but temporarily disabled to reduce resource usage)
 sudo /bin/systemctl daemon-reload
-#sudo /bin/systemctl enable grafana-server
-#sudo service influxdb start
-#sudo service grafana-server start
+# sudo /bin/systemctl enable grafana-server
+# sudo /bin/systemctl enable infuxdb
+# sudo service influxdb start
+# sudo service grafana-server start
+# ansible localhost -b -m service -a "name=grafana-server enabled=yes"
+# ansible localhost -b -m service -a "name=grafana-server state=started"
+# ansible localhost -b -m service -a "name=influxdb enabled=yes"
+# ansible localhost -b -m service -a "name=influxdb state=started"
 
 # Install the TensorFlow 2.2 components and dependencies
 wget https://github.com/lhelontra/tensorflow-on-arm/releases/download/v2.2.0/tensorflow-2.2.0-cp37-none-linux_aarch64.whl 

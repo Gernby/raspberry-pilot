@@ -143,4 +143,4 @@ cd
 cp ~/raspilot/finish_install.sh ~/
 sh ~/finish_install.sh
 
-echo "Please reboot, run top -u ubuntu, and look for boardd, dashboard, and controlsd"
+echo "Please reboot, run top -u ubuntu, and look for boardd, dashboard, ubloxd and controlsd"

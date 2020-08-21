@@ -394,7 +394,7 @@ while 1:
       angle_bias += (0.000001 * cs.vEgo)
 
   profiler.checkpoint('process')
-
+  path_send.pathPlan.centerCompensation = 0
   path_send.pathPlan.angleSteers = float(fast_angles[0][5])
   path_send.pathPlan.fastAngles = [[float(x) - angle_bias for x in y] for y in fast_angles]
   path_send.pathPlan.laneWidth = float(lane_width + width_trim)

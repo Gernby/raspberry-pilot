@@ -728,6 +728,7 @@ struct PathPlan {
   rightError @30 :List(Float32);
   centerError @31 :List(Float32);
   sysTime @32 :UInt64;
+  centerCompensation @33 :Float32;
 }
 
 struct LiveLocationData {
@@ -1810,7 +1811,7 @@ struct Event {
     ubloxGnss @34 :UbloxGnss;
     clocks @35 :Clocks;
     liveMpc @36 :LiveMpcData;
-    liveLongitudinalMpc @37 :LiveLongitudinalMpcData;
+    liveLongitudinalMpc @37 :LiveLongitudinalMpcData; 
     navStatus @38 :NavStatus;
     ubloxRaw @39 :Data;
     gpsPlannerPoints @40 :GPSPlannerPoints;

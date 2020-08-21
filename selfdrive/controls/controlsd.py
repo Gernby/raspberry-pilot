@@ -174,7 +174,7 @@ def state_control(frame, lkasMode, path_plan, CS, CP, state, events, AM, LaC, la
   active = isActive(state)
 
   # Steering PID loop and lateral MPC
-  actuators.steer, actuators.steerAngle, lac_log = LaC.update(path_plan.paramsValid and CS.lkMode and (active or lkasMode), CS.brakePressed, CS.vEgo, CS.steeringAngle, CS.steeringTorqueEps, CS.steeringPressed, CP, path_plan, CS.canTime, CS.blinkers)
+  actuators.steer, actuators.steerAngle, lac_log = LaC.update(path_plan.paramsValid and CS.lkMode and (active or lkasMode), CS.brakePressed, CS.vEgo, CS.steeringAngle, CS.steeringRate, CS.steeringPressed, CP, path_plan, CS.canTime, CS.blinkers)
   profiler.checkpoint('lac_update')
     # parse warnings from car specific interface
   for e in get_events(events, [ET.WARNING]):
@@ -226,7 +226,7 @@ def controlsd_thread(gctx=None):
   params = Params()
   print(params)
   # Pub Sockets
-  profiler = Profiler(False, 'controls')
+  profiler = Profiler(True, 'controls')
 
   sendcan = messaging.pub_sock(service_list['sendcan'].port)
   controlsstate = messaging.pub_sock(service_list['controlsState'].port)

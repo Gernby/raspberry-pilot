@@ -87,8 +87,6 @@ class LatControlPID(object):
           self.react_steer = (float(self.kegman.conf['reactSteer']))
           self.react_mpc = (float(self.kegman.conf['reactMPC']))
           self.damp_mpc = (float(self.kegman.conf['dampMPC']))
-          self.wiggle_angle = (float(self.kegman.conf['wiggleAngle']))
-          self.accel_limit = (float(self.kegman.conf['accelLimit']))
           self.polyReact = min(11, max(0, int(10 * float(self.kegman.conf['polyReact']))))
           self.poly_damp = min(1, max(0, float(self.kegman.conf['polyDamp'])))
           self.poly_factor = max(0.0, float(self.kegman.conf['polyFactor']) * 0.001)

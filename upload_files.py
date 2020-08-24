@@ -9,6 +9,7 @@ import numpy as np
 import requests
 import sys 
 import gc
+from selfdrive.kegman_conf import kegman_conf
 from common.params import Params
 if len(sys.argv) < 2 or sys.argv[1] == 0:
   destination = "gernstation.synology.me"
@@ -17,6 +18,10 @@ elif sys.argv[1] == '1':
   min_time = 0
   destination = "192.168.1.3"
 print("using %s" % destination)
+
+kegman = kegman_conf()
+do_import_local = True if kegman.conf['useLocalImport'] == "1" else False
+print("useLocalImport = ", do_import_local)
 params = Params()
 user_id =  str(params.get("PandaDongleId"))
 user_id = user_id.replace("'","")
@@ -39,7 +44,11 @@ file_data = {"user_id": str(params.get("PandaDongleId")), "file_name": "", "file
 file_list = []
 
 upload_list = os.listdir('/data/upload/')
-file_count = len(upload_list)
+file_count = 0
+for file in upload_list:
+  filename = os.fsdecode(file)
+  if filename.endswith(".dat"): file_count += 1
+print("Total files to upload: %d" % file_count)
 for file in upload_list: 
   filename = os.fsdecode(file)
   if filename.endswith(".dat"): 
@@ -51,6 +60,15 @@ for file in upload_list:
         file_list.append(filename)
         dataPush.send_string(json.dumps(file_data))
         print("characters sent: %d" % len(inString))
+        if do_import_local:
+          try:
+            r = requests.post('http://localhost:8086/write?db=carDB&%sprecision=ms', data=inString)
+            print(r)
+          except:
+            r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')
+            time.sleep(1)
+            r = requests.post('http://localhost:8086/write?db=carDB&%sprecision=ms', data=inString)
+            print(r)
         time.sleep(1)
         if len(file_list) > 5:
           #print(dataSub.recv_string())
@@ -60,14 +78,14 @@ for file in upload_list:
           file_to_delete = file_list.pop(file_list.index(return_data['filename']))
           if return_data['statuscode'] == 204:
             print("successfully processed: %s  files remaining: %d" % (file_to_delete, file_count))
-            #os.rename('/data/upload/%s' % file_to_delete, '/data/upload/%s' % file_to_delete.replace('.dat','.bak'))
-            os.remove('/data/upload/%s' % file_to_delete)
+            os.rename('/data/upload/%s' % file_to_delete, '/data/upload/%s' % file_to_delete.replace('.dat','.bak'))
+            #os.remove('/data/upload/%s' % file_to_delete)
           else:
             print(" Oops!  status_code: %s    NOT successful with file: %s" % (str(return_data['statuscode']), file_to_delete))
-          file_count -= 1
       else:
         os.remove('/data/upload/%s' % filename)
         print("empty file deleted:  %s" % filename)
+      file_count -= 1
 
 for i in range(len(file_list)):
   reply = dataSub.recv_multipart()

@@ -292,7 +292,7 @@ while 1:
     cs = log.Event.from_bytes(_cs).carState
 
     #TO DO: Split hi and low res control scalers
-    vehicle_array.append([cs.vEgo, cs.steeringAngle, cs.lateralAccel, cs.steeringTorqueEps, cs.yawRateCAN, cs.vEgo, cs.longAccel,  max(570, lane_width + width_trim), cs.steeringAngle, cs.lateralAccel, cs.yawRateCAN])
+    vehicle_array.append([cs.vEgo, cs.steeringAngle, cs.lateralAccel, cs.steeringRate, cs.yawRateCAN, cs.vEgo, cs.longAccel,  max(570, lane_width + width_trim), cs.steeringAngle, cs.lateralAccel, cs.yawRateCAN])
 
     if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
       stock_cam_frame_prev = cs.camLeft.frame

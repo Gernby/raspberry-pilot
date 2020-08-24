@@ -49,7 +49,6 @@ class LatControlPID(object):
     self.angle_index = 0.
     self.avg_plan_age = 0.
     self.min_index = 0
-    self.wiggle_angle = 0
     self.max_index = 0
     self.prev_angle_steers = 0.
     self.c_prob = 0.
@@ -57,7 +56,6 @@ class LatControlPID(object):
     self.projected_lane_error = 0.
     self.prev_projected_lane_error = 0.
     self.path_index = None #np.arange((30.))*100.0/15.0
-    self.accel_limit = 0.05      # 100x degrees/sec**2
     self.angle_rate_des = 0.0    # degrees/sec, rate dynamically limited by accel_limit
     self.fast_angles = [[]]
     self.center_angles = []
@@ -80,22 +78,22 @@ class LatControlPID(object):
         try:
           time.sleep(0.0001)
           self.kegman = kegman_conf() 
-          self.pid._k_i = ([0.], [float(self.kegman.conf['Ki'])])
-          self.pid._k_p = ([0.], [float(self.kegman.conf['Kp'])])
-          self.pid.k_f = (float(self.kegman.conf['Kf']))
-          self.damp_steer = (float(self.kegman.conf['dampSteer']))
-          self.react_steer = (float(self.kegman.conf['reactSteer']))
-          self.react_mpc = (float(self.kegman.conf['reactMPC']))
-          self.damp_mpc = (float(self.kegman.conf['dampMPC']))
-          self.polyReact = min(11, max(0, int(10 * float(self.kegman.conf['polyReact']))))
-          self.poly_damp = min(1, max(0, float(self.kegman.conf['polyDamp'])))
-          self.poly_factor = max(0.0, float(self.kegman.conf['polyFactor']) * 0.001)
-          self.require_blinker = bool(int(self.kegman.conf['requireBlinker']))
-          self.require_nudge = bool(int(self.kegman.conf['requireNudge']))
-          self.react_center = [max(0, float(self.kegman.conf['reactCenter0'])),max(0, float(self.kegman.conf['reactCenter1'])),max(0, float(self.kegman.conf['reactCenter2'])), 0]
-          self.kegtime_prev = self.kegtime
         except:
           print("   Kegman error")
+        self.pid._k_i = ([0.], [float(self.kegman.conf['Ki'])])
+        self.pid._k_p = ([0.], [float(self.kegman.conf['Kp'])])
+        self.pid.k_f = (float(self.kegman.conf['Kf']))
+        self.damp_steer = (float(self.kegman.conf['dampSteer']))
+        self.react_steer = (float(self.kegman.conf['reactSteer']))
+        self.react_mpc = (float(self.kegman.conf['reactMPC']))
+        self.damp_mpc = (float(self.kegman.conf['dampMPC']))
+        self.polyReact = min(11, max(0, int(10 * float(self.kegman.conf['polyReact']))))
+        self.poly_damp = min(1, max(0, float(self.kegman.conf['polyDamp'])))
+        self.poly_factor = max(0.0, float(self.kegman.conf['polyFactor']) * 0.001)
+        self.require_blinker = bool(int(self.kegman.conf['requireBlinker']))
+        self.require_nudge = bool(int(self.kegman.conf['requireNudge']))
+        self.react_center = [max(0, float(self.kegman.conf['reactCenter0'])),max(0, float(self.kegman.conf['reactCenter1'])),max(0, float(self.kegman.conf['reactCenter2'])), 0]
+        self.kegtime_prev = self.kegtime
 
   def update_lane_state(self, angle_steers, driver_opposing_lane, blinker_on, path_plan):
     if self.require_nudge:
@@ -227,7 +225,7 @@ class LatControlPID(object):
           else:
             self.previous_integral = self.pid.i
 
-        deadzone = 0.0 
+        deadzone = -0.1
 
         if path_plan.cProb == 0 or (angle_feedforward > 0) == (self.pid.p > 0) or (path_plan.cPoly[-1] > 0) == (self.pid.p > 0):
           p_scale = 1.0 
@@ -244,9 +242,9 @@ class LatControlPID(object):
         print("  angle error!")
         pass
     
-      driver_opposing_op = steer_override and (angle_steers - self.prev_angle_steers) * output_steer < 0
-      self.update_lane_state(angle_steers, driver_opposing_op, blinker_on, path_plan)
-      self.profiler.checkpoint('lane_change')
+      #driver_opposing_op = steer_override and (angle_steers - self.prev_angle_steers) * output_steer < 0
+      #self.update_lane_state(angle_steers, driver_opposing_op, blinker_on, path_plan)
+      #self.profiler.checkpoint('lane_change')
 
     output_factor = self.lane_change_adjustment if pid_log.active else 0
 

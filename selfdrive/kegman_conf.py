@@ -117,6 +117,10 @@ class kegman_conf():
       self.config.update({"reactSteer": "0.0"})
       self.element_updated = True
 
+    if "useLocalImport" not in self.config:
+      self.config.update({"useLocalImport": "0"})
+      self.element_updated = True
+
     if self.element_updated:
       self.write_config(self.config)
 

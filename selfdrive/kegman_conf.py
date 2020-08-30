@@ -121,6 +121,10 @@ class kegman_conf():
       self.config.update({"useLocalImport": "0"})
       self.element_updated = True
 
+    if "deadzone" not in self.config:
+      self.config.update({"deadzone": "0"})
+      self.element_updated = True
+
     if self.element_updated:
       self.write_config(self.config)
 

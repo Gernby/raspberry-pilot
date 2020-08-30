@@ -90,6 +90,16 @@ def sub_sock(port, poller=None, addr="127.0.0.1", conflate=False, timeout=None):
     poller.register(sock, zmq.POLLIN)
   return sock
 
+def project_error(cpoly):
+  peaks = np.sort([np.argmin(cpoly[:,0]), np.argmax(cpoly[:,0])])
+  if cpoly[peaks[0],0] < cpoly[peaks[1],0]:
+    peak_slope = peaks[0] + np.argmax(np.diff(cpoly[peaks[0]:peaks[1]+1,0]))
+  else:
+    peak_slope = peaks[0] + np.argmin(np.diff(cpoly[peaks[0]:peaks[1]+1,0]))
+  for i in range(peak_slope+2, len(cpoly)):
+    cpoly[i,0] = 2 * cpoly[i-1,0] - cpoly[i-2,0]
+  return cpoly
+
 def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, angle, prev_center, minimize=False, optimize=False):
   center = tri_value[:,0:1]
   left = l_prob * tri_value[:,1:2] + (1 - l_prob) * center
@@ -97,10 +107,9 @@ def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, angle, prev_center, min
   if minimize:
     abs_left = max(0.00001, np.sum(np.absolute(left)))
     abs_right = max(0.00001,  np.sum(np.absolute(right)))
-    return [(abs_right * left + abs_left * right) / (abs_left + abs_right), tri_value[:,1:2], tri_value[:,2:3]]
+    return [project_error((abs_right * left + abs_left * right) / (abs_left + abs_right)), tri_value[:,1:2], tri_value[:,2:3]]
   else:
     return [0.5 * left + 0.5 * right, tri_value[:,1:2], tri_value[:,2:3]]
-
 
 def update_calibration(calibration, inputs, cal_col, cs):
   cal_speed = cs.vEgo * 0.00001
@@ -360,12 +369,12 @@ while 1:
   
   calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,angle_speed_count::3], cs.torqueRequest, cs.steeringAngle - calibration[0], calc_center[0], minimize=use_minimize, optimize=use_optimize)
   
-  if cs.vEgo > 10 and l_prob > 0 and r_prob > 0:	
+  '''if cs.vEgo > 10 and l_prob > 0 and r_prob > 0:	
     if calc_center[1][0,0] > calc_center[2][0,0]:	
       width_trim += 1	
     else:	
       width_trim -= 1	
-    width_trim = max(-100, min(width_trim, 0))
+    width_trim = max(-100, min(width_trim, 0))'''
 
   fast_angles = []
   if use_discrete_angle:

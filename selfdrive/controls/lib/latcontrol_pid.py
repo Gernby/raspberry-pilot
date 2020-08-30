@@ -52,6 +52,7 @@ class LatControlPID(object):
     self.max_index = 0
     self.prev_angle_steers = 0.
     self.c_prob = 0.
+    self.deadzone = 0.
     self.starting_angle = 0.
     self.projected_lane_error = 0.
     self.prev_projected_lane_error = 0.
@@ -88,10 +89,11 @@ class LatControlPID(object):
         self.react_mpc = (float(self.kegman.conf['reactMPC']))
         self.damp_mpc = (float(self.kegman.conf['dampMPC']))
         self.polyReact = min(11, max(0, int(10 * float(self.kegman.conf['polyReact']))))
-        self.poly_damp = min(1, max(0, float(self.kegman.conf['polyDamp'])))
         self.poly_factor = max(0.0, float(self.kegman.conf['polyFactor']) * 0.001)
+        self.poly_smoothing = max(1.0, float(self.kegman.conf['polyDamp']) * 100.)	
         self.require_blinker = bool(int(self.kegman.conf['requireBlinker']))
         self.require_nudge = bool(int(self.kegman.conf['requireNudge']))
+        self.deadzone = float(self.kegman.conf['deadzone'])
         self.react_center = [max(0, float(self.kegman.conf['reactCenter0'])),max(0, float(self.kegman.conf['reactCenter1'])),max(0, float(self.kegman.conf['reactCenter2'])), 0]
         self.kegtime_prev = self.kegtime
 
@@ -160,10 +162,8 @@ class LatControlPID(object):
       self.last_plan_time = path_plan.canTime
       self.avg_plan_age += 0.01 * (path_age - self.avg_plan_age)
       self.c_prob = path_plan.cProb
-      self.projected_lane_error = float(min(0.5, max(-0.5, self.c_prob * self.poly_factor * sum(np.array(path_plan.cPoly)))))
-      self.center_angles.append(float(self.projected_lane_error))
-      if len(self.center_angles) > 15: self.center_angles.pop(0)
-      self.projected_lane_error -= (float(self.c_prob * self.poly_damp * self.center_angles[0]))
+      self.projected_lane_error = self.c_prob * self.poly_factor * sum(np.array(path_plan.cPoly)[2:])
+      self.prev_projected_lane_error = self.projected_lane_error
       self.fast_angles = np.array(path_plan.fastAngles)
       self.profiler.checkpoint('path_plan')
 
@@ -209,10 +209,11 @@ class LatControlPID(object):
           self.limited_damp_angle_steers_des = angle_steers
           self.angle_rate_des = 0
         else:
+          self.path_error_comp += (self.projected_lane_error - self.path_error_comp) / self.poly_smoothing
           react_steer = self.react_steer + self.react_center[min(len(self.react_center)-1, int(abs(angle_steers - path_plan.angleOffset)))]
           self.damp_angle_steers += (angle_steers + angle_steers_rate * (self.damp_steer + float(react_steer)) - self.damp_angle_steers) / max(1.0, self.damp_steer * 100.)
           self.angle_steers_des = interp(self.angle_index, self.path_index, self.fast_angles[min(len(self.fast_angles)-1, int(self.polyReact))])
-          self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des + self.projected_lane_error) / max(1.0, self.damp_mpc * 100.)
+          self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des) / max(1.0, self.damp_mpc * 100.)
 
         angle_feedforward = float(self.damp_angle_steers_des - path_plan.angleOffset) + float(self.path_error_comp)
         self.angle_ff_ratio = float(gernterp(abs(angle_feedforward), self.angle_ff_bp[0], self.angle_ff_bp[1]))
@@ -225,16 +226,14 @@ class LatControlPID(object):
           else:
             self.previous_integral = self.pid.i
 
-        deadzone = -0.1
-
         if path_plan.cProb == 0 or (angle_feedforward > 0) == (self.pid.p > 0) or (path_plan.cPoly[-1] > 0) == (self.pid.p > 0):
           p_scale = 1.0 
         else:
           p_scale = max(0.2, min(1.0, 1 / abs(angle_feedforward)))
         self.profiler.checkpoint('pre-pid')
 
-        output_steer = self.pid.update(self.damp_angle_steers_des, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override, p_scale=p_scale,
-                                      add_error=0, feedforward=steer_feedforward, speed=v_ego, deadzone=deadzone)
+        output_steer = self.pid.update(self.damp_angle_steers_des + self.path_error_comp, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override, p_scale=p_scale,
+                                      add_error=0, feedforward=steer_feedforward, speed=v_ego, deadzone=self.deadzone)
         self.profiler.checkpoint('pid_update')
 
       except:
@@ -262,7 +261,7 @@ class LatControlPID(object):
     pid_log.i = float(self.pid.i)
     pid_log.f = float(self.pid.f)
     pid_log.output = float(output_steer)
-    pid_log.p2 = float(self.projected_lane_error)
+    pid_log.p2 = float(self.path_error_comp)
     pid_log.saturated = bool(self.pid.saturated)
     pid_log.angleFFRatio = self.angle_ff_ratio
     pid_log.steerAngle = float(self.damp_angle_steers)

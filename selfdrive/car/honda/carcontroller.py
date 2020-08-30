@@ -158,6 +158,8 @@ class CarController():
       STEER_MAX = 0x3e8  # CR-V only uses 12-bits and requires a lower value (max value from energee)
     elif CS.CP.carFingerprint in (CAR.ODYSSEY_CHN):
       STEER_MAX = 0x7FFF
+    elif CS.CP.carFingerprint in (CAR.CIVIC):
+      STEER_MAX = 0x1400
     else:
       STEER_MAX = 0x1000
 

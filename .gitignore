@@ -33,3 +33,4 @@ selfdrive/test/tests/plant/out
 /src/
 
 one
+.vscode/settings.json

@@ -120,7 +120,7 @@ sudo /bin/systemctl daemon-reload
 # ansible localhost -b -m service -a "name=influxdb state=started"
 
 # Install the TensorFlow 2.2 components and dependencies
-wget https://github.com/lhelontra/tensorflow-on-arm/releases/download/v2.2.0/tensorflow-2.2.0-cp37-none-linux_aarch64.whl 
+wget https://github.com/lhelontra/tensorflow-on-arm/releases/download/v2.3.0/tensorflow-2.3.0-cp35-none-linux_aarch64.whl
 python3.7 -m pip install -U pip 
 python3.7 -m pip install cython
 python3.7 -m pip install tensorflow-2.2.0-cp37-none-linux_aarch64.whl

@@ -52,6 +52,7 @@ class LatControlPID(object):
     self.max_index = 0
     self.prev_angle_steers = 0.
     self.c_prob = 0.
+    self.deadzone = 0.
     self.starting_angle = 0.
     self.projected_lane_error = 0.
     self.prev_projected_lane_error = 0.
@@ -87,6 +88,7 @@ class LatControlPID(object):
         self.react_steer = (float(self.kegman.conf['reactSteer']))
         self.react_mpc = (float(self.kegman.conf['reactMPC']))
         self.damp_mpc = (float(self.kegman.conf['dampMPC']))
+        self.deadzone = float(self.kegman.conf['deadzone'])
         self.polyReact = min(11, max(0, int(10 * float(self.kegman.conf['polyReact']))))
         self.poly_damp = min(1, max(0, float(self.kegman.conf['polyDamp'])))
         self.poly_factor = max(0.0, float(self.kegman.conf['polyFactor']) * 0.001)
@@ -225,8 +227,6 @@ class LatControlPID(object):
           else:
             self.previous_integral = self.pid.i
 
-        deadzone = -0.1
-
         if path_plan.cProb == 0 or (angle_feedforward > 0) == (self.pid.p > 0) or (path_plan.cPoly[-1] > 0) == (self.pid.p > 0):
           p_scale = 1.0 
         else:
@@ -234,7 +234,7 @@ class LatControlPID(object):
         self.profiler.checkpoint('pre-pid')
 
         output_steer = self.pid.update(self.damp_angle_steers_des, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override, p_scale=p_scale,
-                                      add_error=0, feedforward=steer_feedforward, speed=v_ego, deadzone=deadzone)
+                                      add_error=0, feedforward=steer_feedforward, speed=v_ego, deadzone=self.deadzone if abs(angle_feedforward) < 1 else 0.0)
         self.profiler.checkpoint('pid_update')
 
       except:

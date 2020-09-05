@@ -40,25 +40,35 @@ BIT_MASK = [1, 128, 64, 32, 8, 4, 2, 8,
 
 #import sys
 #sys.stderr = open('../laterald.txt', 'w')
+history_rows = []
 for filename in os.listdir('models/'):
   if filename[-5:] == '.hdf5':
-    if MODEL_NAME == '':
+    if os.path.exists('models/models.json'):
+      models = []
+      with open('models/models.json', 'r') as f:
+        models = []
+        for md in json.load(f)['models']:
+          models.append(load_model(os.path.expanduser('models/%s' % md)))
+          history_rows.append(models[-1].layers[0].input.shape[1])
+          print("loaded %s" % md)
+      break
+    elif MODEL_NAME == '':
       MODEL_NAME = filename
+      models = [load_model(os.path.expanduser('models/%s' % (MODEL_NAME)))]
+      history_rows = [models[-1].layers[0].input.shape[1]]
     else:
       print("\n\n   More than one model found!  Exiting!\n\n")
       exit()
      #[0]  #'Model-100-2-2-3-3'
 print('loading model: %s' % MODEL_NAME)
-model = load_model(os.path.expanduser('models/%s' % (MODEL_NAME)))
+models[-1].summary()
 
-HISTORY_ROWS = model.layers[0].input.shape[1]
+#HISTORY_ROWS = models[-1].layers[0].input.shape[1]
 OUTPUT_ROWS = 15
 BATCH_SIZE = 1
 MAX_CENTER_OPPOSE = np.reshape(np.arange(15) * 200, (OUTPUT_ROWS,1))
 
-lo_res_data = np.zeros((BATCH_SIZE,HISTORY_ROWS, INPUTS-6))
-
-print(model.summary())
+lo_res_data = np.zeros((BATCH_SIZE,history_rows[-1], INPUTS-6))
 
 def dump_sock(sock, wait_for_one=False):
   if wait_for_one:
@@ -173,7 +183,7 @@ start_time = time.time()
 
 #['Civic','CRV_5G','Accord_15','Insight', 'Accord']
 fingerprint = np.zeros((1, 10), dtype=np.int)
-model_output = model.predict_on_batch([lo_res_data[  :,:,:6], lo_res_data[  :,:,:-16],lo_res_data[  :,:,-16:-8], lo_res_data[  :,:,-8:], fingerprint])
+model_output = models[-1].predict_on_batch([lo_res_data[  :,:,:6], lo_res_data[  :,:,:-16],lo_res_data[  :,:,-16:-8], lo_res_data[  :,:,-8:], fingerprint])
 
 print(model_output.shape)
 while model_output.shape[2] > output_scaler.max_abs_.shape[0]:
@@ -213,8 +223,10 @@ with open(os.path.expanduser('~/vehicle_option.json'), 'r') as f:
   fingerprint[:,3+vehicle_option['vehicle_option']] = 1
 
 print(fingerprint, vehicle_option)
-model_output = model.predict_on_batch([lo_res_data[  :,:,:6], lo_res_data[  :,:,:-16],lo_res_data[  :,:,-16:-8], lo_res_data[  :,:,-8:], fingerprint])
+for md in range(len(models)):
+  model_output = models[md].predict_on_batch([lo_res_data[  :,-history_rows[md]:,:6], lo_res_data[  :,-history_rows[md]:,:-16],lo_res_data[  :,-history_rows[md]:,-16:-8], lo_res_data[  :,-history_rows[md]:,-8:], fingerprint])
 print(model_output)
+print(history_rows)
 
 l_prob = 0.0
 r_prob = 0.0
@@ -337,7 +349,7 @@ while 1:
   r_prob =     min(1, max(0, cs.camRight.parm4 / 127))
   lr_prob =    (l_prob + r_prob) - l_prob * r_prob
 
-  vehicle_array = np.array(vehicle_array[-HISTORY_ROWS:])
+  vehicle_array = np.array(vehicle_array[-history_rows[-1]:])
   #if cs.vEgo > 10 and abs(cs.steeringAngle - calibration[0]) <= 3 and abs(cs.steeringRate) < 3 and l_prob > 0 and r_prob > 0:
   #  cal_factor = update_calibration(calibration, np.concatenate((vehicle_array[-1], camera_input), axis=0), cal_col, cs)
 
@@ -357,12 +369,13 @@ while 1:
     
   #try:
 
-  hi_res_data = vehicle_scaler.transform(vehicle_standard.transform(vehicle_array[-HISTORY_ROWS:]))
+  hi_res_data = vehicle_scaler.transform(vehicle_standard.transform(vehicle_array[-history_rows[-1]:]))
   lo_res_data[:-1,:] = lo_res_data[1:,:]
   lo_res_data[-1,:] = np.concatenate(([hi_res_data[-1,6:]], [camera_input[:-32]], camera_scaler.transform(camera_standard.transform([camera_input[-32:]]))), axis=1)
   profiler.checkpoint('scale')
     
-  model_output = model.predict_on_batch([np.array([hi_res_data[:,:6]]), lo_res_data[:,:,:-16], lo_res_data[:,:,-16:-8], lo_res_data[:,:,-8:], fingerprint])
+  model_index = int(min(len(models)-1, (abs(cs.steeringAngle - calibration[0]))**0.5))
+  model_output = models[model_index].predict_on_batch([np.array([hi_res_data[-history_rows[model_index]:,:6]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
   profiler.checkpoint('predict')
 
   descaled_output = output_standard.inverse_transform(output_scaler.inverse_transform(model_output[-1])) 
@@ -388,7 +401,7 @@ while 1:
       fast_angles = np.clip(fast_angles, relative_angles - angle_limit, relative_angles + angle_limit)
   else:
     fast_angles = angle_factor * advanceSteer * (descaled_output[:,:angle_speed_count] - descaled_output[0,:angle_speed_count]) + cs.steeringAngle
-    if angle_limit < 1: 
+    if angle_limit < 1 or abs(cs.steeringAngle) > 30: 
       discrete_angles = angle_factor * descaled_output[:,:angle_speed_count] + calibration[0]
       fast_angles = np.clip(fast_angles, discrete_angles - angle_limit, discrete_angles + angle_limit)
   
@@ -413,6 +426,7 @@ while 1:
   path_send.pathPlan.laneWidth = float(lane_width + width_trim)
   path_send.pathPlan.angleOffset = float(calibration[0])
   path_send.pathPlan.angleBias = angle_bias
+  path_send.pathPlan.modelIndex = model_index
   path_send.pathPlan.paramsValid = calibrated
   path_send.pathPlan.cPoly = [float(x) for x in (calc_center[0][:,0])]
   path_send.pathPlan.lPoly = [float(x) for x in (calc_center[1][:,0] + 0.5 * lane_width)]
@@ -437,6 +451,8 @@ while 1:
   if frame % 60 == 0:
     #print(calibration_factor, np.round(calibration, 2))
     print('lane_width: %0.1f angle bias: %0.2f  lateral_offset:  %d   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs  angle_speed:  %0.1f' % (lane_width, angle_bias, lateral_adjust, calc_center[0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,0], descaled_output[1,1], execution_time_avg, angle_speed))
+  elif frame % 15 == 1:
+    print("model_index: %d  angle: %0.1f  history_rows: %d" % (model_index, cs.steeringAngle, history_rows[model_index]))
 
   if frame > next_params_put and ((cs.vEgo < 10 and cs.brakePressed) or not calibrated):
     next_params_put = frame + 3000

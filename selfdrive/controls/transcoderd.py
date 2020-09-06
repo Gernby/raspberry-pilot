@@ -6,14 +6,14 @@ import json
 import joblib
 import numpy as np
 
-INPUTS = 78
+INPUTS = 77
 OUTPUTS = 9
 MODEL_VERSION = 'F'
 MODEL_NAME = ''
 output_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_output_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
 output_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_output_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
-vehicle_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_vehicle_%s.scaler' % (12, MODEL_VERSION)))
-vehicle_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_vehicle_%s.scaler' % (12, MODEL_VERSION)))
+vehicle_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_vehicle_%s.scaler' % (11, MODEL_VERSION)))
+vehicle_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_vehicle_%s.scaler' % (11, MODEL_VERSION)))
 camera_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_camera_%s.scaler' % (32, MODEL_VERSION)))
 camera_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_camera_%s.scaler' % (32, MODEL_VERSION)))
 
@@ -40,35 +40,25 @@ BIT_MASK = [1, 128, 64, 32, 8, 4, 2, 8,
 
 #import sys
 #sys.stderr = open('../laterald.txt', 'w')
-history_rows = []
 for filename in os.listdir('models/'):
   if filename[-5:] == '.hdf5':
-    if os.path.exists('models/models.json'):
-      models = []
-      with open('models/models.json', 'r') as f:
-        models = []
-        for md in json.load(f)['models']:
-          models.append(load_model(os.path.expanduser('models/%s' % md)))
-          history_rows.append(models[-1].layers[0].input.shape[1])
-          print("loaded %s" % md)
-      break
-    elif MODEL_NAME == '':
+    if MODEL_NAME == '':
       MODEL_NAME = filename
-      models = [load_model(os.path.expanduser('models/%s' % (MODEL_NAME)))]
-      history_rows = [models[-1].layers[0].input.shape[1]]
     else:
       print("\n\n   More than one model found!  Exiting!\n\n")
       exit()
      #[0]  #'Model-100-2-2-3-3'
 print('loading model: %s' % MODEL_NAME)
-models[-1].summary()
+model = load_model(os.path.expanduser('models/%s' % (MODEL_NAME)))
 
-#HISTORY_ROWS = models[-1].layers[0].input.shape[1]
+HISTORY_ROWS = model.layers[0].input.shape[1]
 OUTPUT_ROWS = 15
 BATCH_SIZE = 1
 MAX_CENTER_OPPOSE = np.reshape(np.arange(15) * 200, (OUTPUT_ROWS,1))
 
-lo_res_data = np.zeros((BATCH_SIZE,history_rows[-1], INPUTS-6))
+lo_res_data = np.zeros((BATCH_SIZE,HISTORY_ROWS, INPUTS-5))
+
+print(model.summary())
 
 def dump_sock(sock, wait_for_one=False):
   if wait_for_one:
@@ -100,29 +90,16 @@ def sub_sock(port, poller=None, addr="127.0.0.1", conflate=False, timeout=None):
     poller.register(sock, zmq.POLLIN)
   return sock
 
-def project_error(cpoly):
-  peaks = np.sort([np.argmin(cpoly[:,0]), np.argmax(cpoly[:,0])])
-  if cpoly[peaks[0],0] < cpoly[peaks[1],0]:
-    peak_slope = peaks[0] + np.argmax(np.diff(cpoly[peaks[0]:peaks[1]+1,0]))
-  else:
-    peak_slope = peaks[0] + np.argmin(np.diff(cpoly[peaks[0]:peaks[1]+1,0]))
-  for i in range(peak_slope+2, len(cpoly)):
-    cpoly[i,0] = 2 * cpoly[i-1,0] - cpoly[i-2,0]
-  return cpoly
-
-def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, angle, prev_center, minimize=False, optimize=False, project=False):
+def tri_blend(l_prob, r_prob, lr_prob, tri_value, steer, angle, prev_center, minimize=False, optimize=False):
   center = tri_value[:,0:1]
   left = l_prob * tri_value[:,1:2] + (1 - l_prob) * center
   right = r_prob * tri_value[:,2:3] + (1 - r_prob) * center
   if minimize:
     abs_left = max(0.00001, np.sum(np.absolute(left)))
     abs_right = max(0.00001,  np.sum(np.absolute(right)))
-    centers = [(abs_right * left + abs_left * right) / (abs_left + abs_right), tri_value[:,1:2], tri_value[:,2:3]]
+    return [(abs_right * left + abs_left * right) / (abs_left + abs_right), tri_value[:,1:2], tri_value[:,2:3]]
   else:
-    centers = [0.5 * left + 0.5 * right, tri_value[:,1:2], tri_value[:,2:3]]
-  if project:
-    centers[0] = project_error(centers[0])
-  return centers
+    return [0.5 * left + 0.5 * right, tri_value[:,1:2], tri_value[:,2:3]]
 
 
 def update_calibration(calibration, inputs, cal_col, cs):
@@ -176,14 +153,14 @@ time_factor = 1.0
 lateral_offset = 0
 calibration_factor = 1.0
 angle_limit = 0.0
-next_params_put = 3600
+next_params_put = 36000
 
 model_output = None
 start_time = time.time()
 
 #['Civic','CRV_5G','Accord_15','Insight', 'Accord']
 fingerprint = np.zeros((1, 10), dtype=np.int)
-model_output = models[-1].predict_on_batch([lo_res_data[  :,:,:6], lo_res_data[  :,:,:-16],lo_res_data[  :,:,-16:-8], lo_res_data[  :,:,-8:], fingerprint])
+model_output = model.predict_on_batch([lo_res_data[  :,:,:5], lo_res_data[  :,:,:-16],lo_res_data[  :,:,-16:-8], lo_res_data[  :,:,-8:], fingerprint])
 
 print(model_output.shape)
 while model_output.shape[2] > output_scaler.max_abs_.shape[0]:
@@ -223,10 +200,8 @@ with open(os.path.expanduser('~/vehicle_option.json'), 'r') as f:
   fingerprint[:,3+vehicle_option['vehicle_option']] = 1
 
 print(fingerprint, vehicle_option)
-for md in range(len(models)):
-  model_output = models[md].predict_on_batch([lo_res_data[  :,-history_rows[md]:,:6], lo_res_data[  :,-history_rows[md]:,:-16],lo_res_data[  :,-history_rows[md]:,-16:-8], lo_res_data[  :,-history_rows[md]:,-8:], fingerprint])
+model_output = model.predict_on_batch([lo_res_data[  :,:,:5], lo_res_data[  :,:,:-16],lo_res_data[  :,:,-16:-8], lo_res_data[  :,:,-8:], fingerprint])
 print(model_output)
-print(history_rows)
 
 l_prob = 0.0
 r_prob = 0.0
@@ -234,8 +209,8 @@ lateral_adjust = 0
 frame = 0
 dump_sock(carState, True)
 
-calibration_items = ['angle_steers','lateral_accelleration','yaw_rate_can','angle_steers2','lateral_accelleration2','yaw_rate_can2','far_left_1','far_left_7','far_left_9','far_right_1','far_right_7','far_right_9','left_1','left_7','left_9','right_1','right_7','right_9']
-all_items = ['v_ego','angle_steers','lateral_accelleration','angle_rate', 'angle_rate_eps', 'yaw_rate_can','v_ego','long_accel', 'lane_width','angle_steers2','lateral_accelleration2','yaw_rate_can2','l_blinker','r_blinker',
+calibration_items = ['angle_steers','lateral_accelleration','angle_rate_eps', 'yaw_rate_can','angle_steers2','lateral_accelleration2','yaw_rate_can2','far_left_1','far_left_7','far_left_9','far_right_1','far_right_7','far_right_9','left_1','left_7','left_9','right_1','right_7','right_9']
+all_items = ['v_ego','angle_steers','lateral_accelleration','angle_rate_eps', 'yaw_rate_can','v_ego','long_accel', 'lane_width','angle_steers2','lateral_accelleration2','yaw_rate_can2','l_blinker','r_blinker',
             'left_missing','l6b_6','l6b_6','l6b_6','l6b_6','l6b_6','l6b_6','l8b_8',
             'far_left_missing','fl6b_6','fl6b_6','fl6b_6','fl6b_6','fl6b_6','fl6b_6','fl8b_8',
             'right_missing','r6b_6','r6b_6','r6b_6','r6b_6','r6b_6','r6b_6','r8b_8',
@@ -306,10 +281,6 @@ except:
 stock_cam_frame_prev = -1
 combine_flags = 1
 vehicle_array = []
-first_model = 0
-last_model = len(models)-1
-model_factor = 0.5
-model_index = 0
 params = None
 
 while 1:
@@ -321,7 +292,7 @@ while 1:
     cs = log.Event.from_bytes(_cs).carState
 
     #TO DO: Split hi and low res control scalers
-    vehicle_array.append([cs.vEgo, cs.steeringAngle, cs.lateralAccel, cs.steeringRate, cs.steeringTorqueEps, cs.yawRateCAN, cs.vEgo, cs.longAccel,  max(570, lane_width + width_trim), cs.steeringAngle, cs.lateralAccel, cs.yawRateCAN])
+    vehicle_array.append([cs.vEgo, cs.steeringAngle, cs.lateralAccel, cs.steeringRate, cs.yawRateCAN, cs.vEgo, cs.longAccel,  max(570, lane_width + width_trim), cs.steeringAngle, cs.lateralAccel, cs.yawRateCAN])
 
     if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
       stock_cam_frame_prev = cs.camLeft.frame
@@ -353,7 +324,7 @@ while 1:
   r_prob =     min(1, max(0, cs.camRight.parm4 / 127))
   lr_prob =    (l_prob + r_prob) - l_prob * r_prob
 
-  vehicle_array = np.array(vehicle_array[-history_rows[-1]:])
+  vehicle_array = np.array(vehicle_array[-HISTORY_ROWS:])
   #if cs.vEgo > 10 and abs(cs.steeringAngle - calibration[0]) <= 3 and abs(cs.steeringRate) < 3 and l_prob > 0 and r_prob > 0:
   #  cal_factor = update_calibration(calibration, np.concatenate((vehicle_array[-1], camera_input), axis=0), cal_col, cs)
 
@@ -362,26 +333,23 @@ while 1:
       if cal_col[i] < vehicle_array.shape[1]:
         vehicle_array[:,cal_col[i]] -= calibration[i]
       else:
-        camera_input[cal_col[i]-12] -= calibration[i]
+        camera_input[cal_col[i]-11] -= calibration[i]
         #print(all_items[11:][cal_col[i]-11], calibration_items[i])
 
       # TO DO: Fix this hack
-      if i in [0,4,5]: 
+      if i in [0,4]: 
         vehicle_array[:,cal_col[i]] /= angle_factor
 
   profiler.checkpoint('calibrate')
     
   #try:
 
-  hi_res_data = vehicle_scaler.transform(vehicle_standard.transform(vehicle_array[-history_rows[-1]:]))
+  hi_res_data = vehicle_scaler.transform(vehicle_standard.transform(vehicle_array[-HISTORY_ROWS:]))
   lo_res_data[:-1,:] = lo_res_data[1:,:]
-  lo_res_data[-1,:] = np.concatenate(([hi_res_data[-1,6:]], [camera_input[:-32]], camera_scaler.transform(camera_standard.transform([camera_input[-32:]]))), axis=1)
+  lo_res_data[-1,:] = np.concatenate(([hi_res_data[-1,5:]], [camera_input[:-32]], camera_scaler.transform(camera_standard.transform([camera_input[-32:]]))), axis=1)
   profiler.checkpoint('scale')
-  if cs.steeringPressed:
-    model_index = 0
-  else:
-    model_index = max(model_index - 1, first_model, min(model_index + 1, last_model, int(abs(cs.steeringAngle - calibration[0]) * model_factor)))
-  model_output = models[model_index].predict_on_batch([np.array([hi_res_data[-history_rows[model_index]:,:6]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
+    
+  model_output = model.predict_on_batch([np.array([hi_res_data[:,:5]]), lo_res_data[:,:,:-16], lo_res_data[:,:,-16:-8], lo_res_data[:,:,-8:], fingerprint])
   profiler.checkpoint('predict')
 
   descaled_output = output_standard.inverse_transform(output_scaler.inverse_transform(model_output[-1])) 
@@ -392,12 +360,12 @@ while 1:
   
   calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,angle_speed_count::3], cs.torqueRequest, cs.steeringAngle - calibration[0], calc_center[0], minimize=use_minimize, optimize=use_optimize)
   
-  '''if cs.vEgo > 10 and l_prob > 0 and r_prob > 0:	
+  if cs.vEgo > 10 and l_prob > 0 and r_prob > 0:	
     if calc_center[1][0,0] > calc_center[2][0,0]:	
       width_trim += 1	
     else:	
       width_trim -= 1	
-    width_trim = max(-100, min(width_trim, 0))'''
+    width_trim = max(-100, min(width_trim, 0))
 
   fast_angles = []
   if use_discrete_angle:
@@ -407,7 +375,7 @@ while 1:
       fast_angles = np.clip(fast_angles, relative_angles - angle_limit, relative_angles + angle_limit)
   else:
     fast_angles = angle_factor * advanceSteer * (descaled_output[:,:angle_speed_count] - descaled_output[0,:angle_speed_count]) + cs.steeringAngle
-    if angle_limit < 1 or abs(cs.steeringAngle) > 30: 
+    if angle_limit < 1: 
       discrete_angles = angle_factor * descaled_output[:,:angle_speed_count] + calibration[0]
       fast_angles = np.clip(fast_angles, discrete_angles - angle_limit, discrete_angles + angle_limit)
   
@@ -420,10 +388,10 @@ while 1:
       angle_bias -= (0.00001 * cs.vEgo)'''
 
   if abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10:
-    if calc_center[0][3,0] > 0:
-      angle_bias -= (0.00001 * cs.vEgo)
-    elif calc_center[0][3,0] < 0:
-      angle_bias += (0.00001 * cs.vEgo)
+    if calc_center[0][0,0] > 0:
+      angle_bias -= (0.000001 * cs.vEgo)
+    elif calc_center[0][0,0] < 0:
+      angle_bias += (0.000001 * cs.vEgo)
 
   profiler.checkpoint('process')
   path_send.pathPlan.centerCompensation = 0
@@ -432,7 +400,6 @@ while 1:
   path_send.pathPlan.laneWidth = float(lane_width + width_trim)
   path_send.pathPlan.angleOffset = float(calibration[0])
   path_send.pathPlan.angleBias = angle_bias
-  path_send.pathPlan.modelIndex = model_index
   path_send.pathPlan.paramsValid = calibrated
   path_send.pathPlan.cPoly = [float(x) for x in (calc_center[0][:,0])]
   path_send.pathPlan.lPoly = [float(x) for x in (calc_center[1][:,0] + 0.5 * lane_width)]
@@ -441,7 +408,7 @@ while 1:
   path_send.pathPlan.rProb = float(r_prob)
   path_send.pathPlan.cProb = float(lr_prob)
   path_send.pathPlan.canTime = cs.canTime
-  path_send.pathPlan.sysTime = cs.sysTime 
+  path_send.pathPlan.sysTime = cs.sysTime
   gernPath.send(path_send.to_bytes())
   profiler.checkpoint('send')
   
@@ -457,8 +424,6 @@ while 1:
   if frame % 60 == 0:
     #print(calibration_factor, np.round(calibration, 2))
     print('lane_width: %0.1f angle bias: %0.2f  lateral_offset:  %d   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs  angle_speed:  %0.1f' % (lane_width, angle_bias, lateral_adjust, calc_center[0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,0], descaled_output[1,1], execution_time_avg, angle_speed))
-  elif frame % 15 == 1:
-    print("model_index: %d  angle: %0.1f  history_rows: %d" % (model_index, cs.steeringAngle, history_rows[model_index]))
 
   if frame > next_params_put and ((cs.vEgo < 10 and cs.brakePressed) or not calibrated):
     next_params_put = frame + 3000
@@ -479,9 +444,6 @@ while 1:
       use_discrete_angle = True if float(kegman.conf['discreteAngle']) > 0 else False
       angle_limit = abs(float(kegman.conf['discreteAngle']))
       use_minimize = True if kegman.conf['useMinimize'] == '1' else False
-      first_model = max(0, min(len(models)-1, int(float(kegman.conf['firstModel']))))
-      last_model = max(first_model, min(len(models)-1, int(float(kegman.conf['lastModel']))))
-      model_factor = abs(float(kegman.conf['modelFactor']))
   
     profiler.checkpoint('kegman')
       

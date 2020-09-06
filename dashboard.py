@@ -136,7 +136,7 @@ while 1:
       time.sleep(0.04)
       for _cs in carState.recv_multipart():
         cs = log.Event.from_bytes(_cs).carState
-        vEgo = cs.vEgo + 0.001
+        vEgo = cs.vEgo
         if vEgo > 0 and cs.canTime//60000 > previous_minute:
           profiler.checkpoint('carstate')
           time.sleep(0.00001)
@@ -269,28 +269,28 @@ while 1:
       profiler.checkpoint('live_tune')
 
   if kegman_valid and not cs is None and not logfile is None:
-    #try:
-    (mode, ino, dev, nlink, uid, gid, size, atime, mtime, kegtime) = os.stat(os.path.expanduser('~/kegman.json'))
-    if kegtime != kegtime_prev:
-      kegtime_prev = kegtime
-      kegman = kegman_conf() 
-      kegmanInsertString = ["tuneData,user=" + user_id + " "]
-      for key in kegman.conf:
-        if is_number(str(kegman.conf[key])) and key not in ['identifier']:
-          kegmanInsertString.append(key)
-          kegmanInsertString.append("=")
-          kegmanInsertString.append(str(kegman.conf[key]))
-          kegmanInsertString.append(",")
-      kegmanInsertString[-1] = " "
-      kegmanInsertString.append(str(int(cs.canTime)))
-      kegmanInsertString.append("\n")
-      kegmanInsertString = "".join(kegmanInsertString)
-      logfile.write(kegmanInsertString)
-      if do_send_live:
-        tunePush.send_json(kegman.conf)
-      print(kegmanInsertString)
-    #except:
-    #  kegman_valid = False
+    try:
+      (mode, ino, dev, nlink, uid, gid, size, atime, mtime, kegtime) = os.stat(os.path.expanduser('~/kegman.json'))
+      if kegtime != kegtime_prev:
+        kegtime_prev = kegtime
+        kegman = kegman_conf() 
+        kegmanInsertString = ["tuneData,user=" + user_id + " "]
+        for key in kegman.conf:
+          if is_number(str(kegman.conf[key])) and key not in ['identifier']:
+            kegmanInsertString.append(key)
+            kegmanInsertString.append("=")
+            kegmanInsertString.append(str(kegman.conf[key]))
+            kegmanInsertString.append(",")
+        kegmanInsertString[-1] = " "
+        kegmanInsertString.append(str(int(cs.canTime)))
+        kegmanInsertString.append("\n")
+        kegmanInsertString = "".join(kegmanInsertString)
+        logfile.write(kegmanInsertString)
+        if do_send_live:
+          tunePush.send_json(kegman.conf)
+        print(kegmanInsertString)
+    except:
+      kegman_valid = False
 
   if do_influx and len(localCarStateDataString2) >= 45:
     frame += 1

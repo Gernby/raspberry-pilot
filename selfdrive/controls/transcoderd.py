@@ -306,6 +306,10 @@ except:
 stock_cam_frame_prev = -1
 combine_flags = 1
 vehicle_array = []
+first_model = 0
+last_model = len(models)-1
+model_factor = 0.5
+model_index = 0
 params = None
 
 while 1:
@@ -373,8 +377,10 @@ while 1:
   lo_res_data[:-1,:] = lo_res_data[1:,:]
   lo_res_data[-1,:] = np.concatenate(([hi_res_data[-1,6:]], [camera_input[:-32]], camera_scaler.transform(camera_standard.transform([camera_input[-32:]]))), axis=1)
   profiler.checkpoint('scale')
-    
-  model_index = int(min(len(models)-1, (abs(cs.steeringAngle - calibration[0]))**0.5))
+  if cs.steeringPressed:
+    model_index = 0
+  else:
+    model_index = max(model_index - 1, first_model, min(model_index + 1, last_model, int(abs(cs.steeringAngle - calibration[0]) * model_factor)))
   model_output = models[model_index].predict_on_batch([np.array([hi_res_data[-history_rows[model_index]:,:6]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
   profiler.checkpoint('predict')
 
@@ -473,6 +479,9 @@ while 1:
       use_discrete_angle = True if float(kegman.conf['discreteAngle']) > 0 else False
       angle_limit = abs(float(kegman.conf['discreteAngle']))
       use_minimize = True if kegman.conf['useMinimize'] == '1' else False
+      first_model = max(0, min(len(models)-1, int(float(kegman.conf['firstModel']))))
+      last_model = max(first_model, min(len(models)-1, int(float(kegman.conf['lastModel']))))
+      model_factor = abs(float(kegman.conf['modelFactor']))
   
     profiler.checkpoint('kegman')
       

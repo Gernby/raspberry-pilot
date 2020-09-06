@@ -89,6 +89,13 @@ class kegman_conf():
         if car in CP.carFingerprint:
           print(car, base_config[car])
           break
+      if base_config['tuneRev'] != self.config['tuneRev']:
+        if os.path.exists(os.path.expanduser('~/kegman.json')):
+          with open(os.path.expanduser('~/kegman.json'), 'r') as f1:
+            json.load(f1)
+            with open(os.path.expanduser('~/kegman_%s.json' % self.config['tuneRev']), 'w') as f2:
+              json.dump(self.config, f2, indent=2, sort_keys=True)
+              os.chmod(os.path.expanduser("~/kegman.json"), 0o764)
       self.config.update({'tuneRev': base_config['tuneRev']})
       for key, value in base_config[car].items():
         self.config.update({key: value})
@@ -119,6 +126,10 @@ class kegman_conf():
 
     if "useLocalImport" not in self.config:
       self.config.update({"useLocalImport": "0"})
+      self.element_updated = True
+
+    if "deadzone" not in self.config:
+      self.config.update({"deadzone": "-0.1"})
       self.element_updated = True
 
     if self.element_updated:

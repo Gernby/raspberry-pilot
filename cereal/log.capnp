@@ -729,6 +729,7 @@ struct PathPlan {
   centerError @31 :List(Float32);
   sysTime @32 :UInt64;
   centerCompensation @33 :Float32;
+  modelIndex @34 :Int16;
 }
 
 struct LiveLocationData {

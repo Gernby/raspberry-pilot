@@ -224,6 +224,8 @@ class LatControlPID(object):
           self.damp_angle_steers += (angle_steers + angle_steers_rate * (self.damp_steer + float(react_steer)) - self.damp_angle_steers) / max(1.0, self.damp_steer * 100.)
           self.angle_steers_des = interp(self.angle_index, self.path_index, self.fast_angles[min(len(self.fast_angles)-1, int(self.polyReact))])
           self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des + self.projected_lane_error) / max(1.0, self.damp_mpc * 100.)
+          if (self.damp_angle_steers - self.damp_angle_steers_des) * (angle_steers - self.damp_angle_steers_des) < 0:
+            self.damp_angle_steers = self.damp_angle_steers_des
 
         angle_feedforward = float(self.damp_angle_steers_des - path_plan.angleOffset) + float(self.path_error_comp)
         self.angle_ff_ratio = float(gernterp(abs(angle_feedforward), self.angle_ff_bp[0], self.angle_ff_bp[1]))

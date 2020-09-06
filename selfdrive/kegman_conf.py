@@ -89,7 +89,7 @@ class kegman_conf():
         if car in CP.carFingerprint:
           print(car, base_config[car])
           break
-      if base_config['tuneRev'] != self.config['tuneRev']:
+      if "tuneRev" in self.config and base_config['tuneRev'] != self.config['tuneRev']:
         if os.path.exists(os.path.expanduser('~/kegman.json')):
           with open(os.path.expanduser('~/kegman.json'), 'r') as f1:
             json.load(f1)
@@ -130,6 +130,12 @@ class kegman_conf():
 
     if "deadzone" not in self.config:
       self.config.update({"deadzone": "-0.1"})
+      self.element_updated = True
+
+    if "firstModel" not in self.config:
+      self.config.update({"firstModel": "0"})
+      self.config.update({"lastModel": "6"})
+      self.config.update({"modelFactor": "0.5"})
       self.element_updated = True
 
     if self.element_updated:

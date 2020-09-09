@@ -372,13 +372,14 @@ while 1:
   profiler.checkpoint('calibrate')
     
   #try:
-
   hi_res_data = vehicle_scaler.transform(vehicle_standard.transform(vehicle_array[-history_rows[-1]:]))
   lo_res_data[:-1,:] = lo_res_data[1:,:]
   lo_res_data[-1,:] = np.concatenate(([hi_res_data[-1,6:]], [camera_input[:-32]], camera_scaler.transform(camera_standard.transform([camera_input[-32:]]))), axis=1)
   profiler.checkpoint('scale')
-  if cs.steeringPressed:
-    model_index = 0
+  if lr_prob == 0:
+    model_index = last_model
+  elif cs.steeringPressed:
+    model_index = first_model
   else:
     model_index = max(model_index - 1, first_model, min(model_index + 1, last_model, int(abs(cs.steeringAngle - calibration[0]) * model_factor)))
   model_output = models[model_index].predict_on_batch([np.array([hi_res_data[-history_rows[model_index]:,:6]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])

@@ -50,6 +50,7 @@ class LatControlPID(object):
     self.avg_plan_age = 0.
     self.min_index = 0
     self.max_index = 0
+    self.wiggle_angle = 0.2
     self.prev_angle_steers = 0.
     self.c_prob = 0.
     self.deadzone = 0.
@@ -91,6 +92,7 @@ class LatControlPID(object):
         self.react_mpc = (float(self.kegman.conf['reactMPC']))
         self.damp_mpc = (float(self.kegman.conf['dampMPC']))
         self.deadzone = float(self.kegman.conf['deadzone'])
+        self.wiggle_angle = float(self.kegman.conf['wiggleAngle'])
         self.polyReact = min(11, max(0, int(10 * float(self.kegman.conf['polyReact']))))
         self.poly_damp = min(1, max(0, float(self.kegman.conf['polyDamp'])))
         self.poly_factor = max(0.0, float(self.kegman.conf['polyFactor']) * 0.001)
@@ -226,8 +228,9 @@ class LatControlPID(object):
           self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des + self.projected_lane_error) / max(1.0, self.damp_mpc * 100.)
           if (self.damp_angle_steers - self.damp_angle_steers_des) * (angle_steers - self.damp_angle_steers_des) < 0:
             self.damp_angle_steers = self.damp_angle_steers_des
+        requested_angle = min(self.damp_angle_steers_des + self.wiggle_angle, max(self.damp_angle_steers_des - self.wiggle_angle, self.angle_steers_des))
 
-        angle_feedforward = float(self.damp_angle_steers_des - path_plan.angleOffset) + float(self.path_error_comp)
+        angle_feedforward = float(requested_angle - path_plan.angleOffset) + float(self.path_error_comp)
         self.angle_ff_ratio = float(gernterp(abs(angle_feedforward), self.angle_ff_bp[0], self.angle_ff_bp[1]))
         rate_feedforward = (1.0 - self.angle_ff_ratio) * self.rate_ff_gain * self.angle_rate_des
         steer_feedforward = float(v_ego)**2 * (rate_feedforward + angle_feedforward * self.angle_ff_ratio * self.angle_ff_gain)
@@ -244,7 +247,7 @@ class LatControlPID(object):
           p_scale = max(0.2, min(1.0, 1 / abs(angle_feedforward)))
         self.profiler.checkpoint('pre-pid')
 
-        output_steer = self.pid.update(self.damp_angle_steers_des, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override, p_scale=p_scale,
+        output_steer = self.pid.update(requested_angle, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override, p_scale=p_scale,
                                       add_error=0, feedforward=steer_feedforward, speed=v_ego, deadzone=self.deadzone if abs(angle_feedforward) < 1 else 0.0)
         self.profiler.checkpoint('pid_update')
 

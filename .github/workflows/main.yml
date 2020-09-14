@@ -24,11 +24,11 @@ jobs:
 
       # Runs a single command using the runners shell
       - name: Move the file to home
-        run: mv ~/actions-runner/_work/raspberry-pilot/raspberry-pilot ~/raspberry-pilot
+        run: mv /home/ubuntu/actions-runner/_work/raspberry-pilot/raspberry-pilot /home/ubuntu/raspberry-pilot
 
       # Runs a set of commands using the runners shell
       - name: Run a multi-line script
         run: |
-          cp ~/raspberry-pilot/start_install_tf.sh ~/start_install_tf.sh
-          cd ~/
+          cp /home/ubuntu/raspberry-pilot/start_install_tf.sh /home/ubuntu/start_install_tf.sh
+          cd /home/ubuntu
           sh start_install_tf.sh

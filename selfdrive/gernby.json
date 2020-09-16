@@ -15,6 +15,7 @@
   "ACCORD_15": {
     "Ki": "0.24",
     "Kp": "0.8",
+    "accelLimit": "0.2",
     "advanceSteer": "0.6", 
     "angleFactor": "0.95",
     "dampMPC": "0.17",
@@ -36,6 +37,7 @@
   "ACCORD": {
     "Ki": "0.24",
     "Kp": "0.8",
+    "accelLimit": "0.2",
     "advanceSteer": "0.4", 
     "angleFactor": "0.95",
     "dampMPC": "0.17",
@@ -57,6 +59,7 @@
   "CIVIC": {
     "Ki": "0.24",
     "Kp": "0.8",
+    "accelLimit": "0.2",
     "advanceSteer": "0.6", 
     "angleFactor": "1.0",
     "dampMPC": "0.15",
@@ -77,7 +80,8 @@
   },
   "INSIGHT": {
     "Ki": "0.24",
-    "Kp": "0.8",
+    "Kp": "0.8", 
+    "accelLimit": "0.2",
     "advanceSteer": "0.6", 
     "angleFactor": "1.0",
     "dampMPC": "0.17",
@@ -99,6 +103,7 @@
   "CRV": {
     "Ki": "0.24",
     "Kp": "0.8",
+    "accelLimit": "0.2",
     "advanceSteer": "0.5", 
     "angleFactor": "1.0",
     "dampMPC": "0.17",

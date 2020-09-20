@@ -92,6 +92,7 @@ class LatControlPID(object):
         self.react_mpc = (float(self.kegman.conf['reactMPC']))
         self.damp_mpc = (float(self.kegman.conf['dampMPC']))
         self.deadzone = float(self.kegman.conf['deadzone'])
+        self.rate_ff_gain = float(self.kegman.conf['rateFFGain'])
         self.wiggle_angle = float(self.kegman.conf['wiggleAngle'])
         self.accel_limit = (float(self.kegman.conf['accelLimit']))
         self.polyReact = min(11, max(0, int(10 * float(self.kegman.conf['polyReact']))))

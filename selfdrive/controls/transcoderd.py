@@ -265,14 +265,16 @@ print(car_params)
   
 calibrated = True
 calibration_data = params.get("CalibrationParams")
-calibration_data =  json.loads(calibration_data)
-calibration = np.array(calibration_data['calibration'])
-if len(calibration) != len(cal_col):
+if not calibration_data is None:
+  calibration_data =  json.loads(calibration_data)
+  calibration = np.array(calibration_data['calibration'])
+if calibration_data is None or len(calibration) != len(cal_col):
   calibration = np.zeros(len(cal_col))
   calibrated = False
   print("resetting calibration")
-lane_width = calibration_data['lane_width']
-angle_bias = calibration_data['angle_bias']
+else:
+  lane_width = calibration_data['lane_width']
+  angle_bias = calibration_data['angle_bias']
 print(calibration)
 
 stock_cam_frame_prev = -1

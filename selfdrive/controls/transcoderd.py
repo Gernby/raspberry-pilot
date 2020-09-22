@@ -259,48 +259,23 @@ kegtime_prev = 0
 angle_speed_count = model_output.shape[2] - 7
 #(mode, ino, dev, nlink, uid, gid, size, atime, mtime, kegtime_prev) = os.stat(os.path.expanduser('~/kegman.json'))
 
-
-'''for i in range(0, 9, 3):
-  print("mean: ", output_standard.mean_[i])
-  output_standard.mean_[i] += 100
-  print("mean: ", output_standard.mean_[i])'''
-
-try:
-  car_params = params.get('CarParams')
-  print(car_params)
-  #if 'Accord' in car_params['fingerprint']:
-    
-  calibrated = True
-  calibration_data = params.get("CalibrationParams")
+car_params = params.get('CarParams')
+print(car_params)
+#if 'Accord' in car_params['fingerprint']:
+  
+calibrated = True
+calibration_data = params.get("CalibrationParams")
+if not calibration_data is None:
   calibration_data =  json.loads(calibration_data)
   calibration = np.array(calibration_data['calibration'])
-  if len(calibration) != len(cal_col):
-    with open(os.path.expanduser('~/calibration.json'), 'r') as f:
-      calibration_data = json.load(f)
-      calibration = np.array(calibration_data['calibration'])
-      if len(calibration) != len(cal_col):
-        calibration = np.zeros(len(cal_col))
-        calibrated = False
-        print("resetting calibration")
+if calibration_data is None or len(calibration) != len(cal_col):
+  calibration = np.zeros(len(cal_col))
+  calibrated = False
+  print("resetting calibration")
+else:
   lane_width = calibration_data['lane_width']
   angle_bias = calibration_data['angle_bias']
-  print(calibration)
-except:
-  # TODO: Remove this after user's calibrations have been moved to params
-  try:
-    with open(os.path.expanduser('~/calibration.json'), 'r') as f:
-      calibration_data = json.load(f)
-      calibration = np.array(calibration_data['calibration'])
-      if len(calibration) != len(cal_col):
-        calibration = np.zeros(len(cal_col))
-        calibrated = False
-        print("resetting calibration")
-    lane_width = calibration_data['lane_width']
-    angle_bias = calibration_data['angle_bias']
-  except:
-    calibrated = False
-    print("resetting calibration")
-    calibration = np.zeros(len(cal_col))
+print(calibration)
 
 stock_cam_frame_prev = -1
 combine_flags = 1

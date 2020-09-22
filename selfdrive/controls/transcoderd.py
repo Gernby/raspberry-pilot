@@ -275,32 +275,12 @@ try:
   calibration_data =  json.loads(calibration_data)
   calibration = np.array(calibration_data['calibration'])
   if len(calibration) != len(cal_col):
-    with open(os.path.expanduser('~/calibration.json'), 'r') as f:
-      calibration_data = json.load(f)
-      calibration = np.array(calibration_data['calibration'])
-      if len(calibration) != len(cal_col):
-        calibration = np.zeros(len(cal_col))
-        calibrated = False
-        print("resetting calibration")
+    calibration = np.zeros(len(cal_col))
+    calibrated = False
+    print("resetting calibration")
   lane_width = calibration_data['lane_width']
   angle_bias = calibration_data['angle_bias']
   print(calibration)
-except:
-  # TODO: Remove this after user's calibrations have been moved to params
-  try:
-    with open(os.path.expanduser('~/calibration.json'), 'r') as f:
-      calibration_data = json.load(f)
-      calibration = np.array(calibration_data['calibration'])
-      if len(calibration) != len(cal_col):
-        calibration = np.zeros(len(cal_col))
-        calibrated = False
-        print("resetting calibration")
-    lane_width = calibration_data['lane_width']
-    angle_bias = calibration_data['angle_bias']
-  except:
-    calibrated = False
-    print("resetting calibration")
-    calibration = np.zeros(len(cal_col))
 
 stock_cam_frame_prev = -1
 combine_flags = 1

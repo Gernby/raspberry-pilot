@@ -232,7 +232,7 @@ l_prob = 0.0
 r_prob = 0.0
 lateral_adjust = 0
 frame = 0
-#dump_sock(carState, True)
+dump_sock(carState, True)
 
 calibration_items = ['angle_steers','lateral_accelleration','yaw_rate_can','angle_steers2','lateral_accelleration2','yaw_rate_can2','far_left_1','far_left_7','far_left_9','far_right_1','far_right_7','far_right_9','left_1','left_7','left_9','right_1','right_7','right_9']
 all_items = ['v_ego','angle_steers','lateral_accelleration','angle_rate', 'angle_rate_eps', 'yaw_rate_can','v_ego','long_accel', 'lane_width','angle_steers2','lateral_accelleration2','yaw_rate_can2','l_blinker','r_blinker',

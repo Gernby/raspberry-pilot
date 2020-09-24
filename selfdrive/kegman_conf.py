@@ -140,6 +140,10 @@ class kegman_conf():
       self.config.update({"accelLimit": "0.2"})
       self.element_updated = True
 
+    if "rateFFGain" not in self.config:
+      self.config.update({"rateFFGain": "0.4"})
+      self.element_updated = True
+
     if "firstModel" not in self.config:
       self.config.update({"firstModel": "0"})
       self.config.update({"lastModel": "6"})

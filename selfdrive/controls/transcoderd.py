@@ -175,7 +175,8 @@ time_factor = 1.0
 lateral_offset = 0
 calibration_factor = 1.0
 angle_limit = 0.0
-next_params_put = 3600
+next_params_distance = 133000.0
+distance_driven = 0.0
 
 model_output = None
 start_time = time.time()
@@ -231,7 +232,7 @@ l_prob = 0.0
 r_prob = 0.0
 lateral_adjust = 0
 frame = 0
-dump_sock(carState, True)
+#dump_sock(carState, True)
 
 calibration_items = ['angle_steers','lateral_accelleration','yaw_rate_can','angle_steers2','lateral_accelleration2','yaw_rate_can2','far_left_1','far_left_7','far_left_9','far_right_1','far_right_7','far_right_9','left_1','left_7','left_9','right_1','right_7','right_9']
 all_items = ['v_ego','angle_steers','lateral_accelleration','angle_rate', 'angle_rate_eps', 'yaw_rate_can','v_ego','long_accel', 'lane_width','angle_steers2','lateral_accelleration2','yaw_rate_can2','l_blinker','r_blinker',
@@ -272,9 +273,12 @@ if calibration_data is None or len(calibration) != len(cal_col):
   calibration = np.zeros(len(cal_col))
   calibrated = False
   print("resetting calibration")
+  params.delete("CalibrationParams")
 else:
   lane_width = calibration_data['lane_width']
   angle_bias = calibration_data['angle_bias']
+  params = None
+
 print(calibration)
 
 stock_cam_frame_prev = -1
@@ -284,7 +288,6 @@ first_model = 0
 last_model = len(models)-1
 model_factor = 0.5
 model_index = 0
-params = None
 
 while 1:
   vehicle_array = list(vehicle_array)
@@ -420,6 +423,7 @@ while 1:
     profiler.checkpoint('send')
     
     frame += 1
+    distance_driven += cs.vEgo 
 
     path_send = log.Event.new_message()
     path_send.init('pathPlan')
@@ -430,12 +434,17 @@ while 1:
 
     if frame % 60 == 0:
       #print(calibration_factor, np.round(calibration, 2))
-      print('lane_width: %0.1f angle bias: %0.2f  lateral_offset:  %d   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs  angle_speed:  %0.1f' % (lane_width, angle_bias, lateral_adjust, calc_center[0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,0], descaled_output[1,1], execution_time_avg, angle_speed))
+      print('lane_width: %0.1f angle bias: %0.2f  distance_driven:  %0.2f   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs  angle_speed:  %0.1f' % (lane_width, angle_bias, distance_driven, calc_center[0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,0], descaled_output[1,1], execution_time_avg, angle_speed))
 
-    if frame > next_params_put and ((cs.vEgo < 10 and cs.brakePressed) or not calibrated):
-      next_params_put = frame + 3000
+    if distance_driven > next_params_distance and ((cs.vEgo < 10 and cs.brakePressed) or not calibrated):
+      next_params_distance = distance_driven + 133000
       print(np.round(calibration,2))
-      put_nonblocking("CalibrationParams", json.dumps({'calibration': list(calibration),'lane_width': lane_width,'angle_bias': angle_bias}))
+      if calibrated:
+        put_nonblocking("CalibrationParams", json.dumps({'calibration': list(calibration),'lane_width': lane_width,'angle_bias': angle_bias}))
+      else:
+        params.put("CalibrationParams", json.dumps({'calibration': list(calibration),'lane_width': lane_width,'angle_bias': angle_bias}))
+        params = None
+      calibrated = True
       #os.remove(os.path.expanduser('~/calibration.json'))
       profiler.checkpoint('save_cal')
 

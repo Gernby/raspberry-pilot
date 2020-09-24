@@ -73,6 +73,7 @@ class LatControlPID(object):
       lateral_params = json.loads(lateral_params)
       self.angle_ff_gain = max(1.0, float(lateral_params['angle_ff_gain']))
     except:
+      params.put("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
       self.angle_ff_gain = 1.0
 
   def live_tune(self, CP):

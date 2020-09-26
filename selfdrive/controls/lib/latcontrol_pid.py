@@ -53,6 +53,7 @@ class LatControlPID(object):
     self.prev_angle_steers = 0.
     self.c_prob = 0.
     self.deadzone = 0.
+    self.use_deadzone = False
     self.starting_angle = 0.
     self.projected_lane_error = 0.
     self.prev_projected_lane_error = 0.
@@ -179,7 +180,10 @@ class LatControlPID(object):
         self.zero_poly_crossed = time.time()
       self.prev_projected_lane_error = self.projected_lane_error
       if time.time() - min(self.zero_poly_crossed, self.zero_steer_crossed) < 4:
+        self.use_deadzone = False
         self.projected_lane_error -= (float(self.c_prob * self.poly_damp * self.center_angles[0]))
+      else:
+        self.use_deadzone = True
       self.fast_angles = np.array(path_plan.fastAngles)
       self.profiler.checkpoint('path_plan')
 
@@ -247,14 +251,16 @@ class LatControlPID(object):
           else:
             self.previous_integral = self.pid.i
 
-        if path_plan.cProb == 0 or (angle_feedforward > 0) == (self.pid.p > 0) or (path_plan.cPoly[-1] > 0) == (self.pid.p > 0):
+        if (angle_feedforward > 0) == (self.pid.p > 0) or (path_plan.cProb > 0 and (path_plan.cPoly[-1] > 0) == (self.pid.p > 0)):
           p_scale = 1.0 
+        elif abs(angle_feedforward) < 1:
+          p_scale = min(1.0, 5 / (0.001 + abs(angle_steers_rate)))
         else:
-          p_scale = max(0.2, min(1.0, 1 / abs(angle_feedforward)))
+          p_scale = max(0.2, min(1.0, 1 / (0.001 + abs(angle_feedforward)), 1 / (0.001 + abs(angle_steers_rate)-3)))
         self.profiler.checkpoint('pre-pid')
 
         output_steer = self.pid.update(requested_angle, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override, p_scale=p_scale,
-                                      add_error=0, feedforward=steer_feedforward, speed=v_ego, deadzone=self.deadzone if abs(angle_feedforward) < 1 else 0.0)
+                                      add_error=0, feedforward=steer_feedforward, speed=v_ego, deadzone=(self.deadzone if abs(angle_feedforward) < 1 and self.use_deadzone else 0.0))  #-self.deadzone))
         self.profiler.checkpoint('pid_update')
 
       except:

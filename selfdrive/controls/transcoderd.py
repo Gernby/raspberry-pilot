@@ -287,6 +287,11 @@ vehicle_array = []
 first_model = 0
 last_model = len(models)-1
 model_factor = 0.5
+lateral_factor = 1
+yaw_factor = 1
+speed_factor = 1
+steer_factor = 1
+width_factor = 1
 model_index = 0
 
 while 1:
@@ -298,7 +303,8 @@ while 1:
     cs = log.Event.from_bytes(_cs).carState
 
     #TO DO: Split hi and low res control scalers
-    vehicle_array.append([cs.vEgo, max(-30, min(30, cs.steeringAngle)), cs.lateralAccel, max(-40, min(40, cs.steeringRate)), max(-40, min(40, cs.steeringTorqueEps)), cs.yawRateCAN, cs.vEgo, cs.longAccel,  max(570, lane_width + width_trim), max(-30, min(30, cs.steeringAngle)), cs.lateralAccel, cs.yawRateCAN])
+    vehicle_array.append([cs.vEgo, max(-30, min(30, steer_factor * cs.steeringAngle / angle_factor)), lateral_factor * cs.lateralAccel, max(-40, min(40, steer_factor * cs.steeringRate / angle_factor)), max(-40, min(40, cs.steeringTorqueEps)), yaw_factor * cs.yawRateCAN, 
+                                      speed_factor * cs.vEgo, cs.longAccel,  width_factor * max(570, lane_width + width_trim), max(-30, min(30, steer_factor * cs.steeringAngle / angle_factor)), lateral_factor * cs.lateralAccel, yaw_factor * cs.yawRateCAN])
 
     if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
       stock_cam_frame_prev = cs.camLeft.frame
@@ -344,8 +350,8 @@ while 1:
           #print(all_items[11:][cal_col[i]-11], calibration_items[i])
 
         # TO DO: Fix this hack
-        if i == 0: 
-          vehicle_array[:,cal_col[i]] /= angle_factor
+        #if i == 0: 
+        #  vehicle_array[:,cal_col[i]] /= angle_factor
 
     profiler.checkpoint('calibrate')
       
@@ -356,6 +362,8 @@ while 1:
     profiler.checkpoint('scale')
     if lr_prob == 0 or cs.steeringPressed:
       model_index = first_model
+    elif left_missing != right_missing:
+      model_index = last_model
     else:
       model_index = max(model_index - 1, first_model, min(model_index + 1, last_model, int(abs(cs.steeringAngle - calibration[0]) * model_factor)))
     model_output = models[model_index].predict_on_batch([np.array([hi_res_data[-history_rows[model_index]:,:6]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
@@ -369,12 +377,12 @@ while 1:
     
     calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,angle_speed_count::3], cs.torqueRequest, cs.steeringAngle - calibration[0], calc_center[0], minimize=use_minimize, optimize=use_optimize)
     
-    '''if cs.vEgo > 10 and l_prob > 0 and r_prob > 0:	
+    if cs.vEgo > 10 and l_prob > 0 and r_prob > 0:	
       if calc_center[1][0,0] > calc_center[2][0,0]:	
         width_trim += 1	
       else:	
         width_trim -= 1	
-      width_trim = max(-100, min(width_trim, 0))'''
+      width_trim = max(-200, min(width_trim, 50))
 
     fast_angles = []
     if use_discrete_angle:
@@ -456,6 +464,7 @@ while 1:
         kegman = kegman_conf()  
         advanceSteer = 1.0 + max(0, float(kegman.conf['advanceSteer']))
         angle_factor = float(kegman.conf['angleFactor'])
+        steer_factor = float(kegman.conf['steerFactor'])
         angle_speed = min(5, max(0, int(10 * float(kegman.conf['polyReact']))))
         use_discrete_angle = True if float(kegman.conf['discreteAngle']) > 0 else False
         angle_limit = abs(float(kegman.conf['discreteAngle']))
@@ -463,6 +472,10 @@ while 1:
         first_model = max(0, min(len(models)-1, int(float(kegman.conf['firstModel']))))
         last_model = max(first_model, min(len(models)-1, int(float(kegman.conf['lastModel']))))
         model_factor = abs(float(kegman.conf['modelFactor']))
+        speed_factor = abs(float(kegman.conf['speedFactor']))
+        width_factor = abs(float(kegman.conf['widthFactor']))
+        lateral_factor = abs(float(kegman.conf['lateralFactor']))
+        yaw_factor = abs(float(kegman.conf['yawFactor']))
     
       profiler.checkpoint('kegman')
         

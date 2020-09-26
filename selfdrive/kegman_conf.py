@@ -140,6 +140,13 @@ class kegman_conf():
       self.config.update({"accelLimit": "0.2"})
       self.element_updated = True
 
+    if "widthFactor" not in self.config:
+      self.config.update({"speedFactor": "1.0"})
+      self.config.update({"lateralFactor": "1.0"})
+      self.config.update({"yawFactor": "1.0"})
+      self.config.update({"steerFactor": "1.0"})
+      self.element_updated = True
+
     if "rateFFGain" not in self.config:
       self.config.update({"rateFFGain": "0.4"})
       self.element_updated = True

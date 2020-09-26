@@ -138,9 +138,6 @@ somewhere in the middle of the file. If you add it to the end, add a trailing co
 ## Loading the Model
 
 1. When you receive the model from Gernby, delete all files in `~/raspilot/models` and unzip the new archive in that folder. The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
-
-**Note: You must ensure that only one file ending with '5' exists in this folder. If multiple files match, delete or move all but one of the excess files to ~.**
-
 2. Reboot the Pi, and log back in
 3. Run `top -u ubuntu`
 4. Look for `controlsd`, `boardd`, `ubloxd`, `dashboard`, and `transcoderd` this time

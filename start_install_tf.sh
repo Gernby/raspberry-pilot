@@ -107,6 +107,7 @@ sudo apt install -y influxdb influxdb-client apt-transport-https adduser dfu-uti
 echo "Changing the default python.."
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.7 2
+sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 3
 
 # start grafana and influxdb (installed but temporarily disabled to reduce resource usage)
 sudo /bin/systemctl daemon-reload

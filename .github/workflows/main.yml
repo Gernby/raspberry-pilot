@@ -1,0 +1,40 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the resonant-rails branch
+on:
+  push:
+    branches: [ resonant-rails ]
+  pull_request:
+    branches: [ resonant-rails ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: self-hosted
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - name: Remove from home 
+        run: rm -rf /home/ubuntu/raspberry-pilot
+
+      # Runs a single command using the runners shell
+      - name: Move the file to home
+        run: mv /home/ubuntu/actions-runner/_work/raspberry-pilot/raspberry-pilot /home/ubuntu
+
+      # Runs a single command using the runners shell
+      - name: Copy start script 
+        run: cp /home/ubuntu/raspberry-pilot/start_install_tf.sh /home/ubuntu/
+
+      # Runs a set of commands using the runners shell
+      - name: Run a multi-line script
+        run: |
+          cd /home/ubuntu/
+          bash start_install_tf.sh

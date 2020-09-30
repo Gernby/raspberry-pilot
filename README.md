@@ -149,12 +149,11 @@ somewhere in the middle of the file. If you add it to the end, add a trailing co
 2. Turn on the car and watch the dash. The `ACC` and `LKAS` indicators should only appear Orange for a couple of seconds before turning Green.
 3. After about a minute, the lane marking indicators should light up but show as outlines. You do not need to wait for this to show up before driving.
 4. Drive to a road with well-marked lines on both sides of the car and with minimal curves and breaks in the lines -- an interstate is preferred
-5. Drive the car on the interstate for 15 minutes. You must hold the wheel as steady as you can and hold the car in the center of the lane as much as possible. This training period is critical to the future performance of the software.
-6. After 15 minutes, unplug the Pi from the Panda (either end of the cable is fine), wait a few seconds, and plug it back in. You will see major errors on the dash but they will soon clear up.
-7. If the training was successful, you will feel the wheel start to steer by itself after about 75 seconds. **Important:** Note that this will happen even if you haven't set the ACC radar cruise control!
-8. Keep your hands lightly brushing the wheel and be ready to take over if at any point you feel uncomfortable about the way the software is steering
-9. If you are completely uncomfortable, press the Lane Keeping Assist button beneath the "SET" button in the ACC cruise control section of the steering wheel to disable the Raspberry Pilot LKAS.
-10. On all subsequent drives, Raspberry Pilot will start steering the car about 75 seconds after turning on the car. Again, press the LKAS button any time you do not want this feature enabled.
+5. Drive the car on the interstate for about 5 miles. You must hold the wheel as steady as you can and hold the car in the center of the lane as much as possible. This training period is critical to the future performance of the software.
+6. After about 5 miles, Raspberry Pilot should take over steering automatically and without any input from you. If RP does not start steering, something went wrong and you need to keep your hands on the wheel until you can stop and troubleshoot.
+7. Keep your hands lightly brushing the wheel and be ready to take over if at any point you feel uncomfortable about the way the software is steering
+8. If you are completely uncomfortable, press the Lane Keeping Assist button beneath the "SET" button in the ACC cruise control section of the steering wheel to disable the Raspberry Pilot LKAS.
+9. On all subsequent drives, Raspberry Pilot will start steering the car about 75 seconds after turning on the car. Again, press the LKAS button any time you do not want this feature enabled.
 
 ## Notes
 

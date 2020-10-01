@@ -183,7 +183,10 @@ start_time = time.time()
 
 #['Civic','CRV_5G','Accord_15','Insight', 'Accord']
 fingerprint = np.zeros((1, 10), dtype=np.int)
-model_output = models[-1].predict_on_batch([lo_res_data[  :,:,:6], lo_res_data[  :,:,:-16],lo_res_data[  :,:,-16:-8], lo_res_data[  :,:,-8:], fingerprint])
+for md in range(len(models)):
+  model_output = models[md].predict_on_batch([lo_res_data[  :,-history_rows[md]:,:6], lo_res_data[  :,-history_rows[md]:,:-16],lo_res_data[  :,-history_rows[md]:,-16:-8], lo_res_data[  :,-history_rows[md]:,-8:], fingerprint])
+
+#model_output = models[-1].predict_on_batch([lo_res_data[  :,:,:6], lo_res_data[  :,:,:-16],lo_res_data[  :,:,-16:-8], lo_res_data[  :,:,-8:], fingerprint])
 
 print(model_output.shape)
 while model_output.shape[2] > output_scaler.max_abs_.shape[0]:
@@ -202,6 +205,12 @@ while model_output.shape[2] > output_scaler.max_abs_.shape[0]:
 
 descaled_output = output_standard.transform(output_scaler.inverse_transform(model_output[-1]))
 print(descaled_output)
+
+path_send = log.Event.new_message()
+path_send.init('pathPlan')
+gernPath.send(path_send.to_bytes())
+
+os.system("taskset -a -cp --cpu-list 2,3 %d" % os.getpid())
 
 car_params = car.CarParams.from_bytes(params.get('CarParams', True))
 
@@ -223,10 +232,10 @@ with open(os.path.expanduser('~/vehicle_option.json'), 'r') as f:
   fingerprint[:,3+vehicle_option['vehicle_option']] = 1
 
 print(fingerprint, vehicle_option)
-for md in range(len(models)):
+'''for md in range(len(models)):
   model_output = models[md].predict_on_batch([lo_res_data[  :,-history_rows[md]:,:6], lo_res_data[  :,-history_rows[md]:,:-16],lo_res_data[  :,-history_rows[md]:,-16:-8], lo_res_data[  :,-history_rows[md]:,-8:], fingerprint])
-print(model_output)
-print(history_rows)
+print(model_output)'''
+#print(history_rows)
 
 l_prob = 0.0
 r_prob = 0.0
@@ -248,13 +257,13 @@ cal_col = np.zeros((len(calibration_items)),dtype=np.int)
 cal_factor = np.zeros((len(calibration_items)),dtype=np.int)
 for col in range(len(calibration_items)):
   cal_col[col] = all_items.index(calibration_items[col])
-print(cal_col)
+#print(cal_col)
 
 adj_items =  ['far_left_2','far_right_2','left_2','right_2']
 adj_col = np.zeros((len(adj_items)),dtype=np.int)
 for col in range(len(adj_items)):
   adj_col[col] = all_items.index(adj_items[col])
-print(adj_col)
+#print(adj_col)
 #             [46, 54, 62, 70]
 kegtime_prev = 0
 angle_speed_count = model_output.shape[2] - 7
@@ -382,7 +391,7 @@ while 1:
         width_trim += 1	
       else:	
         width_trim -= 1	
-      width_trim = max(-200, min(width_trim, 50))
+      width_trim = max(-200, min(width_trim, 0))
 
     fast_angles = []
     if use_discrete_angle:

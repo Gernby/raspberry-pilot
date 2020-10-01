@@ -61,7 +61,7 @@ def fingerprint(logcan, sendcan, is_panda_black):
     return ("simulator2", None, "")
   elif os.getenv("SIMULATOR") is not None:
     return ("simulator", None, "")
-
+  print("black_panda in fingerprint:", is_panda_black)
   params = Params()
   car_params = params.get("CarParams")
 
@@ -78,13 +78,13 @@ def fingerprint(logcan, sendcan, is_panda_black):
   finger = {i: {} for i in range(0, 4)}  # collect on all buses
   candidate_cars = {i: all_known_cars() for i in [0, 1]}  # attempt fingerprint on both bus 0 and 1
   frame = 0
-  frame_fingerprint = 10  # 0.1s
+  frame_fingerprint = 500  # 5.0s
   car_fingerprint = None
   done = False
 
   while not done:
     a = messaging.recv_one(logcan)
-
+    #print("length a: " , len(a))
     for can in a.can:
       # need to independently try to fingerprint both bus 0 and 1 to work
       # for the combo black_panda and honda_bosch. Ignore extended messages
@@ -92,8 +92,8 @@ def fingerprint(logcan, sendcan, is_panda_black):
       # Include bus 2 for toyotas to disambiguate cars using camera messages
       # (ideally should be done for all cars but we can't for Honda Bosch)
       for b in candidate_cars:
-        if (can.src == b or (only_toyota_left(candidate_cars[b]) and can.src == 2)) and \
-           can.address < 0x800 and can.address not in [0x7df, 0x7e0, 0x7e8]:
+        if (can.src == b or (only_toyota_left(candidate_cars[b]) and can.src == 2)): # and \
+           #can.address < 0x800 and can.address not in [0x7df, 0x7e0, 0x7e8]:
           finger[can.src][can.address] = len(can.dat)
           candidate_cars[b] = eliminate_incompatible_cars(can, candidate_cars[b])
 
@@ -109,18 +109,19 @@ def fingerprint(logcan, sendcan, is_panda_black):
           car_fingerprint = candidate_cars[b][0]
 
     # bail if no cars left or we've been waiting for more than 2s
-    failed = all(len(cc) == 0 for cc in candidate_cars.values()) or frame > 200
+    failed = all(len(cc) == 0 for cc in candidate_cars.values()) or frame > 1000
     succeeded = car_fingerprint is not None
     done = failed or succeeded
 
     frame += 1
 
-  cloudlog.warning("fingerprinted %s", car_fingerprint)
+  print("\nFingerprint Candidates: ", candidate_cars)
+  print("fingerprinted %s", car_fingerprint)
   return car_fingerprint, finger, vin
 
 
 def get_car(logcan, sendcan, is_panda_black=False):
-
+  print("black_panda in get_car:", is_panda_black)
   candidate, fingerprints, vin = fingerprint(logcan, sendcan, is_panda_black)
 
   if candidate is None:

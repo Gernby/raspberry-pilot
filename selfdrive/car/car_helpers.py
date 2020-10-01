@@ -115,8 +115,8 @@ def fingerprint(logcan, sendcan, is_panda_black):
 
     frame += 1
 
-  print("Fingerprint Candidates: ", candidate_cars)
-  cloudlog.warning("fingerprinted %s", car_fingerprint)
+  print("\nFingerprint Candidates: ", candidate_cars)
+  print("fingerprinted %s", car_fingerprint)
   return car_fingerprint, finger, vin
 
 

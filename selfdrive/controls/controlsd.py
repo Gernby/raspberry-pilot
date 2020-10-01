@@ -1,6 +1,7 @@
 #!/usr/bin/env python3 
 import capnp
 import time
+import sys
 from cereal import car, log
 from common.numpy_fast import clip
 from common.params import Params
@@ -237,10 +238,17 @@ def controlsd_thread(gctx=None):
 
   sm = messaging.SubMaster(['pathPlan','health','gpsLocationExternal'])
   can_sock = messaging.sub_sock(service_list['can'].port)
+  if len(sys.argv) >= 2 and sys.argv[1] == 'wait':
+    print("waiting for transcoder")
+    messaging.recv_one(sm.sock['pathPlan'])
+    print("transcoder ready")
+  else:
+    print('not waiting for transcoder')
   hw_type = messaging.recv_one(sm.sock['health']).health.hwType
   is_panda_black = hw_type == log.HealthData.HwType.blackPanda  
-  print("panda black: ", is_panda_black)
+  print("\npanda black: ", is_panda_black)
   wait_for_can(can_sock)
+  
   CI, CP = get_car(can_sock, sendcan, is_panda_black)
   #logcan.close()
 

@@ -78,9 +78,9 @@ ansible localhost -v -b -m apt -a "autoremove=yes"
 echo "Installing dependencies.."
 sudo apt install -y build-essential make python3.7-dev python3-pip libzmq3-dev python3-zmq
 sudo apt install -y openjdk-8-jdk automake zip unzip libtool swig libpng-dev pkg-config
-sudo apt install -y libhdf5-dev clang libarchive-dev  
+sudo apt install -y libhdf5-dev clang libarchive-dev
 sudo apt install -y libssl-dev libswscale-dev
-sudo apt install -y libusb-1.0-0 libusb-1.0-0-dev ocl-icd-libopencl1 ocl-icd-opencl-dev 
+sudo apt install -y libusb-1.0-0 libusb-1.0-0-dev ocl-icd-libopencl1 ocl-icd-opencl-dev
 sudo apt install -y opencl-headers checkinstall
 sudo apt install -y clang-3.8 libatlas-base-dev libopenblas-base libopenblas-dev gfortran
 sudo apt install -y capnproto uuid-dev libsodium-dev valgrind
@@ -132,11 +132,13 @@ python3.7 -m pip install cython
 python3.7 -m pip install tensorflow-2.2.0-cp37-none-linux_aarch64.whl
 python3.7 -m pip install sklearn
 python3.7 -m pip install pyzmq
-python3.7 -m pip install pycapnp 
+python3.7 -m pip install pycapnp
 python3.7 -m pip install setproctitle
 python3.7 -m pip install cffi
 python3.7 -m pip install cython
 python3.7 -m pip install pandacan
+python3.7 -m pip install pycrypto
+python3.7 -m pip install pycryptodome
 
 # Create folders for storing various hdf5 files; supports switching models via remote ssh commands
 mkdir ~/buttons

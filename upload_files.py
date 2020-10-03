@@ -62,12 +62,12 @@ for file in upload_list:
         print("characters sent: %d" % len(inString))
         if do_import_local:
           try:
-            r = requests.post('http://localhost:8086/write?db=carDB&%sprecision=ms', data=inString)
+            r = requests.post('http://localhost:8086/write?db=carDB&precision=ms', data=inString)
             print(r)
           except:
             r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')
             time.sleep(1)
-            r = requests.post('http://localhost:8086/write?db=carDB&%sprecision=ms', data=inString)
+            r = requests.post('http://localhost:8086/write?db=carDB&precision=ms', data=inString)
             print(r)
         time.sleep(1)
         if len(file_list) > 5:

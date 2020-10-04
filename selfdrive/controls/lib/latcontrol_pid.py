@@ -201,7 +201,7 @@ class LatControlPID(object):
     self.live_tune(CP)
     self.profiler.checkpoint('live_tune')
 
-    if v_ego < 0.3 or not path_plan.paramsValid or abs(angle_steers_rate) > 40:
+    if v_ego < 0.3 or not path_plan.paramsValid:
       if self.frame > self.next_params_put and v_ego == 0 and brake_pressed:
         self.next_params_put = self.frame + 36000
         put_nonblocking("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
@@ -266,7 +266,7 @@ class LatControlPID(object):
       except:
         output_steer = 0
         self.pid.reset()
-        print("  angle error!")
+        print("angle error!")
         pass
     
       #driver_opposing_op = steer_override and (angle_steers - self.prev_angle_steers) * output_steer < 0

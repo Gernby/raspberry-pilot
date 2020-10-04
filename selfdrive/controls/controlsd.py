@@ -2,6 +2,7 @@
 import capnp
 import time
 import sys
+import os
 from cereal import car, log
 from common.numpy_fast import clip
 from common.params import Params
@@ -247,6 +248,7 @@ def controlsd_thread(gctx=None):
   hw_type = messaging.recv_one(sm.sock['health']).health.hwType
   is_panda_black = hw_type == log.HealthData.HwType.blackPanda  
   print("\npanda black: ", is_panda_black)
+  messaging.drain_sock(can_sock)
   wait_for_can(can_sock)
   
   CI, CP = get_car(can_sock, sendcan, is_panda_black)

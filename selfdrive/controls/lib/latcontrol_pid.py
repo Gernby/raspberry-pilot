@@ -69,12 +69,12 @@ class LatControlPID(object):
     self.zero_steer_crossed = 0
 
     try:
-      params = Params()
-      lateral_params = params.get("LateralGain")
+      self.params = Params()
+      lateral_params = self.params.get("LateralGain")
       lateral_params = json.loads(lateral_params)
       self.angle_ff_gain = max(1.0, float(lateral_params['angle_ff_gain']))
     except:
-      params.put("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
+      self.params.put("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
       self.angle_ff_gain = 1.0
 
   def live_tune(self, CP):
@@ -204,7 +204,8 @@ class LatControlPID(object):
     if v_ego < 0.3 or not path_plan.paramsValid:
       if self.frame > self.next_params_put and v_ego == 0 and brake_pressed:
         self.next_params_put = self.frame + 36000
-        put_nonblocking("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
+        #put_nonblocking("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
+        self.params.put("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
         self.profiler.checkpoint('params_put')
       output_steer = 0.0
       self.stage = "0"

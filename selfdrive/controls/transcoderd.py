@@ -65,6 +65,7 @@ BATCH_SIZE = 1
 MAX_CENTER_OPPOSE = np.reshape(np.arange(15) * 200, (OUTPUT_ROWS,1))
 
 lo_res_data = np.zeros((BATCH_SIZE,history_rows[-1], INPUTS-6))
+#lo_res_data = np.zeros((BATCH_SIZE,history_rows[-1], INPUTS-6+2))
 
 def dump_sock(sock, wait_for_one=False):
   if wait_for_one:
@@ -181,7 +182,8 @@ start_time = time.time()
 #['Civic','CRV_5G','Accord_15','Insight', 'Accord']
 fingerprint = np.zeros((1, 10), dtype=np.int)
 for md in range(len(models)):
-  model_output = models[md].predict_on_batch([lo_res_data[  :,-history_rows[md]:,:6], lo_res_data[  :,-history_rows[md]:,:-16],lo_res_data[  :,-history_rows[md]:,-16:-8], lo_res_data[  :,-history_rows[md]:,-8:], fingerprint])
+  model_output = models[md].predict_on_batch([lo_res_data[:,-history_rows[md]:,:6], lo_res_data[:,-history_rows[md]:,:-16],lo_res_data[:,-history_rows[md]:,-16:-8], lo_res_data[:,-history_rows[md]:,-8:], fingerprint])
+  #model_output = models[md].predict_on_batch([lo_res_data[:,-history_rows[md]:,:6+2], lo_res_data[:,-history_rows[md]:,:-16],lo_res_data[:,-history_rows[md]:,-16:-8], lo_res_data[:,-history_rows[md]:,-8:], fingerprint])
 
 print(model_output.shape)
 while model_output.shape[2] > output_scaler.max_abs_.shape[0]:
@@ -282,7 +284,7 @@ else:
   calibration = [calibration[:len(calibration_items[0])], calibration[len(calibration_items[0]):]]
   lane_width = calibration_data['lane_width']
   angle_bias = calibration_data['angle_bias']
-  params = None
+  #params = None
 
 print(calibration)
 
@@ -308,7 +310,7 @@ while 1:
     cs = log.Event.from_bytes(_cs).carState
 
     #TO DO: Split hi and low res control scalers
-    vehicle_array.append([cs.vEgo, max(-30, min(30, steer_factor * cs.steeringAngle / angle_factor)), lateral_factor * cs.lateralAccel, max(-40, min(40, steer_factor * cs.steeringRate / angle_factor)), max(-40, min(40, cs.steeringTorqueEps)), yaw_factor * cs.yawRateCAN, 
+    vehicle_array.append([speed_factor * cs.vEgo, max(-30, min(30, steer_factor * cs.steeringAngle / angle_factor)), lateral_factor * cs.lateralAccel, max(-40, min(40, steer_factor * cs.steeringRate / angle_factor)), max(-40, min(40, cs.steeringTorqueEps)), yaw_factor * cs.yawRateCAN, 
                                       speed_factor * cs.vEgo, cs.longAccel,  width_factor * max(570, lane_width + width_trim), max(-30, min(30, steer_factor * cs.steeringAngle / angle_factor)), lateral_factor * cs.lateralAccel, yaw_factor * cs.yawRateCAN])
 
     if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
@@ -349,17 +351,20 @@ while 1:
     camera_input[(cal_col[1] == 1)] -= calibration[1]
 
     profiler.checkpoint('calibrate')
-      
+
     #try:
     hi_res_data = np.clip(vehicle_scaler.transform(vehicle_standard.transform(vehicle_array[-history_rows[-1]:])), -1, 1)
+    #hi_res_data = np.concatenate((hi_res_data[:,:1]*hi_res_data[:,:2],hi_res_data),axis=1)
     lo_res_data[:-1,:] = lo_res_data[1:,:]
     lo_res_data[-1,:] = np.concatenate(([hi_res_data[-1,6:]], [camera_input[:-32]], camera_scaler.transform(camera_standard.transform([camera_input[-32:]]))), axis=1)
+    #lo_res_data[-1,:] = np.concatenate(([hi_res_data[-1,:2]], [hi_res_data[-1,8:]], [camera_input[:-32]], camera_scaler.transform(camera_standard.transform([camera_input[-32:]]))), axis=1)
     profiler.checkpoint('scale')
     if lr_prob == 0 or cs.steeringPressed or left_missing != right_missing or cs.vEgo < 20:
       model_index = last_model
     else:
       model_index = max(model_index - 1, first_model, min(model_index + 1, last_model, int(abs(cs.steeringAngle - calibration[0][0]) * model_factor)))
     model_output = models[model_index].predict_on_batch([np.array([hi_res_data[-history_rows[model_index]:,:6]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
+    #model_output = models[model_index].predict_on_batch([np.array([hi_res_data[-history_rows[model_index]:,:8]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
     profiler.checkpoint('predict')
 
     descaled_output = output_standard.inverse_transform(output_scaler.inverse_transform(model_output[-1])) 
@@ -412,12 +417,6 @@ while 1:
         width_trim -= 1	
       width_trim = max(-200, min(width_trim, 0))
 
-    '''if abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0]) < 3 and cs.vEgo > 10 and cs.torqueRequest != 0:
-      if fast_angles[0][0] - angle_bias > cs.steeringAngle:
-        angle_bias += (0.00001 * cs.vEgo)
-      else:
-        angle_bias -= (0.00001 * cs.vEgo)'''
-
     if abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10:
       if calc_center[0][3,0] > 0:
         angle_bias -= (0.00001 * cs.vEgo)
@@ -442,11 +441,11 @@ while 1:
     if distance_driven > next_params_distance and ((cs.vEgo < 10 and cs.brakePressed) or not calibrated):
       next_params_distance = distance_driven + 133000
       print(np.round(calibration[0],2))
-      if calibrated:
-         put_nonblocking("CalibrationParams", json.dumps({'calibration': list(np.concatenate((calibration))),'lane_width': lane_width,'angle_bias': angle_bias}))
-      else:
-        params.put("CalibrationParams", json.dumps({'calibration': list(np.concatenate((calibration))),'lane_width': lane_width,'angle_bias': angle_bias}))
-        params = None
+      #if calibrated:
+      #   put_nonblocking("CalibrationParams", json.dumps({'calibration': list(np.concatenate((calibration))),'lane_width': lane_width,'angle_bias': angle_bias}))
+      #else:
+      params.put("CalibrationParams", json.dumps({'calibration': list(np.concatenate((calibration))),'lane_width': lane_width,'angle_bias': angle_bias}))
+      #params = None
       calibrated = True
       #os.remove(os.path.expanduser('~/calibration.json'))
       profiler.checkpoint('save_cal')

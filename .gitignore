@@ -23,6 +23,7 @@ a.out
 config.json
 clcache
 
+models/
 board/obj/
 selfdrive/boardd/boardd
 selfdrive/locationd/ubloxd

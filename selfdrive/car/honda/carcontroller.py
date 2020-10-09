@@ -165,10 +165,10 @@ class CarController():
     apply_gas = clip(actuators.gas, 0., 1.)
     apply_brake = int(clip(self.brake_last * BRAKE_MAX, 0, BRAKE_MAX - 1))
     
-    if int(self.kegman.conf['BP1']) > 0:
-      steer_lookup_bp = [-1 * int(self.kegman.conf['BP2']) , -1 * int(self.kegman.conf['BP1']) , 0 , int(self.kegman.conf['BP1']) , int(self.kegman.conf['BP2']) ]
-      steer_lookup_v  = [-1 * int(self.kegman.conf['V2']) , -1 * int(self.kegman.conf['V1']) , 0 , int(self.kegman.conf['V1']) , int(self.kegman.conf['V2']) ]
-      apply_steer = int(interp(-actuators.steer * int(self.kegman.conf['V2']), steer_lookup_bp, steer_lookup_v))
+    if int(kegman.conf['BP1']) > 0:
+      steer_lookup_bp = [-1 * int(kegman.conf['BP2']) , -1 * int(kegman.conf['BP1']) , 0 , int(kegman.conf['BP1']) , int(kegman.conf['BP2']) ]
+      steer_lookup_v  = [-1 * int(kegman.conf['V2']) , -1 * int(kegman.conf['V1']) , 0 , int(kegman.conf['V1']) , int(kegman.conf['V2']) ]
+      apply_steer = int(interp(-actuators.steer * int(kegman.conf['V2']), steer_lookup_bp, steer_lookup_v))
     else:
       apply_steer = int(clip(-actuators.steer * STEER_MAX, -STEER_MAX, STEER_MAX))
 

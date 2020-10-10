@@ -175,6 +175,7 @@ calibration_factor = 1.0
 angle_limit = 0.0
 next_params_distance = 133000.0
 distance_driven = 0.0
+steer_override_timer = 0
 
 model_output = None
 start_time = time.time()
@@ -417,11 +418,17 @@ while 1:
         width_trim -= 1	
       width_trim = max(-200, min(width_trim, 0))
 
-    if abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10:
+    steer_override_timer -= 1
+    if steer_override_timer < 0 and abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and (abs(cs.steeringTorque) < 200 or ((cs.steeringTorque < 0) == (calc_center[0][3,0] < 0))):
       if calc_center[0][3,0] > 0:
         angle_bias -= (0.00001 * cs.vEgo)
       elif calc_center[0][3,0] < 0:
         angle_bias += (0.00001 * cs.vEgo)
+    
+    if abs(cs.steeringPressed) > 200 and (cs.steeringTorque < 0) != calc_center[0][3,0] < 0:
+      print("  steering pressed: %d   driver direction: %d   model direction: %d   driver opposing: %d" % (cs.steeringPressed, 1 if cs.steeringTorque > 0 else -1, 1 if calc_center[0][3,0] > 0 else -1, 1 if (cs.steeringTorque < 0) != (calc_center[0][3,0] < 0) else 0))
+      #  # Prevent angle_bias adjustment for 3 seconds after driver opposes the model
+      steer_override_timer = 45 
 
     frame += 1
     distance_driven += cs.vEgo 
@@ -438,13 +445,13 @@ while 1:
       #print(calibration_factor, np.round(calibration, 2))
       print('lane_width: %0.1f angle bias: %0.2f  distance_driven:  %0.2f   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs  angle_speed:  %0.1f' % (lane_width, angle_bias, distance_driven, calc_center[0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,0], descaled_output[1,1], execution_time_avg, angle_speed))
 
-    if distance_driven > next_params_distance and ((cs.vEgo < 10 and cs.brakePressed) or not calibrated):
+    if ((cs.vEgo < 10 and not cs.cruiseState.enabled) or not calibrated) and distance_driven > next_params_distance:
       next_params_distance = distance_driven + 133000
       print(np.round(calibration[0],2))
-      #if calibrated:
-      #   put_nonblocking("CalibrationParams", json.dumps({'calibration': list(np.concatenate((calibration))),'lane_width': lane_width,'angle_bias': angle_bias}))
-      #else:
-      params.put("CalibrationParams", json.dumps({'calibration': list(np.concatenate((calibration))),'lane_width': lane_width,'angle_bias': angle_bias}))
+      if calibrated:
+        put_nonblocking("CalibrationParams", json.dumps({'calibration': list(np.concatenate((calibration))),'lane_width': lane_width,'angle_bias': angle_bias}))
+      else:
+        params.put("CalibrationParams", json.dumps({'calibration': list(np.concatenate((calibration))),'lane_width': lane_width,'angle_bias': angle_bias}))
       #params = None
       calibrated = True
       #os.remove(os.path.expanduser('~/calibration.json'))

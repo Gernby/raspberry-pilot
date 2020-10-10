@@ -140,12 +140,15 @@ python3.7 -m pip install pandacan
 python3.7 -m pip install pycrypto
 python3.7 -m pip install pycryptodome
 
-# Create folders for storing various hdf5 files; supports switching models via remote ssh commands
+# Create folders for storing various hdf5 files; supports switching models via remote ssh commands (DEPRECATED)
 mkdir ~/buttons
 mkdir ~/buttons/model-1
 mkdir ~/buttons/model-2
 mkdir ~/buttons/model-3
 mkdir ~/buttons/model-4
+
+# restore ~/raspilot/models
+mkdir ~/raspilot/models
 
 # Kick off the final stage of the build
 cd

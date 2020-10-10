@@ -5,6 +5,7 @@
 .sconsign.dblite
 model2.png
 a.out
+models.json
 
 *.DSYM
 *.d
@@ -20,10 +21,12 @@ a.out
 *.class
 *.pyxbldc
 *.vcd
+*.zip
+*.scaler
+*.hdf5
 config.json
 clcache
 
-models/
 board/obj/
 selfdrive/boardd/boardd
 selfdrive/locationd/ubloxd

@@ -4,6 +4,7 @@ import zmq
 import time
 import json
 import joblib
+import gc
 import numpy as np
 
 INPUTS = 78
@@ -46,6 +47,8 @@ for filename in os.listdir('models/'):
         models = []
         for md in json.load(f)['models']:
           models.append(load_model(os.path.expanduser('models/%s' % md)))
+          #models[-1].compile()
+          #models[-1].save(os.path.expanduser('models/%s' % md))
           history_rows.append(models[-1].layers[0].input.shape[1])
           print("loaded %s" % md)
       break
@@ -57,8 +60,8 @@ for filename in os.listdir('models/'):
       print("\n\n   More than one model found!  Exiting!\n\n")
       exit()
 
-print('loading model: %s' % MODEL_NAME)
-models[-1].summary()
+#print('loading model: %s' % MODEL_NAME)
+#models[-1].summary()
 
 OUTPUT_ROWS = 15
 BATCH_SIZE = 1
@@ -143,8 +146,6 @@ half_width = 0
 width_trim = 0
 angle_bias = 0.0
 total_offset = 0.0
-path_send = log.Event.new_message()
-path_send.init('pathPlan')
 advanceSteer = 1
 one_deg_per_sec = np.ones((OUTPUT_ROWS,1)) / 15
 left_center = np.zeros((OUTPUT_ROWS,1))
@@ -168,7 +169,7 @@ use_discrete_angle = True
 use_optimize = True
 use_minimize = False
 
-execution_time_avg = 0.0
+execution_time_avg = 0.027
 time_factor = 1.0
 lateral_offset = 0
 calibration_factor = 1.0
@@ -178,14 +179,14 @@ distance_driven = 0.0
 steer_override_timer = 0
 
 model_output = None
-start_time = time.time()
+start_time = 0
 
 #['Civic','CRV_5G','Accord_15','Insight', 'Accord']
 fingerprint = np.zeros((1, 10), dtype=np.int)
 for md in range(len(models)):
+  print("predicting on model %d" % md)
   model_output = models[md].predict_on_batch([lo_res_data[:,-history_rows[md]:,:6], lo_res_data[:,-history_rows[md]:,:-16],lo_res_data[:,-history_rows[md]:,-16:-8], lo_res_data[:,-history_rows[md]:,-8:], fingerprint])
-  #model_output = models[md].predict_on_batch([lo_res_data[:,-history_rows[md]:,:6+2], lo_res_data[:,-history_rows[md]:,:-16],lo_res_data[:,-history_rows[md]:,-16:-8], lo_res_data[:,-history_rows[md]:,-8:], fingerprint])
-
+  
 print(model_output.shape)
 while model_output.shape[2] > output_scaler.max_abs_.shape[0]:
   print("adding column")
@@ -207,6 +208,8 @@ print(descaled_output)
 path_send = log.Event.new_message()
 path_send.init('pathPlan')
 gernPath.send(path_send.to_bytes())
+path_send = log.Event.new_message()
+path_send.init('pathPlan')
 
 os.system("taskset -a -cp --cpu-list 2,3 %d" % os.getpid())
 
@@ -267,8 +270,8 @@ kegtime_prev = 0
 angle_speed_count = model_output.shape[2] - 7
 #(mode, ino, dev, nlink, uid, gid, size, atime, mtime, kegtime_prev) = os.stat(os.path.expanduser('~/kegman.json'))
 
-car_params = params.get('CarParams')
-print(car_params)
+#car_params = params.get('CarParams')
+#print(car_params)
 #if 'Accord' in car_params['fingerprint']:
   
 calibrated = True
@@ -302,9 +305,11 @@ steer_factor = 1
 width_factor = 1
 model_index = 0
 
+print("done loading!")
 while 1:
   vehicle_array = list(vehicle_array)
   for _cs in carState.recv_multipart():
+    if start_time == 0: print("got first packet!")
     start_time = time.time()  
     profiler.checkpoint('inputs_recv', False)
 

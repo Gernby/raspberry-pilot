@@ -202,7 +202,7 @@ class LatControlPID(object):
     self.profiler.checkpoint('live_tune')
 
     if v_ego < 0.3 or not path_plan.paramsValid:
-      if self.frame > self.next_params_put and v_ego == 0 and cruise_enabled:
+      if self.frame > self.next_params_put and v_ego == 0 and not cruise_enabled:
         self.next_params_put = self.frame + 36000
         put_nonblocking("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
         #self.params.put("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))

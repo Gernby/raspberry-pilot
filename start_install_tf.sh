@@ -109,6 +109,9 @@ sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.7 2
 sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 3
 
+# fix apt_pkg missing error due to python3 breaking it :)
+sudo cp /usr/lib/python3/dist-packages/apt_pkg.cpython-36m-aarch64-linux-gnu.so /usr/lib/python3/dist-packages/apt_pkg.so
+
 # start grafana and influxdb (installed but temporarily disabled to reduce resource usage)
 sudo /bin/systemctl daemon-reload
 # sudo /bin/systemctl enable grafana-server

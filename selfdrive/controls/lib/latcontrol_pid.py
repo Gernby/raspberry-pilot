@@ -179,7 +179,7 @@ class LatControlPID(object):
       if (self.projected_lane_error >= 0) == (self.prev_projected_lane_error < 0):
         self.zero_poly_crossed = time.time()
       self.prev_projected_lane_error = self.projected_lane_error
-      if time.time() - min(self.zero_poly_crossed, self.zero_steer_crossed) < 4:
+      if time.time() - max(self.zero_poly_crossed, self.zero_steer_crossed) < 4:
         self.use_deadzone = False
         self.projected_lane_error -= (float(self.c_prob * self.poly_damp * self.center_angles[0]))
       else:

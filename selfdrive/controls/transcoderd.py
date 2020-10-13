@@ -27,6 +27,7 @@ from setproctitle import setproctitle
 from common.params import Params, put_nonblocking
 from common.profiler import Profiler
 from tensorflow.python.keras.models import load_model 
+import tensorflow as tf
 
 setproctitle('transcoderd')
 
@@ -42,13 +43,10 @@ history_rows = []
 for filename in os.listdir('models/'):
   if filename[-5:] == '.hdf5':
     if os.path.exists('models/models.json'):
-      models = []
       with open('models/models.json', 'r') as f:
         models = []
         for md in json.load(f)['models']:
           models.append(load_model(os.path.expanduser('models/%s' % md)))
-          #models[-1].compile()
-          #models[-1].save(os.path.expanduser('models/%s' % md))
           history_rows.append(models[-1].layers[0].input.shape[1])
           print("loaded %s" % md)
       break
@@ -60,15 +58,11 @@ for filename in os.listdir('models/'):
       print("\n\n   More than one model found!  Exiting!\n\n")
       exit()
 
-#print('loading model: %s' % MODEL_NAME)
-#models[-1].summary()
-
 OUTPUT_ROWS = 15
 BATCH_SIZE = 1
 MAX_CENTER_OPPOSE = np.reshape(np.arange(15) * 200, (OUTPUT_ROWS,1))
 
 lo_res_data = np.zeros((BATCH_SIZE,history_rows[-1], INPUTS-6))
-#lo_res_data = np.zeros((BATCH_SIZE,history_rows[-1], INPUTS-6+2))
 
 def dump_sock(sock, wait_for_one=False):
   if wait_for_one:
@@ -184,9 +178,9 @@ start_time = 0
 #['Civic','CRV_5G','Accord_15','Insight', 'Accord']
 fingerprint = np.zeros((1, 10), dtype=np.int)
 for md in range(len(models)):
-  print("predicting on model %d" % md)
-  model_output = models[md].predict_on_batch([lo_res_data[:,-history_rows[md]:,:6], lo_res_data[:,-history_rows[md]:,:-16],lo_res_data[:,-history_rows[md]:,-16:-8], lo_res_data[:,-history_rows[md]:,-8:], fingerprint])
-  
+  models[md] = tf.function(models[md])
+  model_output = models[md]([lo_res_data[:,-history_rows[md]:,:6], lo_res_data[:,-history_rows[md]:,:-16],lo_res_data[:,-history_rows[md]:,-16:-8], lo_res_data[:,-history_rows[md]:,-8:], fingerprint])  
+
 print(model_output.shape)
 while model_output.shape[2] > output_scaler.max_abs_.shape[0]:
   print("adding column")
@@ -369,8 +363,9 @@ while 1:
       model_index = last_model
     else:
       model_index = max(model_index - 1, first_model, min(model_index + 1, last_model, int(abs(cs.steeringAngle - calibration[0][0]) * model_factor)))
-    model_output = models[model_index].predict_on_batch([np.array([hi_res_data[-history_rows[model_index]:,:6]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
-    #model_output = models[model_index].predict_on_batch([np.array([hi_res_data[-history_rows[model_index]:,:8]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
+    
+    model_output = models[model_index]([np.array([hi_res_data[-history_rows[model_index]:,:6]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
+    
     profiler.checkpoint('predict')
 
     descaled_output = output_standard.inverse_transform(output_scaler.inverse_transform(model_output[-1])) 
@@ -410,7 +405,7 @@ while 1:
     path_send.pathPlan.canTime = cs.canTime
     path_send.pathPlan.sysTime = cs.sysTime 
     gernPath.send(path_send.to_bytes())
-    time.sleep(0.0001)
+    #time.sleep(0.0001)
     profiler.checkpoint('send')
     
     max_width_step = 0.05 * cs.vEgo * l_prob * r_prob

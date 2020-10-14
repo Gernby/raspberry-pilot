@@ -308,10 +308,17 @@ while 1:
     profiler.checkpoint('inputs_recv', False)
 
     cs = log.Event.from_bytes(_cs).carState
+    rate_adjustment = np.interp(cs.vEgo, [0., 40.], [speed_factor, 1.00])
+    if cs.steeringPressed:
+      rate_adjustment = 1 / rate_adjustment
+    adjusted_speed = max(10, rate_adjustment * cs.vEgo)
 
     #TO DO: Split hi and low res control scalers
-    vehicle_array.append([speed_factor * cs.vEgo, max(-30, min(30, steer_factor * cs.steeringAngle / angle_factor)), lateral_factor * cs.lateralAccel, max(-40, min(40, steer_factor * cs.steeringRate / angle_factor)), max(-40, min(40, cs.steeringTorqueEps)), yaw_factor * cs.yawRateCAN, 
-                                      speed_factor * cs.vEgo, cs.longAccel,  width_factor * max(570, lane_width + width_trim), max(-30, min(30, steer_factor * cs.steeringAngle / angle_factor)), lateral_factor * cs.lateralAccel, yaw_factor * cs.yawRateCAN])
+    #TO DO: Sanity check linear adjustments for speed with lateral accel and yaw rate
+    vehicle_array.append([adjusted_speed, max(-30, min(30, steer_factor * cs.steeringAngle / angle_factor)), rate_adjustment * lateral_factor * cs.lateralAccel, 
+                          max(-40, min(40, rate_adjustment * steer_factor * cs.steeringRate / angle_factor)), max(-40, min(40, rate_adjustment * cs.steeringTorqueEps)), 
+                          rate_adjustment * yaw_factor * cs.yawRateCAN, adjusted_speed, cs.longAccel,  width_factor * max(570, lane_width + width_trim), 
+                          max(-30, min(30, steer_factor * cs.steeringAngle / angle_factor)), rate_adjustment * lateral_factor * cs.lateralAccel, rate_adjustment * yaw_factor * cs.yawRateCAN])
 
     if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
       stock_cam_frame_prev = cs.camLeft.frame
@@ -443,7 +450,7 @@ while 1:
 
     if frame % 60 == 0:
       #print(calibration_factor, np.round(calibration, 2))
-      print('lane_width: %0.1f angle bias: %0.2f  distance_driven:  %0.2f   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs  angle_speed:  %0.1f' % (lane_width, angle_bias, distance_driven, calc_center[0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,0], descaled_output[1,1], execution_time_avg, angle_speed))
+      print('lane_width: %0.1f angle bias: %0.2f  distance_driven:  %0.2f   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs  adjusted_speed:  %0.1f' % (lane_width, angle_bias, distance_driven, calc_center[0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,0], descaled_output[1,1], execution_time_avg, adjusted_speed))
 
     if ((cs.vEgo < 10 and not cs.cruiseState.enabled) or not calibrated) and distance_driven > next_params_distance:
       next_params_distance = distance_driven + 133000

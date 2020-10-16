@@ -96,14 +96,6 @@ sh start_install_tf.sh
 5. Look for `controlsd`, `boardd`, `ubloxd` and `dashboard` in the rightmost column of the list.
 6. If you see all four, let Gernby know you're ready for the model. He will get it to you one way or another. You are ready to flash your Panda.
 
-## Loading the Model
-
-1. When you receive the model from Gernby, delete all files in `~/raspilot/models` and unzip the new archive in that folder. The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
-2. Reboot the Pi, and log back in
-3. Run `top -u ubuntu`
-4. Look for `controlsd`, `boardd`, `ubloxd`, `dashboard`, and `transcoderd` this time
-5. If all five processes are present, you are ready to train the software and see how it drives
-
 ## Flashing the Panda
 
 **Note: If you can't hit your household WiFi from your car, be sure to configure the Pi to hit your cellular hotspot and turn on your hotspot before booting up the Pi in the car.**
@@ -142,6 +134,14 @@ somewhere in the middle of the file. If you add it to the end, add a trailing co
 8. This will prevent the Pi from attempting to flash the Panda on subsequent boots as this behavior is not desired for White and Gray Pandas
 9. Shutdown the Pi with `sudo halt`
 10. Remove the USB A-to-A cable connecting the Pi to the Panda. Disconnect the Pi from the temporary power source and connect it back to the Panda.
+
+## Loading the Model
+
+1. When you receive the model from Gernby, delete all files in `~/raspilot/models` and unzip the new archive in that folder. The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
+2. Reboot the Pi, and log back in
+3. Run `top -u ubuntu`
+4. Look for `controlsd`, `boardd`, `ubloxd`, `dashboard`, and `transcoderd` this time
+5. If all five processes are present, you are ready to train the software and see how it drives
 
 ## First Drive and Training
 

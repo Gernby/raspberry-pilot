@@ -105,35 +105,19 @@ sh start_install_tf.sh
 1. Connect the Pi to the Black Panda using the standard configuration (USB A on the Panda to USB C on the Pi)
 2. Turn on the car
 3. SSH into the Pi
-4. Edit `~/kegman.json` to add
-
-`"useAutoFlash": "1",`
-
-somewhere in the middle of the file. If you add it to the end, add a trailing comma to the current last line and do not add a trailing comma to this line.
-
+4. Edit `~/kegman.json` and change the value in `useAutoFlash` from `0` to `1`.
 5. Reboot the Pi. The Pi should successfully flash the Panda upon reboot and keep the Panda up to date in the future.
 
 ### White or Gray Panda
 
-1. If you're doing this in the car, bring a spare USB cable with you so you don't have to undo a cable you've hidden.
-2. Connect the Pi to the Panda using USB A-to-C. Turn on the car. Wait 2 minutes. Turn the car off.
-2. Disconnect the Pi from the Panda and move it to an external power source such as a battery pack or laptop USB port
+1. Before taking the Pi outside, edit `~/kegman.json` and change the value in `useAutoFlash` from `0` to `1`. Safely shut down the Pi.
+2. Take the Pi outside with a separate power source, a USB C cable to power the Pi, and the USB A-to-A cable for flashing the Panda
 3. Connect the USB A-to-A cable between the Pi and the Panda
-4. SSH into the Pi using "ubuntu/ubuntu"
-5. Edit `~/kegman.json` to add
+4. Power up the Pi and wait two minutes. The Panda should cycle through several colors, before ending in a slow pulsing color or combination of colors. If it the process ends in a fast flashing green LED, it was not successful.
+5. Unplug the power supply from the Pi. Remove the USB A-to-A cable from the Pi and the Panda.
+6. Bring the Pi and power supply and USB A-to-A back inside to your work area. Come to Discord to let us know if the flash was successful or not.
 
-`"useAutoFlash": "1",`
-
-somewhere in the middle of the file. If you add it to the end, add a trailing comma to the current last line and do not add a trailing comma to this line.
-
-6. Reboot the Pi using the `sudo reboot` command in ssh. The Panda should successfully flash upon reboot.
-7. SSH into the Pi and edit `~/kegman.json` to change
-
-`"useAutoFlash": "1",` to `"useAutoFlash": "0",`
-
-8. This will prevent the Pi from attempting to flash the Panda on subsequent boots as this behavior is not desired for White and Gray Pandas
-9. Shutdown the Pi with `sudo halt`
-10. Remove the USB A-to-A cable connecting the Pi to the Panda. Disconnect the Pi from the temporary power source and connect it back to the Panda.
+If it was successful, you're ready to receive the model. If not, we'll talk about alternative approaches to flashing the Panda.
 
 ## Loading the Model
 
@@ -142,6 +126,7 @@ somewhere in the middle of the file. If you add it to the end, add a trailing co
 3. Run `top -u ubuntu`
 4. Look for `controlsd`, `boardd`, `ubloxd`, `dashboard`, and `transcoderd` this time
 5. If all five processes are present, you are ready to train the software and see how it drives
+6. Take the Pi back out to the car and connect it via the standard configuration: USB A in the Panda, USB C in the Pi
 
 ## First Drive and Training
 

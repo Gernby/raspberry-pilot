@@ -106,7 +106,7 @@ sh start_install_tf.sh
 2. Turn on the car
 3. SSH into the Pi
 4. Edit `~/kegman.json` and change the value in `useAutoFlash` from `0` to `1`.
-5. Reboot the Pi. The Pi should successfully flash the Panda upon reboot and keep the Panda up to date in the future.
+5. Turn the car off and unplug the Pi.
 
 ### White or Gray Panda
 
@@ -115,9 +115,8 @@ sh start_install_tf.sh
 3. Connect the USB A-to-A cable between the Pi and the Panda
 4. Power up the Pi and wait two minutes. The Panda should cycle through several colors, before ending in a slow pulsing color or combination of colors. If it the process ends in a fast flashing green LED, it was not successful.
 5. Unplug the power supply from the Pi. Remove the USB A-to-A cable from the Pi and the Panda.
-6. Bring the Pi and power supply and USB A-to-A back inside to your work area. Come to Discord to let us know if the flash was successful or not.
 
-If it was successful, you're ready to receive the model. If not, we'll talk about alternative approaches to flashing the Panda.
+Bring the Pi (and power supply and USB A-to-A if needed) back inside to your work area. Come to Discord to let us know if the flash was successful or not. If it was successful, you're ready to receive the model. If not, we'll talk about alternative approaches to flashing the Panda.
 
 ## Loading the Model
 

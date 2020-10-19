@@ -101,7 +101,7 @@ class kegman_conf():
         self.config.update({key: value})
         self.element_updated = True
 
-    if not CP is none and ("fingerprint" not in self.config or self.config['fingerprint'] != CP.carFingerprint):
+    if not CP is None and ("fingerprint" not in self.config or self.config['fingerprint'] != CP.carFingerprint):
       self.config.update({"fingerprint": CP.carFingerprint})
       self.element_updated = True
 

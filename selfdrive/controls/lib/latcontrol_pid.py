@@ -67,6 +67,7 @@ class LatControlPID(object):
     self.next_params_put = 36000
     self.zero_poly_crossed = 0
     self.zero_steer_crossed = 0
+    self.lane_changing = 0
 
     try:
       self.params = Params()
@@ -270,9 +271,9 @@ class LatControlPID(object):
         print("angle error!")
         pass
     
-      #driver_opposing_op = steer_override and (angle_steers - self.prev_angle_steers) * output_steer < 0
-      #self.update_lane_state(angle_steers, driver_opposing_op, blinker_on, path_plan)
-      #self.profiler.checkpoint('lane_change')
+      driver_opposing_op = steer_override and (angle_steers - self.prev_angle_steers) * output_steer < 0
+      self.update_lane_state(angle_steers, driver_opposing_op, blinker_on, path_plan)
+      self.profiler.checkpoint('lane_change')
 
     output_factor = self.lane_change_adjustment if pid_log.active else 0
 

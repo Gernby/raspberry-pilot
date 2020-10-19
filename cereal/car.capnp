@@ -149,6 +149,7 @@ struct CarState {
   centerOffset @50 :Float32;
   blinkers @51 :Bool;
   gpsLocation @53 :GpsLocationData;
+  laneChanging @54 :Bool;
 
   # lock info
   doorOpen @24 :Bool;

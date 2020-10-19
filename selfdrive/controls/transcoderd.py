@@ -339,7 +339,7 @@ while 1:
           camera_flags[1+i*16] == 0
           camera_flags[2+i*16] == 0
 
-      camera_input = np.concatenate(([0, 0], np.minimum(1, camera_flags), 
+      camera_input = np.concatenate(([0 if not cs.laneChanging else cs.leftBlinker, 0 if not cs.laneChanging else cs.rightBlinker], np.minimum(1, camera_flags), 
                                      [cs.camFarLeft.parm10,  cs.camFarLeft.parm2,  cs.camFarLeft.parm1,  cs.camFarLeft.parm3,  cs.camFarLeft.parm4,  cs.camFarLeft.parm5,  cs.camFarLeft.parm7,  cs.camFarLeft.parm9], 
                                      [cs.camFarRight.parm10, cs.camFarRight.parm2, cs.camFarRight.parm1, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm7, cs.camFarRight.parm9],
                                      [cs.camLeft.parm10,     cs.camLeft.parm2,     cs.camLeft.parm1,     cs.camLeft.parm3,     cs.camLeft.parm4,     cs.camLeft.parm5,     cs.camLeft.parm7,     cs.camLeft.parm9],    
@@ -366,8 +366,10 @@ while 1:
     lo_res_data[-1,:] = np.concatenate(([hi_res_data[-1,6:]], [camera_input[:-32]], camera_scaler.transform(camera_standard.transform([camera_input[-32:]]))), axis=1)
     #lo_res_data[-1,:] = np.concatenate(([hi_res_data[-1,:2]], [hi_res_data[-1,8:]], [camera_input[:-32]], camera_scaler.transform(camera_standard.transform([camera_input[-32:]]))), axis=1)
     profiler.checkpoint('scale')
-    if lr_prob == 0 or cs.steeringPressed or left_missing != right_missing or cs.vEgo < 20:
-      model_index = last_model
+    #if lr_prob == 0 or cs.steeringPressed or left_missing != right_missing or cs.vEgo < 20:
+    #  model_index = last_model
+    if lr_prob == 0 or cs.steeringPressed or cs.laneChanging:
+      model_index = 1
     else:
       model_index = max(model_index - 1, first_model, min(model_index + 1, last_model, int(abs(cs.steeringAngle - calibration[0][0]) * model_factor)))
     

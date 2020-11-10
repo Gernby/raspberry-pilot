@@ -18,13 +18,12 @@
 
 ## MicroSD card preparation and first login
 
-1. Go to https://ubuntu.com/download/raspberry-pi on the laptop that will prepare the microSD card
-2. In the Raspberry Pi 4 column, locate the row for Ubuntu 18.04 LTS, and click "Download 64-bit" at the far right end
-3. Insert the microSD card into the microSD-to-SD card adapter and then into the computer you will use to burn the image
-4. If you have Balena Etcher, flash the SD card with the image you just downloaded
-5. If you are not using Balena Etcher, decompress the `xz`-compressed Ubuntu image file
-6. Umount ("eject") the microSD card if the computer automatically mounted it but do not remove it from the slot
-7. Burn the decompressed image to the microSD card (process varies by Operating System)
+1. Please download Ubuntu 18.04.5 for the Raspberry Pi here http://cdimage.ubuntu.com/releases/18.04/release/ubuntu-18.04.5-preinstalled-server-arm64+raspi3.img.xz on the laptop that will prepare the microSD card
+2. Insert the microSD card into the microSD-to-SD card adapter and then into the computer you will use to burn the image
+3. If you have Balena Etcher, flash the SD card with the image you just downloaded
+4. If you are not using Balena Etcher, decompress the `xz`-compressed Ubuntu image file
+5. Umount ("eject") the microSD card if the computer automatically mounted it but do not remove it from the slot
+6. Burn the decompressed image to the microSD card (process varies by Operating System)
 
 ## Network preparation for the first boot
 

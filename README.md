@@ -54,7 +54,7 @@ wifis:
       <replace with your home ssd>:
         password: "<enter your home WiFi WPA2 password>"
       <replace with your cellular hotspot ssid>:
-        password: "<enter your hotspot WPA2 password"
+        password: "<enter your hotspot WPA2 password>"
 #     workssid:
 #       auth:
 #         key-management: eap

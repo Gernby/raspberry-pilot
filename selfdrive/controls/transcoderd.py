@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 
+os.system("pkill -f controlsd")
 os.system("taskset -a -cp --cpu-list 2,3 %d" % os.getpid())
 
 import zmq
@@ -71,6 +72,9 @@ for filename in os.listdir('models/'):
     else:
       print("\n\n   More than one model found!  Exiting!\n\n")
       exit()
+
+os.system("taskset -a --cpu-list 0,1 python ~/raspilot/selfdrive/controls/controlsd.py &")
+
 
 def dump_sock(sock, wait_for_one=False):
   if wait_for_one:
@@ -212,8 +216,6 @@ path_send.init('pathPlan')
 gernPath.send(path_send.to_bytes())
 path_send = log.Event.new_message()
 path_send.init('pathPlan')
-
-os.system("taskset -a -cp --cpu-list 2,3 %d" % os.getpid())
 
 car_params = car.CarParams.from_bytes(params.get('CarParams', True))
 

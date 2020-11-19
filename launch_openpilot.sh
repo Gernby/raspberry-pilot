@@ -11,5 +11,5 @@ pkill -f dashboard
 taskset -a --cpu-list 0,1 python ~/raspilot/selfdrive/pandad.py &
 #~/raspilot/selfdrive/boardd/boardd &
 taskset -a --cpu-list 2,3 ~/raspilot/selfdrive/locationd/ubloxd &
-taskset -a --cpu-list 0,1 python ~/raspilot/selfdrive/controls/controlsd.py wait & 
+#taskset -a --cpu-list 0,1 python ~/raspilot/selfdrive/controls/controlsd.py wait & 
 taskset -a --cpu-list 2,3 python ~/raspilot/dashboard.py &

@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 import os
+
+os.system("pkill -f controlsd")
+os.system("taskset -a -cp --cpu-list 2,3 %d" % os.getpid())
+
 import zmq
 import time
 import json
@@ -40,6 +44,14 @@ BIT_MASK = [1, 128, 64, 32, 8, 4, 2, 8,
             1, 128, 64, 32, 8, 4, 2, 8] 
 
 history_rows = []
+fingerprint = np.zeros((1, 10), dtype=np.int)
+
+OUTPUT_ROWS = 15
+BATCH_SIZE = 1
+MAX_CENTER_OPPOSE = np.reshape(np.arange(15) * 200, (OUTPUT_ROWS,1))
+
+lo_res_data = np.zeros((BATCH_SIZE, 4, INPUTS-6))
+
 for filename in os.listdir('models/'):
   if filename[-5:] == '.hdf5':
     if os.path.exists('models/models.json'):
@@ -47,7 +59,10 @@ for filename in os.listdir('models/'):
         models = []
         for md in json.load(f)['models']:
           models.append(load_model(os.path.expanduser('models/%s' % md)))
+          #models[-1].compile()
           history_rows.append(models[-1].layers[0].input.shape[1])
+          models[-1] = tf.function(models[-1].predict_step)
+          model_output = models[-1]([lo_res_data[:,-history_rows[-1]:,:6], lo_res_data[:,-history_rows[-1]:,:-16],lo_res_data[:,-history_rows[-1]:,-16:-8], lo_res_data[:,-history_rows[-1]:,-8:], fingerprint])  
           print("loaded %s" % md)
       break
     elif MODEL_NAME == '':
@@ -58,11 +73,8 @@ for filename in os.listdir('models/'):
       print("\n\n   More than one model found!  Exiting!\n\n")
       exit()
 
-OUTPUT_ROWS = 15
-BATCH_SIZE = 1
-MAX_CENTER_OPPOSE = np.reshape(np.arange(15) * 200, (OUTPUT_ROWS,1))
+os.system("taskset -a --cpu-list 0,1 python ~/raspilot/selfdrive/controls/controlsd.py &")
 
-lo_res_data = np.zeros((BATCH_SIZE,history_rows[-1], INPUTS-6))
 
 def dump_sock(sock, wait_for_one=False):
   if wait_for_one:
@@ -178,7 +190,7 @@ start_time = 0
 #['Civic','CRV_5G','Accord_15','Insight', 'Accord']
 fingerprint = np.zeros((1, 10), dtype=np.int)
 for md in range(len(models)):
-  models[md] = tf.function(models[md])
+  #models[md] = tf.function(models[md])
   model_output = models[md]([lo_res_data[:,-history_rows[md]:,:6], lo_res_data[:,-history_rows[md]:,:-16],lo_res_data[:,-history_rows[md]:,-16:-8], lo_res_data[:,-history_rows[md]:,-8:], fingerprint])  
 
 print(model_output.shape)
@@ -204,8 +216,6 @@ path_send.init('pathPlan')
 gernPath.send(path_send.to_bytes())
 path_send = log.Event.new_message()
 path_send.init('pathPlan')
-
-os.system("taskset -a -cp --cpu-list 2,3 %d" % os.getpid())
 
 car_params = car.CarParams.from_bytes(params.get('CarParams', True))
 
@@ -308,7 +318,10 @@ while 1:
     profiler.checkpoint('inputs_recv', False)
 
     cs = log.Event.from_bytes(_cs).carState
-    rate_adjustment = np.interp(cs.vEgo, [0., 40.], [speed_factor, 1.00])
+    if model_index == 0:
+      rate_adjustment = np.interp(cs.vEgo, [0., 40.], [speed_factor, 1.00])
+    else:
+      rate_adjustment = 1
     if cs.steeringPressed:
       rate_adjustment = 1 / rate_adjustment
     adjusted_speed = max(10, rate_adjustment * cs.vEgo)
@@ -339,7 +352,7 @@ while 1:
           camera_flags[1+i*16] == 0
           camera_flags[2+i*16] == 0
 
-      camera_input = np.concatenate(([0 if not cs.laneChanging else cs.leftBlinker, 0 if not cs.laneChanging else cs.rightBlinker], np.minimum(1, camera_flags), 
+      camera_input = np.concatenate(([0, 0], np.minimum(1, camera_flags),
                                      [cs.camFarLeft.parm10,  cs.camFarLeft.parm2,  cs.camFarLeft.parm1,  cs.camFarLeft.parm3,  cs.camFarLeft.parm4,  cs.camFarLeft.parm5,  cs.camFarLeft.parm7,  cs.camFarLeft.parm9], 
                                      [cs.camFarRight.parm10, cs.camFarRight.parm2, cs.camFarRight.parm1, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm7, cs.camFarRight.parm9],
                                      [cs.camLeft.parm10,     cs.camLeft.parm2,     cs.camLeft.parm1,     cs.camLeft.parm3,     cs.camLeft.parm4,     cs.camLeft.parm5,     cs.camLeft.parm7,     cs.camLeft.parm9],    
@@ -368,7 +381,7 @@ while 1:
     profiler.checkpoint('scale')
     #if lr_prob == 0 or cs.steeringPressed or left_missing != right_missing or cs.vEgo < 20:
     #  model_index = last_model
-    if lr_prob == 0 or cs.steeringPressed or cs.laneChanging:
+    if lr_prob == 0 or cs.steeringPressed: # or cs.laneChanging:
       model_index = 1
     else:
       model_index = max(model_index - 1, first_model, min(model_index + 1, last_model, int(abs(cs.steeringAngle - calibration[0][0]) * model_factor)))

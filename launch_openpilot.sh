@@ -2,14 +2,14 @@
 cd ~/raspilot
 export PYTHONPATH="$PWD"
 pkill -f transcoderd
-python3.7 selfdrive/controls/transcoderd.py &
+taskset -a --cpu-list 2,3 python3.7 selfdrive/controls/transcoderd.py &
 pkill -f controlsd
 pkill -f pandad
 pkill -f boardd
 pkill -f ubloxd
 pkill -f dashboard
-python ~/raspilot/selfdrive/pandad.py &
+taskset -a --cpu-list 0,1 python ~/raspilot/selfdrive/pandad.py &
 #~/raspilot/selfdrive/boardd/boardd &
-~/raspilot/selfdrive/locationd/ubloxd &
-python ~/raspilot/selfdrive/controls/controlsd.py wait & 
-python ~/raspilot/dashboard.py &
+taskset -a --cpu-list 2,3 ~/raspilot/selfdrive/locationd/ubloxd &
+#taskset -a --cpu-list 0,1 python ~/raspilot/selfdrive/controls/controlsd.py wait & 
+taskset -a --cpu-list 2,3 python ~/raspilot/dashboard.py &

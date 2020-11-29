@@ -31,6 +31,12 @@ from common.params import Params, put_nonblocking
 from common.profiler import Profiler
 from tensorflow.python.keras.models import load_model 
 import tensorflow as tf
+import sentry_sdk
+sentry_sdk.init(
+    "https://2c6d54c342d14b4a9f3c2fc62a87def6@o445390.ingest.sentry.io/5473328",
+    traces_sample_rate=1
+)
+
 
 setproctitle('transcoderd')
 

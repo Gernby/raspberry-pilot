@@ -20,6 +20,12 @@ from selfdrive.controls.lib.latcontrol_pid import LatControlPID
 from selfdrive.controls.lib.laterald import Lateral
 from selfdrive.controls.lib.alertmanager import AlertManager
 from setproctitle import setproctitle
+import sentry_sdk
+
+sentry_sdk.init(
+    "https://2c6d54c342d14b4a9f3c2fc62a87def6@o445390.ingest.sentry.io/5473328",
+    traces_sample_rate=1
+)
 
 
 ThermalStatus = log.ThermalData.ThermalStatus

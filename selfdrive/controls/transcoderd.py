@@ -49,7 +49,7 @@ OUTPUT_ROWS = 15
 BATCH_SIZE = 1
 MAX_CENTER_OPPOSE = np.reshape(np.arange(15) * 200, (OUTPUT_ROWS,1))
 
-lo_res_data = np.zeros((BATCH_SIZE, 5, INPUTS-6))
+lo_res_data = np.zeros((BATCH_SIZE, 7, INPUTS-6))
 
 for filename in os.listdir('models/'):
   if filename[-5:] == '.hdf5':
@@ -64,7 +64,7 @@ for filename in os.listdir('models/'):
           history_rows.append(models[-1].layers[0].input.shape[1])
           models[-1] = tf.function(models[-1].predict_step)
           #model_output = models[-1]([lo_res_data[:,-history_rows[-1]:,:6], lo_res_data[:,-history_rows[-1]:,:-16],lo_res_data[:,-history_rows[-1]:,-16:-8], lo_res_data[:,-history_rows[-1]:,-8:], fingerprint])  
-          model_output = models[-1]([lo_res_data[:,-5:,:6], lo_res_data[:,-history_rows[-1]:,:-16],lo_res_data[:,-history_rows[-1]:,-16:-8], lo_res_data[:,-history_rows[-1]:,-8:], fingerprint])  
+          model_output = models[-1]([lo_res_data[:,-7:,:6], lo_res_data[:,-history_rows[-1]:,:-16],lo_res_data[:,-history_rows[-1]:,-16:-8], lo_res_data[:,-history_rows[-1]:,-8:], fingerprint])  
           print("loaded %s" % md)
       break
     elif MODEL_NAME == '':
@@ -196,7 +196,7 @@ fingerprint = np.zeros((1, 10), dtype=np.int)
 for md in range(len(models)):
   #models[md] = tf.function(models[md])
   #model_output = models[md]([lo_res_data[:,-history_rows[md]:,:6], lo_res_data[:,-history_rows[md]:,:-16],lo_res_data[:,-history_rows[md]:,-16:-8], lo_res_data[:,-history_rows[md]:,-8:], fingerprint])  
-  model_output = models[md]([lo_res_data[:,-5:,:6], lo_res_data[:,-history_rows[md]:,:-16],lo_res_data[:,-history_rows[md]:,-16:-8], lo_res_data[:,-history_rows[md]:,-8:], fingerprint])  
+  model_output = models[md]([lo_res_data[:,-7:,:6], lo_res_data[:,-history_rows[md]:,:-16],lo_res_data[:,-history_rows[md]:,-16:-8], lo_res_data[:,-history_rows[md]:,-8:], fingerprint])  
 
 print(model_output.shape)
 while model_output.shape[2] > output_scaler.max_abs_.shape[0]:
@@ -368,9 +368,9 @@ while 1:
   r_prob =     min(1, max(0, cs.camRight.parm4 / 127))
   lr_prob =    (l_prob + r_prob) - l_prob * r_prob
 
-  if len(vehicle_array) >= 5:
+  if len(vehicle_array) >= 7:
     #vehicle_array = np.array(vehicle_array[-history_rows[-1]:])
-    vehicle_array = np.array(vehicle_array[-5:])
+    vehicle_array = np.array(vehicle_array[-7:])
     profiler.checkpoint('process_inputs')
 
     vehicle_array[:,(cal_col[0] == 1)] -= calibration[0]
@@ -379,7 +379,7 @@ while 1:
     profiler.checkpoint('calibrate')
 
     #try:
-    hi_res_data = np.clip(vehicle_scaler.transform(vehicle_standard.transform(vehicle_array[-5:])), -1, 1)
+    hi_res_data = np.clip(vehicle_scaler.transform(vehicle_standard.transform(vehicle_array[-7:])), -1, 1)
     #hi_res_data = np.concatenate((hi_res_data[:,:1]*hi_res_data[:,:2],hi_res_data),axis=1)
     lo_res_data[:-1,:] = lo_res_data[1:,:]
     lo_res_data[-1,:] = np.concatenate(([hi_res_data[-1,6:]], [camera_input[:-32]], camera_scaler.transform(camera_standard.transform([camera_input[-32:]]))), axis=1)
@@ -394,7 +394,7 @@ while 1:
     #lo_res_data[:,:-history_rows[model_index],:7] = lo_res_data[:,-history_rows[model_index],:7]
     
     #model_output = models[model_index]([np.array([hi_res_data[-history_rows[model_index]:,:6]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
-    model_output = models[model_index]([np.array([hi_res_data[-5:,:6]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
+    model_output = models[model_index]([np.array([hi_res_data[-7:,:6]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
     
     profiler.checkpoint('predict')
 

@@ -92,6 +92,7 @@ class CarController():
     self.lead_distance_counter = 1
     self.lead_distance_counter_prev = 1
     self.rough_lead_speed = 0.0
+    self.kegman = kegman_conf()
 
   def rough_speed(self, lead_distance):
     if self.prev_lead_distance != lead_distance:

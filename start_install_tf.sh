@@ -120,16 +120,12 @@ sudo /bin/systemctl daemon-reload
 # ansible localhost -b -m service -a "name=influxdb enabled=yes"
 # ansible localhost -b -m service -a "name=influxdb state=started"
 
-# Placeholder for upcoming TensorFlow 2.3 update
-# wget https://github.com/lhelontra/tensorflow-on-arm/releases/download/v2.3.0/tensorflow-2.3.0-cp37-none-linux_aarch64.whl
-# python -m pip install tensorflow-2.3.0-cp37-none-linux_aarch64.whl
-
-# Install the TensorFlow 2.2 components and dependencies
-wget https://github.com/lhelontra/tensorflow-on-arm/releases/download/v2.2.0/tensorflow-2.2.0-cp37-none-linux_aarch64.whl
+# Install the TensorFlow 2.3 components and dependencies
+wget https://github.com/lhelontra/tensorflow-on-arm/releases/download/v2.3.0/tensorflow-2.3.0-cp37-none-linux_aarch64.whl
 python3.7 -m pip install -U pip
 python3.7 -m pip install -U pyzmq
 python3.7 -m pip install cython
-python3.7 -m pip install tensorflow-2.2.0-cp37-none-linux_aarch64.whl
+python3.7 -m pip install tensorflow-2.3.0-cp37-none-linux_aarch64.whl
 python3.7 -m pip install sklearn
 python3.7 -m pip install pyzmq
 python3.7 -m pip install pycapnp

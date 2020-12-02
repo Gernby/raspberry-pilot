@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # simple boardd wrapper that updates the panda first
 import os
+import subprocess
 import time
 from selfdrive.kegman_conf import kegman_conf
 
@@ -87,6 +88,15 @@ def update_panda():
       print("Version mismatch after flashing, exiting")
       raise AssertionError
 
+def upload_drives():
+  print("Attempting connection to panda")
+
+  panda = None
+  panda_list = Panda.list()
+  if len(panda_list) == 0: 
+    print("Panda disconnected, safe to upload")
+    subprocess.call(['python3', 'upload_files.py'])
+
 
 def main(gctx=None):
   setproctitle('pandad')
@@ -94,8 +104,11 @@ def main(gctx=None):
     kegman = kegman_conf()  #.read_config()
     if bool(int(kegman.conf['useAutoFlash'])): 
       update_panda()
+    if bool(int(kegman.conf['autoUpload'])): 
+      upload_drives()
   except:
     pass
+
   #update_panda()
   os.chdir("selfdrive/boardd")
   os.execvp("./boardd", ["./boardd"])

@@ -83,7 +83,7 @@ os.system("pkill -f controlsd")
 os.system("taskset -a --cpu-list 0,1 python ~/raspilot/selfdrive/controls/controlsd.py &")
 os.system("pkill -f dashboard")
 os.system("taskset -a --cpu-list 2,3 python ~/raspilot/dashboard.py &")
-os.system("bash ~/raspilot/fix_niceness.sh")
+#os.system("bash ~/raspilot/fix_niceness.sh")
 
 def dump_sock(sock, wait_for_one=False):
   if wait_for_one:

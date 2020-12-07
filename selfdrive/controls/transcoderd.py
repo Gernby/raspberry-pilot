@@ -14,12 +14,15 @@ INPUTS = 78
 OUTPUTS = 9
 MODEL_VERSION = 'F'
 MODEL_NAME = ''
-output_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_output_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
-output_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_output_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
-vehicle_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_vehicle_%s.scaler' % (12, MODEL_VERSION)))
-vehicle_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_vehicle_%s.scaler' % (12, MODEL_VERSION)))
-camera_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_camera_%s.scaler' % (32, MODEL_VERSION)))
-camera_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_camera_%s.scaler' % (32, MODEL_VERSION)))
+#output_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_output_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
+#output_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_output_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
+#vehicle_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_vehicle_%s.scaler' % (12, MODEL_VERSION)))
+#vehicle_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_vehicle_%s.scaler' % (12, MODEL_VERSION)))
+#camera_standard = joblib.load(os.path.expanduser('models/GRU_Stand_%d_camera_%s.scaler' % (32, MODEL_VERSION)))
+#camera_scaler = joblib.load(os.path.expanduser('models/GRU_MaxAbs_%d_camera_%s.scaler' % (32, MODEL_VERSION)))
+output_scaler = joblib.load(os.path.expanduser('models/GRU_MinMax_tanh_%d_output_%s.scaler' % (OUTPUTS, MODEL_VERSION)))
+vehicle_scaler = joblib.load(os.path.expanduser('models/GRU_MinMax_tanh_%d_vehicle_%s.scaler' % (12, MODEL_VERSION)))
+camera_scaler = joblib.load(os.path.expanduser('models/GRU_MinMax_tanh_%d_camera_%s.scaler' % (32, MODEL_VERSION)))
 
 from selfdrive.kegman_conf import kegman_conf
 from selfdrive.services import service_list
@@ -56,6 +59,7 @@ BATCH_SIZE = 1
 MAX_CENTER_OPPOSE = np.reshape(np.arange(15) * 200, (OUTPUT_ROWS,1))
 
 lo_res_data = np.zeros((BATCH_SIZE, 7, INPUTS-6))
+hi_res_data = np.zeros((BATCH_SIZE, 50, 6))
 
 for filename in os.listdir('models/'):
   if filename[-5:] == '.hdf5':
@@ -70,7 +74,7 @@ for filename in os.listdir('models/'):
           history_rows.append(models[-1].layers[0].input.shape[1])
           models[-1] = tf.function(models[-1].predict_step)
           #model_output = models[-1]([lo_res_data[:,-history_rows[-1]:,:6], lo_res_data[:,-history_rows[-1]:,:-16],lo_res_data[:,-history_rows[-1]:,-16:-8], lo_res_data[:,-history_rows[-1]:,-8:], fingerprint])  
-          model_output = models[-1]([lo_res_data[:,-7:,:6], lo_res_data[:,-history_rows[-1]:,:-16],lo_res_data[:,-history_rows[-1]:,-16:-8], lo_res_data[:,-history_rows[-1]:,-8:], fingerprint])  
+          model_output = models[-1]([hi_res_data[:,-round(history_rows[-1]*6.7):,:6], lo_res_data[:,-history_rows[-1]:,:-16],lo_res_data[:,-history_rows[-1]:,-16:-8], lo_res_data[:,-history_rows[-1]:,-8:], fingerprint])  
           print("loaded %s" % md)
       break
     elif MODEL_NAME == '':
@@ -82,9 +86,10 @@ for filename in os.listdir('models/'):
       exit()
 
 os.system("pkill -f controlsd")
-os.system("taskset -a --cpu-list 0,1 python ~/raspilot/selfdrive/controls/controlsd.py &")
+os.system("taskset -a --cpu-list 2,3 python ~/raspilot/selfdrive/controls/controlsd.py &")
 os.system("pkill -f dashboard")
-os.system("taskset -a --cpu-list 0,1 python ~/raspilot/dashboard.py &")
+os.system("taskset -a --cpu-list 4,5 python ~/raspilot/dashboard.py &")
+#os.system("bash ~/raspilot/fix_niceness.sh")
 
 def dump_sock(sock, wait_for_one=False):
   if wait_for_one:
@@ -202,10 +207,17 @@ fingerprint = np.zeros((1, 10), dtype=np.int)
 for md in range(len(models)):
   #models[md] = tf.function(models[md])
   #model_output = models[md]([lo_res_data[:,-history_rows[md]:,:6], lo_res_data[:,-history_rows[md]:,:-16],lo_res_data[:,-history_rows[md]:,-16:-8], lo_res_data[:,-history_rows[md]:,-8:], fingerprint])  
-  model_output = models[md]([lo_res_data[:,-7:,:6], lo_res_data[:,-history_rows[md]:,:-16],lo_res_data[:,-history_rows[md]:,-16:-8], lo_res_data[:,-history_rows[md]:,-8:], fingerprint])  
+  model_output = models[md]([hi_res_data[:,-round(history_rows[md]*6.7):,:6], lo_res_data[:,-history_rows[md]:,:-16],lo_res_data[:,-history_rows[md]:,-16:-8], lo_res_data[:,-history_rows[md]:,-8:], fingerprint])  
 
-print(model_output.shape)
-while model_output.shape[2] > output_scaler.max_abs_.shape[0]:
+print(output_scaler)
+while model_output.shape[2] > output_scaler.data_max_.shape[0]:
+  output_scaler.data_max_ = np.concatenate((output_scaler.data_max_[:1], output_scaler.data_max_),axis=0)
+  output_scaler.data_min_ = np.concatenate((output_scaler.data_min_[:1], output_scaler.data_min_),axis=0)
+  output_scaler.data_range_ = np.concatenate((output_scaler.data_range_[:1], output_scaler.data_range_),axis=0)
+  output_scaler.min_ = np.concatenate((output_scaler.min_[:1], output_scaler.min_),axis=0)
+  output_scaler.scale_ = np.concatenate((output_scaler.scale_[:1], output_scaler.scale_),axis=0)
+
+'''while model_output.shape[2] > output_scaler.max_abs_.shape[0]:
   print("adding column")
   print(output_standard.mean_.shape, output_scaler.scale_.shape) 
   try:
@@ -217,9 +229,10 @@ while model_output.shape[2] > output_scaler.max_abs_.shape[0]:
   output_scaler.scale_ = np.concatenate((output_scaler.scale_[:1], output_scaler.scale_),axis=0)
   output_standard.mean_ = np.concatenate((output_standard.mean_[:1], output_standard.mean_),axis=0)
   output_standard.scale_ = np.concatenate((output_standard.scale_[:1], output_standard.scale_),axis=0)
-  output_standard.var_ = np.concatenate((output_standard.var_[:1], output_standard.var_),axis=0)
+  output_standard.var_ = np.concatenate((output_standard.var_[:1], output_standard.var_),axis=0)'''
 
-descaled_output = output_standard.transform(output_scaler.inverse_transform(model_output[-1]))
+descaled_output = output_scaler.inverse_transform(model_output[-1])
+#descaled_output = output_standard.transform(output_scaler.inverse_transform(model_output[-1]))
 print(descaled_output)
 
 path_send = log.Event.new_message()
@@ -374,9 +387,9 @@ while 1:
   r_prob =     min(1, max(0, cs.camRight.parm4 / 127))
   lr_prob =    (l_prob + r_prob) - l_prob * r_prob
 
-  if len(vehicle_array) >= 7:
+  if len(vehicle_array) >= round(history_rows[-1]*6.7):
     #vehicle_array = np.array(vehicle_array[-history_rows[-1]:])
-    vehicle_array = np.array(vehicle_array[-7:])
+    vehicle_array = np.array(vehicle_array[-round(history_rows[-1]*6.7):])
     profiler.checkpoint('process_inputs')
 
     vehicle_array[:,(cal_col[0] == 1)] -= calibration[0]
@@ -385,10 +398,12 @@ while 1:
     profiler.checkpoint('calibrate')
 
     #try:
-    hi_res_data = np.clip(vehicle_scaler.transform(vehicle_standard.transform(vehicle_array[-7:])), -1, 1)
+    hi_res_data = np.clip(vehicle_scaler.transform(vehicle_array[-round(history_rows[-1]*6.7):]), -1, 1)
+    #hi_res_data = np.clip(vehicle_scaler.transform(vehicle_standard.transform(vehicle_array[-round(history_rows[-1]*6.7):])), -1, 1)
     #hi_res_data = np.concatenate((hi_res_data[:,:1]*hi_res_data[:,:2],hi_res_data),axis=1)
     lo_res_data[:-1,:] = lo_res_data[1:,:]
-    lo_res_data[-1,:] = np.concatenate(([hi_res_data[-1,6:]], [camera_input[:-32]], camera_scaler.transform(camera_standard.transform([camera_input[-32:]]))), axis=1)
+    #lo_res_data[-1,:] = np.concatenate(([hi_res_data[-1,6:]], [camera_input[:-32]], camera_scaler.transform(camera_standard.transform([camera_input[-32:]]))), axis=1)
+    lo_res_data[-1,:] = np.concatenate(([hi_res_data[-1,6:]], [camera_input[:-32]], camera_scaler.transform([camera_input[-32:]])), axis=1)
     #lo_res_data[-1,:] = np.concatenate(([hi_res_data[-1,:2]], [hi_res_data[-1,8:]], [camera_input[:-32]], camera_scaler.transform(camera_standard.transform([camera_input[-32:]]))), axis=1)
     profiler.checkpoint('scale')
     #if lr_prob == 0 or cs.steeringPressed or left_missing != right_missing or cs.vEgo < 20:
@@ -399,12 +414,12 @@ while 1:
       model_index = max(model_index - 1, first_model, min(model_index + 1, last_model, int(abs(cs.steeringAngle - calibration[0][0]) * model_factor)))
     #lo_res_data[:,:-history_rows[model_index],:7] = lo_res_data[:,-history_rows[model_index],:7]
     
-    #model_output = models[model_index]([np.array([hi_res_data[-history_rows[model_index]:,:6]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
-    model_output = models[model_index]([np.array([hi_res_data[-7:,:6]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
+    model_output = models[model_index]([np.array([hi_res_data[-round(history_rows[model_index]*6.7):,:6]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
     
     profiler.checkpoint('predict')
 
-    descaled_output = output_standard.inverse_transform(output_scaler.inverse_transform(model_output[-1])) 
+    descaled_output = output_scaler.inverse_transform(model_output[-1])
+    #descaled_output = output_standard.inverse_transform(output_scaler.inverse_transform(model_output[-1])) 
     profiler.checkpoint('scale')
     
     calc_center = tri_blend(l_prob, r_prob, lr_prob, descaled_output[:,angle_speed_count::3], cs.torqueRequest, cs.steeringAngle - calibration[0][0], calc_center[0], minimize=use_minimize, optimize=use_optimize)
@@ -480,6 +495,7 @@ while 1:
     if frame % 60 == 0:
       #print(calibration_factor, np.round(calibration, 2))
       print('lane_width: %0.1f angle bias: %0.2f  distance_driven:  %0.2f   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs  adjusted_speed:  %0.1f' % (lane_width, angle_bias, distance_driven, calc_center[0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,0], descaled_output[1,1], execution_time_avg, adjusted_speed))
+      print(left_missing, right_missing, far_left_missing, far_right_missing)
 
     if ((cs.vEgo < 10 and not cs.cruiseState.enabled) or not calibrated) and distance_driven > next_params_distance:
       next_params_distance = distance_driven + 133000

@@ -412,7 +412,6 @@ while 1:
       model_index = 1
     else:
       model_index = max(model_index - 1, first_model, min(model_index + 1, last_model, int(abs(cs.steeringAngle - calibration[0][0]) * model_factor)))
-    #lo_res_data[:,:-history_rows[model_index],:7] = lo_res_data[:,-history_rows[model_index],:7]
     
     model_output = models[model_index]([np.array([hi_res_data[-round(history_rows[model_index]*6.7):,:6]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
     

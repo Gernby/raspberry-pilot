@@ -109,6 +109,9 @@ sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.7 2
 sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 3
 
+# fix apt_pkg missing error due to python3 breaking it :)
+sudo cp /usr/lib/python3/dist-packages/apt_pkg.cpython-*-aarch64-linux-gnu.so /usr/lib/python3/dist-packages/apt_pkg.so
+
 # start grafana and influxdb (installed but temporarily disabled to reduce resource usage)
 sudo /bin/systemctl daemon-reload
 # sudo /bin/systemctl enable grafana-server
@@ -120,18 +123,15 @@ sudo /bin/systemctl daemon-reload
 # ansible localhost -b -m service -a "name=influxdb enabled=yes"
 # ansible localhost -b -m service -a "name=influxdb state=started"
 
-# Placeholder for upcoming TensorFlow 2.3 update
-# wget https://github.com/lhelontra/tensorflow-on-arm/releases/download/v2.3.0/tensorflow-2.3.0-cp37-none-linux_aarch64.whl
-# python -m pip install tensorflow-2.3.0-cp37-none-linux_aarch64.whl
-
-# Install the TensorFlow 2.2 components and dependencies
-wget https://github.com/lhelontra/tensorflow-on-arm/releases/download/v2.2.0/tensorflow-2.2.0-cp37-none-linux_aarch64.whl
+# Install the TensorFlow 2.3 components and dependencies
+wget https://github.com/lhelontra/tensorflow-on-arm/releases/download/v2.3.0/tensorflow-2.3.0-cp37-none-linux_aarch64.whl
 python3.7 -m pip install -U pip
 python3.7 -m pip install -U pyzmq
 python3.7 -m pip install cython
-python3.7 -m pip install tensorflow-2.2.0-cp37-none-linux_aarch64.whl
+python3.7 -m pip install tensorflow-2.3.0-cp37-none-linux_aarch64.whl
 python3.7 -m pip install sklearn
 python3.7 -m pip install pyzmq
+python3.7 -m pip install pkgconfig
 python3.7 -m pip install pycapnp
 python3.7 -m pip install setproctitle
 python3.7 -m pip install cffi

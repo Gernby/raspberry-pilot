@@ -12,6 +12,7 @@
   "_polyFactor_note": "This is the **multiplier** that converts projected lane error into a steering angle adjustment.  Smaller values result in less centering effort, Larger values can cause increasing oscillation.",
   "_polyReact_note": "This is the ratio of desired angle that comes from ** the Fast Angle and Slow Angle outputs of the model**.  At 0.0, the average of Slow and Fast is used, -0.5 will use ONLY Slow Angle, and +0.5 will use ONLY Fast Angle.",
   "_useMinimize_note": "This is an option (1 or 0) to consider the noise level from left and right in the blending of the lane center values.",
+  "_overrideFingerprint": "The fingerprint can be forced by adding overrideFingerprint with one of these values: 'HONDA ACCORD 2018 SPORT 2T', 'HONDA ACCORD 2018 HYBRID TOURING', 'HONDA ACCORD 2018 LX 1.5T','HONDA CIVIC HATCHBACK 2017 SEDAN/COUPE 2019', 'HONDA CR-V 2017 EX', 'HONDA INSIGHT 2019 EX', 'HONDA CR-V 2019 HYBRID'",
   "ACCORD_15": {
     "Ki": "0.18",
     "Kp": "0.6",

@@ -16,7 +16,7 @@ if len(sys.argv) < 2 or sys.argv[1] == 0:
   min_time = 0  #(time.time() - 72 * 60 * 60) * 1000
 elif sys.argv[1] == '1':
   min_time = 0
-  destination = "192.168.1.3"
+  destination = "192.168.1.2"
 print("using %s" % destination)
 
 kegman = kegman_conf()
@@ -46,7 +46,7 @@ file_list = []
 upload_list = os.listdir('/data/upload/')
 file_count = 0
 for file in upload_list:
-  filename = os.fsdecode(file)
+  filename = os.fsdecode(file) 
   if filename.endswith(".dat"): file_count += 1
 print("Total files to upload: %d" % file_count)
 for file in upload_list: 
@@ -66,10 +66,10 @@ for file in upload_list:
             print(r)
           except:
             r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')
-            time.sleep(1)
+            #time.sleep(1)
             r = requests.post('http://localhost:8086/write?db=carDB&%sprecision=ms', data=inString)
             print(r)
-        time.sleep(1)
+        #time.sleep(1)
         if len(file_list) > 5:
           #print(dataSub.recv_string())
           reply = dataSub.recv_multipart()
@@ -78,8 +78,8 @@ for file in upload_list:
           file_to_delete = file_list.pop(file_list.index(return_data['filename']))
           if return_data['statuscode'] == 204:
             print("successfully processed: %s  files remaining: %d" % (file_to_delete, file_count))
-            os.rename('/data/upload/%s' % file_to_delete, '/data/upload/%s' % file_to_delete.replace('.dat','.bak'))
-            #os.remove('/data/upload/%s' % file_to_delete)
+            #os.rename('/data/upload/%s' % file_to_delete, '/data/upload/%s' % file_to_delete.replace('.dat','.bak'))
+            os.remove('/data/upload/%s' % file_to_delete)
           else:
             print(" Oops!  status_code: %s    NOT successful with file: %s" % (str(return_data['statuscode']), file_to_delete))
       else:

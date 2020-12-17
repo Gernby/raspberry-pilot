@@ -68,7 +68,7 @@ for filename in os.listdir('models/'):
           history_rows.append(models[-1].layers[0].input.shape[1])
           models[-1] = tf.function(models[-1].predict_step)
           #model_output = models[-1]([lo_res_data[:,-history_rows[-1]:,:6], lo_res_data[:,-history_rows[-1]:,:-16],lo_res_data[:,-history_rows[-1]:,-16:-8], lo_res_data[:,-history_rows[-1]:,-8:], fingerprint])  
-          model_output = models[-1]([hi_res_data[:,-round(history_rows[-1]*6.7):,:6], lo_res_data[:,-history_rows[-1]:,:-16],lo_res_data[:,-history_rows[-1]:,-16:-8], lo_res_data[:,-history_rows[-1]:,-8:], fingerprint])  
+          model_output = models[-1]([hi_res_data[:,-round(history_rows[-1]*6.6666667):,:6], lo_res_data[:,-history_rows[-1]:,:-16],lo_res_data[:,-history_rows[-1]:,-16:-8], lo_res_data[:,-history_rows[-1]:,-8:], fingerprint])  
           print("loaded %s" % md)
       break
     elif MODEL_NAME == '':
@@ -201,7 +201,7 @@ fingerprint = np.zeros((1, 10), dtype=np.int)
 for md in range(len(models)):
   #models[md] = tf.function(models[md])
   #model_output = models[md]([lo_res_data[:,-history_rows[md]:,:6], lo_res_data[:,-history_rows[md]:,:-16],lo_res_data[:,-history_rows[md]:,-16:-8], lo_res_data[:,-history_rows[md]:,-8:], fingerprint])  
-  model_output = models[md]([hi_res_data[:,-round(history_rows[md]*6.7):,:6], lo_res_data[:,-history_rows[md]:,:-16],lo_res_data[:,-history_rows[md]:,-16:-8], lo_res_data[:,-history_rows[md]:,-8:], fingerprint])  
+  model_output = models[md]([hi_res_data[:,-round(history_rows[md]*6.6666667):,:6], lo_res_data[:,-history_rows[md]:,:-16],lo_res_data[:,-history_rows[md]:,-16:-8], lo_res_data[:,-history_rows[md]:,-8:], fingerprint])  
 
 print(output_scaler)
 while model_output.shape[2] > output_scaler.data_max_.shape[0]:
@@ -381,9 +381,9 @@ while 1:
   r_prob =     min(1, max(0, cs.camRight.parm4 / 127))
   lr_prob =    (l_prob + r_prob) - l_prob * r_prob
 
-  if len(vehicle_array) >= round(history_rows[-1]*6.7):
+  if len(vehicle_array) >= round(history_rows[-1]*6.6666667):
     #vehicle_array = np.array(vehicle_array[-history_rows[-1]:])
-    vehicle_array = np.array(vehicle_array[-round(history_rows[-1]*6.7):])
+    vehicle_array = np.array(vehicle_array[-round(history_rows[-1]*6.6666667):])
     profiler.checkpoint('process_inputs')
 
     vehicle_array[:,(cal_col[0] == 1)] -= calibration[0]
@@ -392,8 +392,8 @@ while 1:
     profiler.checkpoint('calibrate')
 
     #try:
-    hi_res_data = np.clip(vehicle_scaler.transform(vehicle_array[-round(history_rows[-1]*6.7):]), -1, 1)
-    #hi_res_data = np.clip(vehicle_scaler.transform(vehicle_standard.transform(vehicle_array[-round(history_rows[-1]*6.7):])), -1, 1)
+    hi_res_data = np.clip(vehicle_scaler.transform(vehicle_array[-round(history_rows[-1]*6.6666667):]), -1, 1)
+    #hi_res_data = np.clip(vehicle_scaler.transform(vehicle_standard.transform(vehicle_array[-round(history_rows[-1]*6.6666667):])), -1, 1)
     #hi_res_data = np.concatenate((hi_res_data[:,:1]*hi_res_data[:,:2],hi_res_data),axis=1)
     lo_res_data[:-1,:] = lo_res_data[1:,:]
     #lo_res_data[-1,:] = np.concatenate(([hi_res_data[-1,6:]], [camera_input[:-32]], camera_scaler.transform(camera_standard.transform([camera_input[-32:]]))), axis=1)
@@ -407,7 +407,7 @@ while 1:
     else:
       model_index = max(model_index - 1, first_model, min(model_index + 1, last_model, int(abs(cs.steeringAngle - calibration[0][0]) * model_factor)))
     
-    model_output = models[model_index]([np.array([hi_res_data[-round(history_rows[model_index]*6.7):,:6]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
+    model_output = models[model_index]([np.array([hi_res_data[-round(history_rows[model_index]*6.6666667):,:6]]), lo_res_data[:,-history_rows[model_index]:,:-16], lo_res_data[:,-history_rows[model_index]:,-16:-8], lo_res_data[:,-history_rows[model_index]:,-8:], fingerprint])
     
     profiler.checkpoint('predict')
 

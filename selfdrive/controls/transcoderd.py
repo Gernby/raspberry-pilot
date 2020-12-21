@@ -383,16 +383,17 @@ while 1:
 
   if len(vehicle_array) >= round(history_rows[-1]*6.6666667):
     #vehicle_array = np.array(vehicle_array[-history_rows[-1]:])
-    vehicle_array = np.array(vehicle_array[-round(history_rows[-1]*6.6666667):])
+    vehicle_array = vehicle_array[-round(history_rows[-1]*6.66666667):]
     profiler.checkpoint('process_inputs')
 
-    vehicle_array[:,(cal_col[0] == 1)] -= calibration[0]
+    vehicle_input = np.array(vehicle_array)
+    vehicle_input[:,(cal_col[0] == 1)] -= calibration[0]
     camera_input[(cal_col[1] == 1)] -= calibration[1]
 
     profiler.checkpoint('calibrate')
 
     #try:
-    hi_res_data = np.clip(vehicle_scaler.transform(vehicle_array[-round(history_rows[-1]*6.6666667):]), -1, 1)
+    hi_res_data = np.clip(vehicle_scaler.transform(vehicle_input[-round(history_rows[-1]*6.6666667):]), -1, 1)
     #hi_res_data = np.clip(vehicle_scaler.transform(vehicle_standard.transform(vehicle_array[-round(history_rows[-1]*6.6666667):])), -1, 1)
     #hi_res_data = np.concatenate((hi_res_data[:,:1]*hi_res_data[:,:2],hi_res_data),axis=1)
     lo_res_data[:-1,:] = lo_res_data[1:,:]
@@ -469,7 +470,7 @@ while 1:
       elif calc_center[0][3,0] < 0:
         angle_bias += (0.00001 * cs.vEgo)
     
-    if abs(cs.steeringPressed) > 200 and (cs.steeringTorque < 0) != calc_center[0][3,0] < 0:
+    if abs(cs.steeringTorque) > 300 and (cs.steeringTorque < 0) != calc_center[0][3,0] < 0 and calibrated:
       print("  steering pressed: %d   driver direction: %d   model direction: %d   driver opposing: %d" % (cs.steeringPressed, 1 if cs.steeringTorque > 0 else -1, 1 if calc_center[0][3,0] > 0 else -1, 1 if (cs.steeringTorque < 0) != (calc_center[0][3,0] < 0) else 0))
       #  # Prevent angle_bias adjustment for 3 seconds after driver opposes the model
       steer_override_timer = 45 
@@ -482,7 +483,7 @@ while 1:
     profiler.checkpoint('log_init')
 
     if cs.vEgo > 10 and abs(cs.steeringAngle - calibration[0][0]) <= 3 and abs(cs.steeringRate) < 3 and l_prob > 0 and r_prob > 0:
-      cal_factor = update_calibration(calibration, [vehicle_array[-1], camera_input], cal_col, cs)
+      cal_factor = update_calibration(calibration, [vehicle_input[-1], camera_input], cal_col, cs)
       profiler.checkpoint('calibrate')
 
     if frame % 60 == 0:

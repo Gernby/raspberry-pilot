@@ -230,7 +230,7 @@ def controlsd_thread(gctx=None):
   params = Params()
   print(params)
   # Pub Sockets
-  profiler = Profiler(True, 'controls')
+  profiler = Profiler(False, 'controls')
 
   sendcan = messaging.pub_sock(service_list['sendcan'].port)
   controlsstate = messaging.pub_sock(service_list['controlsState'].port)

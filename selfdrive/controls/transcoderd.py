@@ -142,14 +142,18 @@ width_trim = 0
 angle_bias = 0
 total_offset = 0.0
 advanceSteer = 1
-one_deg_per_sec = np.ones((OUTPUT_ROWS,1)) / 15
-left_center = np.zeros((OUTPUT_ROWS,1))
-right_center = np.zeros((OUTPUT_ROWS,1))
-calc_center = [np.zeros((3,OUTPUT_ROWS,1)),np.zeros((3,OUTPUT_ROWS,1))]
+accel_limit = np.arange(15, dtype=np.float) / 7.5
+#one_deg_per_sec = np.ones((OUTPUT_ROWS,1)) / 15
+left_center = np.zeros((OUTPUT_ROWS))
+right_center = np.zeros((OUTPUT_ROWS))
+calc_center = [np.zeros((3,OUTPUT_ROWS)),np.zeros((3,OUTPUT_ROWS))]
+#left_center = np.zeros((OUTPUT_ROWS,1))
+#right_center = np.zeros((OUTPUT_ROWS,1))
+#calc_center = [np.zeros((3,OUTPUT_ROWS,1)),np.zeros((3,OUTPUT_ROWS,1))]
 super_center = np.zeros((OUTPUT_ROWS))
 smooth_center = np.zeros((OUTPUT_ROWS))
 fast_angles = np.zeros((OUTPUT_ROWS,1))
-center_limit = np.reshape(0.5 * np.arange(OUTPUT_ROWS) + 10,(OUTPUT_ROWS,1))
+#center_limit = np.reshape(0.5 * np.arange(OUTPUT_ROWS) + 10,(OUTPUT_ROWS,1))
 accel_counter = 0   
 upper_limit = 0
 lower_limit = 0
@@ -159,6 +163,8 @@ center_rate_prev = 0
 calc_center_prev = calc_center
 angle_factor = 1.0
 angle_speed = 3
+projected_rate = np.arange(0., 0.10066667,0.0066666)[1:]
+print(projected_rate)
 use_discrete_angle = True
 use_optimize = True
 use_minimize = True
@@ -259,12 +265,12 @@ else:
   lane_width = calibration_data['lane_width']
   angle_bias = calibration_data['angle_bias']
 
-model_bias = np.zeros((1,OUTPUT_ROWS), np.float)
-center_bias = np.zeros((OUTPUT_ROWS,1), np.float)
+model_bias = np.zeros((OUTPUT_ROWS), np.float)
+center_bias = np.zeros((OUTPUT_ROWS), np.float)
 if 'center_bias' in calibration_data:
-  center_bias[:,0] = calibration_data['center_bias']
+  center_bias = calibration_data['center_bias']
 if 'model_bias' in calibration_data:
-  model_bias[0,:] = calibration_data['model_bias']
+  model_bias = calibration_data['model_bias']
 
 print(calibration)
 
@@ -279,6 +285,7 @@ yaw_factor = 1
 speed_factor = 1
 steer_factor = 1
 width_factor = 1
+angle_plan = 0
 wiggle_angle = 0
 model_index = 0
 fast_angles = [np.array([[0],[0]]),np.array([[0],[0]])]
@@ -333,9 +340,10 @@ while 1:
   if len(vehicle_array) >= round(history_rows[-1]*6.6666667):
 
     vehicle_array = vehicle_array[-round(history_rows[-1]*6.66666667):]
+    vehicle_input = np.array([[vehicle_array],[vehicle_array]])
+
     profiler.checkpoint('process_inputs1')
 
-    vehicle_input = np.array([[vehicle_array],[vehicle_array]])
     vehicle_input[:,:,:,(cal_col[0] == 1)] -= calibration[0]
     camera_input[(cal_col[1] == 1)] -= calibration[1]
 
@@ -346,14 +354,13 @@ while 1:
 
     rate_adjustment = np.interp(cs.vEgo, [0., 40.], [speed_factor, 1.00])
     hi_res_data[0,:,:,:] *= np.array([[[rate_adjustment, 1.0, rate_adjustment, rate_adjustment, rate_adjustment, rate_adjustment, rate_adjustment, 1.0 , 1.0, 1.0, rate_adjustment, rate_adjustment ]]])
+    profiler.checkpoint('process_inputs1')
 
     camera_input[-32:] *= camera_scaler
     lo_res_data[:,:,-1,:6] = hi_res_data[:,:,-1,6:]
     lo_res_data[:,:,-1,6:] = camera_input
 
     profiler.checkpoint('scale1')
-
-    model_index = int(abs(fast_angles[0][-1,-1]) * model_factor)
 
     model_output = models[0]([hi_res_data[0,:,-round(history_rows[0]*6.6666667):,:6], lo_res_data[0,:,-history_rows[0]:,:-16], lo_res_data[0,:,-history_rows[0]:,-16:-8], lo_res_data[0,:,-history_rows[0]:,-8:], fingerprint, \
                               hi_res_data[1,:,-round(history_rows[1]*6.6666667):,:6], lo_res_data[1,:,-history_rows[1]:,:-16], lo_res_data[1,:,-history_rows[1]:,-16:-8], lo_res_data[1,:,-history_rows[1]:,-8:], fingerprint])
@@ -363,7 +370,6 @@ while 1:
     descaled_output = np.array([output_scaler * np.array(model_output[0][0]), output_scaler * np.array(model_output[1][0])])
     
     profiler.checkpoint('scale2')
-    calc_center[1] = np.array(tri_blend(l_prob, r_prob, lr_prob, descaled_output[1,:,angle_speed_count::3], minimize=use_minimize))
 
     if use_discrete_angle:
       fast_angles = angle_factor * descaled_output[:,:,:angle_speed_count] + calibration[0][0]
@@ -375,20 +381,26 @@ while 1:
       '''if angle_limit < 1 or abs(cs.steeringAngle) > 30: 
         discrete_angles = angle_factor * descaled_output[:,-1,:,:angle_speed_count] + calibration[0][0]
         fast_angles = np.clip(fast_angles, discrete_angles - angle_limit, discrete_angles + angle_limit)'''
-    
+
     fast_angles = [np.transpose(fast_angles[0]), np.transpose(fast_angles[1])]
+    
+    if lr_prob > 0:
+      model_index = min(1, int(abs(fast_angles[1][10,8] + model_bias[5]) * model_factor))
+  
+    calc_center[model_index] = np.array(tri_blend(l_prob, r_prob, lr_prob, descaled_output[model_index,:,angle_speed_count::3], minimize=use_minimize))
+    if model_index == 0:
+      angle_plan = np.clip(fast_angles[0], fast_angles[1] + model_bias - accel_limit, fast_angles[1] + model_bias + accel_limit)
+      
+      if lr_prob > 0: smooth_center = calc_center[0][0,:,0]
+    else:
+      angle_plan = np.clip(fast_angles[1] + model_bias, angle_plan - accel_limit, angle_plan + accel_limit)
+      
+      if lr_prob > 0: smooth_center += (((lr_prob * (calc_center[1][0,:,0] + center_bias) + (1 - lr_prob) * smooth_center) - smooth_center) / max(1, min(15, 2 * (abs(cs.steeringRate) - 0))))
+    
+    future_steering = cs.steeringAngle + cs.steeringRate * projected_rate
+    angle_plan = np.clip(angle_plan, future_steering - accel_limit, future_steering + accel_limit)
 
     profiler.checkpoint('process')
-
-    if model_index == 0:
-      angle_plan = np.clip(fast_angles[0], fast_angles[1] - model_bias - wiggle_angle, fast_angles[1] - model_bias + wiggle_angle)
-    else:
-      angle_plan = fast_angles[1] - model_bias
-
-    super_center[-1] = max(0.1, lr_prob) * calc_center[1][0,-1,0] + (1 - max(0.1, lr_prob)) * super_center[-1]
-    super_center[:-1] = (max(0.1, lr_prob) * calc_center[1][0,:-1,0] + (1 - max(0.1, lr_prob)) * super_center[1:]) # - super_center[1:]) / (1 + min(7, abs(cs.steeringRate)))    
-    smooth_center += ((super_center - smooth_center) / max(1, min(15, 2 * (abs(cs.steeringRate) - 0))))
-    profiler.checkpoint('bias')     
 
     path_send.pathPlan.centerCompensation = 0
     path_send.pathPlan.angleSteers = float(angle_plan[0][5])
@@ -398,9 +410,14 @@ while 1:
     path_send.pathPlan.angleBias = angle_bias
     path_send.pathPlan.modelIndex = model_index
     path_send.pathPlan.paramsValid = calibrated
-    path_send.pathPlan.cPoly = [float(x) for x in (smooth_center - center_bias[:,0])]
-    path_send.pathPlan.lPoly = [float(x) for x in ((calc_center[1][1,:,0] - center_bias[:,0]) + 0.5 * lane_width)]
-    path_send.pathPlan.rPoly = [float(x) for x in ((calc_center[1][2,:,0] - center_bias[:,0]) - 0.5 * lane_width)]
+    if model_index == 0:
+      path_send.pathPlan.cPoly = [float(x) for x in smooth_center]
+      path_send.pathPlan.lPoly = [float(x) for x in (calc_center[0][1,:,0] + 0.5 * lane_width)]
+      path_send.pathPlan.rPoly = [float(x) for x in (calc_center[0][2,:,0] - 0.5 * lane_width)]
+    else:
+      path_send.pathPlan.cPoly = [float(x) for x in smooth_center]
+      path_send.pathPlan.lPoly = [float(x) for x in (calc_center[1][1,:,0] + 0.5 * lane_width)]
+      path_send.pathPlan.rPoly = [float(x) for x in (calc_center[1][2,:,0] - 0.5 * lane_width)]
     path_send.pathPlan.lProb = float(l_prob)
     path_send.pathPlan.rProb = float(r_prob)
     path_send.pathPlan.cProb = float(lr_prob)
@@ -415,26 +432,27 @@ while 1:
     max_width_step = 0.05 * cs.vEgo * l_prob * r_prob
     lane_width = max(570, lane_width - max_width_step * 2, min(1200, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
 
-    if cs.vEgo > 10 and l_prob > 0 and r_prob > 0:	
-      if calc_center[1][1][0,0] > calc_center[1][2][0,0]:	
+    steer_override_timer -= 1
+    if model_index == 0 and steer_override_timer < 0 and abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and (abs(cs.steeringTorque) < 300 or ((cs.steeringTorque < 0) == (calc_center[0][0][3,0] < 0))):
+      if calc_center[0][0,5,0] > 0:
+        angle_bias -= (0.00001 * cs.vEgo)
+      elif calc_center[0][0,5,0] < 0:
+        angle_bias += (0.00001 * cs.vEgo)
+  
+      calc_center[1] = np.array(tri_blend(l_prob, r_prob, lr_prob, descaled_output[1,:,angle_speed_count::3], minimize=use_minimize))
+
+      model_bias += (0.00001 * cs.vEgo * lr_prob * (fast_angles[0][5,:] - fast_angles[1][5,:] - model_bias))
+      center_bias += (0.00001 * cs.vEgo * lr_prob * (calc_center[0][0,:,0] - calc_center[1][0,:,0] - center_bias))
+
+      if calc_center[1][1,0,0] > calc_center[1][2,0,0]:	
         width_trim += 1	
       else:	
         width_trim -= 1	
       width_trim = max(-200, min(width_trim, 0))
 
-    steer_override_timer -= 1
-    if steer_override_timer < 0 and abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and (abs(cs.steeringTorque) < 300 or ((cs.steeringTorque < 0) == (calc_center[0][0][3,0] < 0))):
-      if calc_center[0][0][5,0] > 0:
-        angle_bias -= (0.00001 * cs.vEgo)
-      elif calc_center[0][0][5,0] < 0:
-        angle_bias += (0.00001 * cs.vEgo)
-  
-      calc_center[0] = np.array(tri_blend(l_prob, r_prob, lr_prob, descaled_output[0,:,angle_speed_count::3], minimize=use_minimize))
-      model_bias += (0.00001 * cs.vEgo * lr_prob * (fast_angles[0][5,:] - fast_angles[1][5,:] - model_bias))
-      center_bias += (0.00001 * cs.vEgo * lr_prob * (calc_center[0][0,:] - calc_center[1][0,:] - center_bias))
       profiler.checkpoint('bias')
       
-    elif abs(cs.steeringTorque) > 300 and (cs.steeringTorque < 0) != calc_center[0][0][3,0] < 0:
+    elif model_index == 0 and abs(cs.steeringTorque) > 300 and (cs.steeringTorque < 0) != calc_center[0][0,3,0] < 0:
       #print("  steering pressed: %d   driver direction: %d   model direction: %d   driver opposing: %d" % (cs.steeringPressed, 1 if cs.steeringTorque > 0 else -1, 1 if calc_center[0][0][3,0] > 0 else -1, 1 if (cs.steeringTorque < 0) != (calc_center[0][0][3,0] < 0) else 0))
       # Prevent angle_bias adjustment for 3 seconds after driver opposes the model
       steer_override_timer = 45
@@ -448,17 +466,14 @@ while 1:
 
     if frame % 60 == 0:
       print('lane_width: %0.1f angle bias: %0.2f  distance_driven:  %0.2f   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs  adjusted_speed:  %0.1f' % (lane_width, angle_bias, distance_driven, calc_center[0][0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,1,0], descaled_output[1,1,1], execution_time_avg, max(10, rate_adjustment * cs.vEgo)))
-      #print(np.round(model_bias[0,:], 1))
-      #print(np.round(center_bias[:,0], 1))
-      #print(np.round(super_center, 1))
 
     if ((cs.vEgo < 10 and not cs.cruiseState.enabled) or not calibrated) and distance_driven > next_params_distance:
       next_params_distance = distance_driven + 133000
       print(np.round(calibration[0],2))
       if calibrated:
-        put_nonblocking("CalibrationParams", json.dumps({'calibration': list(np.concatenate((calibration))),'lane_width': lane_width,'angle_bias': angle_bias, 'center_bias': list(center_bias[:,0]), 'model_bias': list(model_bias[0,:])}))
+        put_nonblocking("CalibrationParams", json.dumps({'calibration': list(np.concatenate((calibration))),'lane_width': lane_width,'angle_bias': angle_bias, 'center_bias': list(center_bias), 'model_bias': list(model_bias)}))
       else:
-        params.put("CalibrationParams", json.dumps({'calibration': list(np.concatenate((calibration))),'lane_width': lane_width,'angle_bias': angle_bias, 'center_bias': list(center_bias[:,0]), 'model_bias': list(model_bias[0,:])}))
+        params.put("CalibrationParams", json.dumps({'calibration': list(np.concatenate((calibration))),'lane_width': lane_width,'angle_bias': angle_bias, 'center_bias': list(center_bias), 'model_bias': list(model_bias)}))
       #params = None
       calibrated = True
       profiler.checkpoint('save_cal')
@@ -482,6 +497,7 @@ while 1:
         speed_factor = abs(float(kegman.conf['speedFactor']))
         width_factor = abs(float(kegman.conf['widthFactor']))
         wiggle_angle = abs(float(kegman.conf['wiggleAngle']))
+        accel_limit = max(0, abs(float(kegman.conf['accelLimit'])) * 6.7) * np.arange(15, dtype=np.float)
         lateral_factor = abs(float(kegman.conf['lateralFactor']))
         yaw_factor = abs(float(kegman.conf['yawFactor']))
     

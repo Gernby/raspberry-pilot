@@ -43,10 +43,12 @@ class LatControlPID(object):
     self.damp_angle_steers_des = 0.0
     self.limited_damp_angle_steers_des = 0.0
     self.old_plan_count = 0
-    self.last_plan_time = 0
+    self.last_plan_time = 0.
+    self.last_plan_recv = 0.
     self.lane_change_adjustment = 1.0
     self.angle_index = 0.
     self.avg_plan_age = 0.
+    self.avg_plan_freq = 30.0
     self.min_index = 0
     self.max_index = 0
     self.wiggle_angle = 0.2
@@ -62,6 +64,7 @@ class LatControlPID(object):
     self.angle_rate_des = 0.0    # degrees/sec, rate dynamically limited by accel_limit
     self.fast_angles = [[]]
     self.center_angles = []
+    self.last_model_index = 0
     self.live_tune(CP)
     self.react_index = 0.0
     self.next_params_put = 36000
@@ -160,17 +163,22 @@ class LatControlPID(object):
   def update(self, active, cruise_enabled, v_ego, angle_steers, angle_steers_rate, steer_override, CP, path_plan, canTime, blinker_on):
     self.profiler.checkpoint('controlsd')
     pid_log = car.CarState.LateralPIDState.new_message()
-    path_age = (time.time() * 1000 - path_plan.sysTime) * 1e-3
+    cur_time = time.time()
+    path_age = (cur_time - path_plan.sysTime * 1e-3)
     if (angle_steers - path_plan.angleOffset >= 0) == (self.prev_angle_steers < 0):
-      self.zero_steer_crossed = time.time()
+      self.zero_steer_crossed = cur_time
     self.prev_angle_steers = angle_steers - path_plan.angleOffset
 
-    if path_plan.canTime != self.last_plan_time and len(path_plan.fastAngles) > 1:
-      time.sleep(0.00001)
+    #print(path_plan.canTime, self.last_plan_time, self.last_plan_recv)
+    if (path_plan.canTime != self.last_plan_time or path_plan.modelIndex != self.last_model_index) and len(path_plan.fastAngles) > 1:
+      #time.sleep(0.00001)
       if path_age > 0.23: self.old_plan_count += 1
       if self.path_index is None:
         self.avg_plan_age = path_age
         self.path_index = np.arange((len(path_plan.fastAngles)))*100.0/15.0
+      self.avg_plan_freq += 0.01 * (1 / (cur_time - self.last_plan_recv) - self.avg_plan_freq)
+      self.last_plan_recv = cur_time
+      self.last_model_index = path_plan.modelIndex
       self.last_plan_time = path_plan.canTime
       self.avg_plan_age += 0.01 * (path_age - self.avg_plan_age)
       self.c_prob = path_plan.cProb
@@ -178,9 +186,9 @@ class LatControlPID(object):
       self.center_angles.append(float(self.projected_lane_error))
       if len(self.center_angles) > 15: self.center_angles.pop(0)
       if (self.projected_lane_error >= 0) == (self.prev_projected_lane_error < 0):
-        self.zero_poly_crossed = time.time()
+        self.zero_poly_crossed = cur_time
       self.prev_projected_lane_error = self.projected_lane_error
-      if time.time() - max(self.zero_poly_crossed, self.zero_steer_crossed) < 4:
+      if cur_time - max(self.zero_poly_crossed, self.zero_steer_crossed) < 4:
         self.use_deadzone = False
         self.projected_lane_error -= (float(self.c_prob * self.poly_damp * self.center_angles[0]))
       else:
@@ -193,7 +201,7 @@ class LatControlPID(object):
     self.max_index = max(self.max_index, self.angle_index)
 
     if self.frame % 300 == 0 and self.frame > 0:
-      print("old plans:  %d  avg plan age:  %0.3f   min index:  %d  max_index:  %d   center_steer:  %0.2f" % (self.old_plan_count, self.avg_plan_age, self.min_index, self.max_index, self.projected_lane_error))
+      print("old plans:  %d  avg plan age:  %0.3f   avg plan freq:  %0.1f   min index:  %d  max_index:  %d   center_steer:  %0.2f" % (self.old_plan_count, self.avg_plan_age, self.avg_plan_freq, self.min_index, self.max_index, self.projected_lane_error))
       self.min_index = 100
       self.max_index = 0
 
@@ -236,7 +244,7 @@ class LatControlPID(object):
           if (self.damp_angle_steers - self.damp_angle_steers_des) * (angle_steers - self.damp_angle_steers_des) < 0:
             self.damp_angle_steers = self.damp_angle_steers_des
 
-        accel_factor = gernterp(abs(angle_steers - path_plan.angleOffset), [0, 5], [v_ego, 1])
+        accel_factor = gernterp(abs(angle_steers - path_plan.angleOffset), [0, 5], [v_ego, 2])
         self.angle_rate_des = float(min(self.angle_rate_des + self.accel_limit * accel_factor, max(self.angle_rate_des - self.accel_limit * accel_factor, self.damp_angle_steers_des + float(self.projected_lane_error) - self.limited_damp_angle_steers_des)))
         self.limited_damp_angle_steers_des += self.angle_rate_des
         wiggle_angle = gernterp(abs(angle_steers - path_plan.angleOffset), [0, 2], [0, self.wiggle_angle])

@@ -6,6 +6,7 @@ from common.basedir import BASEDIR
 from common.fingerprints import eliminate_incompatible_cars, all_known_cars
 from selfdrive.swaglog import cloudlog
 import selfdrive.messaging as messaging
+from selfdrive.kegman_conf import kegman_conf
 
 
 def get_startup_alert(car_recognized, controller_available):
@@ -81,6 +82,18 @@ def fingerprint(logcan, sendcan, is_panda_black):
   frame_fingerprint = 500  # 5.0s
   car_fingerprint = None
   done = False
+  
+  print(candidate_cars)
+
+  kegman = kegman_conf()
+  print(kegman)
+  if 'overrideFingerprint' in kegman.conf:
+    override = kegman.conf['overrideFingerprint']
+    print("overriding fingerprint with %s" % override)
+    if override in candidate_cars[0]:
+      car_fingerprint = override 
+      print(car_fingerprint)
+      done = True
 
   while not done:
     a = messaging.recv_one(logcan)
@@ -132,3 +145,6 @@ def get_car(logcan, sendcan, is_panda_black=False):
   car_params = CarInterface.get_params(candidate, fingerprints[0], vin, is_panda_black)
 
   return CarInterface(car_params, CarController), car_params
+
+if __name__ == "__main__":
+  print(get_car(None, None, False))

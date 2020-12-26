@@ -33,7 +33,7 @@ class LatControlPID(object):
     self.react_mpc = 0.0
     self.damp_mpc = 0.25
     self.angle_ff_ratio = 0.0
-    self.angle_ff_gain = 1.0
+    self.angle_ff_gain = 0.8
     self.rate_ff_gain = CP.lateralTuning.pid.rateFFGain
     self.angle_ff_bp = [[0.5, 5.0],[0.0, 1.0]]
     self.lateral_offset = 0.0
@@ -73,7 +73,7 @@ class LatControlPID(object):
       self.params = Params()
       lateral_params = self.params.get("LateralGain")
       lateral_params = json.loads(lateral_params)
-      self.angle_ff_gain = max(1.0, float(lateral_params['angle_ff_gain']))
+      self.angle_ff_gain = max(0.1, float(lateral_params['angle_ff_gain']))
     except:
       self.params.put("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
       self.angle_ff_gain = 1.0

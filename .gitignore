@@ -5,7 +5,6 @@
 .sconsign.dblite
 model2.png
 a.out
-models.json
 
 *.DSYM
 *.d
@@ -22,12 +21,11 @@ models.json
 *.pyxbldc
 *.vcd
 *.zip
-*.scaler
-*.hdf5
 config.json
 clcache
 
 board/obj/
+selfdrive/models/Backup
 selfdrive/boardd/boardd
 selfdrive/locationd/ubloxd
 selfdrive/logcatd/logcatd
@@ -35,5 +33,3 @@ selfdrive/proclogd/proclogd
 selfdrive/ui/ui
 selfdrive/test/tests/plant/out
 /src/
-
-one

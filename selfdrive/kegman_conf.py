@@ -59,7 +59,7 @@ class kegman_conf():
     self.element_updated = False
 
     if Reset or not os.path.isfile(os.path.expanduser('~/kegman.json')):
-      self.config = {"Kp":"-1","Ki":"-1","Kf":"-1","rateFFGain":"-1","reactMPC":"-1","dampMPC":"-1","useAutoFlash": "0","useInfluxDB":"0","requireBlinker":"1","requireNudge":"1","autoUpload":"0"}
+      self.config = {"Kp":"-1","Ki":"-1","Kf":"-1","rateFFGain":"-1","reactMPC":"-1","dampMPC":"-1","useAutoFlash": "0","useInfluxDB":"0","requireBlinker":"1","requireNudge":"1"}
       self.element_updated = True
     else:
       with open(os.path.expanduser('~/kegman.json'), 'r') as f:
@@ -160,6 +160,12 @@ class kegman_conf():
       self.config.update({"lastModel": "6"})
       self.config.update({"modelFactor": "0.5"})
       self.element_updated = True
+    
+    if "BP1" not in self.config:
+      self.config.update({"BP1":"0"})
+      self.config.update({"BP2":"0"})
+      self.config.update({"V1":"0"})
+      self.config.update({"V2":"0"})
 
     if self.element_updated:
       self.write_config(self.config)

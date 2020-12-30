@@ -1,7 +1,7 @@
 from collections import namedtuple
 from common.realtime import DT_CTRL
 from selfdrive.controls.lib.drive_helpers import rate_limit
-from common.numpy_fast import clip
+from common.numpy_fast import clip, interp
 from selfdrive.car import create_gas_command
 from selfdrive.car.honda import hondacan
 from selfdrive.car.honda.values import AH, CruiseButtons, CAR
@@ -92,6 +92,7 @@ class CarController():
     self.lead_distance_counter = 1
     self.lead_distance_counter_prev = 1
     self.rough_lead_speed = 0.0
+    self.BP2 = None
 
   def rough_speed(self, lead_distance):
     if self.prev_lead_distance != lead_distance:
@@ -160,11 +161,15 @@ class CarController():
       STEER_MAX = 0x7FFF
     else:
       STEER_MAX = 0x1000
+    
+    if self.BP2 is None:
+      self.BP2 = kegman.conf['BP2'] if kegman.conf['BP2'] == 0 else STEER_MAX
 
     # steer torque is converted back to CAN reference (positive when steering right)
     apply_gas = clip(actuators.gas, 0., 1.)
     apply_brake = int(clip(self.brake_last * BRAKE_MAX, 0, BRAKE_MAX - 1))
-    apply_steer = int(clip(-actuators.steer * STEER_MAX, -STEER_MAX, STEER_MAX))
+    #apply_steer = int(clip(-actuators.steer * STEER_MAX, -STEER_MAX, STEER_MAX))
+    apply_steer = int(interp(-actuators.steer * self.BP2, [-self.BP2, -2560 , 0 , 2560, self.BP2], [-STEER_MAX, -2560, 0 , 2560, STEER_MAX]))
 
     lkas_active = not CS.steer_not_allowed and CS.lkMode
 
@@ -188,7 +193,7 @@ class CarController():
       if pcm_cancel_cmd:
         can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, idx, CS.CP.carFingerprint, CS.CP.isPandaBlack))
       elif CS.standstill and enabled and CS.stopped and CS.lead_distance < 200:
-        if CS.CP.carFingerprint in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH):
+        if CS.CP.carFingerprint in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH, CAR.INSIGHT):
           rough_lead_speed = self.rough_speed(CS.lead_distance)
           if CS.lead_distance > (self.stopped_lead_distance + 15.0) or rough_lead_speed > 0.1:
             #self.stopped_lead_distance = 0.0

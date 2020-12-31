@@ -111,7 +111,7 @@ def sub_sock(port, poller=None, addr="127.0.0.1", conflate=False, timeout=None):
     poller.register(sock, zmq.POLLIN)
   return sock
 
-def tri_blend(l_prob, r_prob, lr_prob, tri_value, minimize=False):
+def tri_blend(l_prob, r_prob, tri_value, minimize=False, minimize2=False):
   center = tri_value[:,0:1]
   left = l_prob * tri_value[:,1:2] + (1 - l_prob) * center
   right = r_prob * tri_value[:,2:3] + (1 - r_prob) * center
@@ -119,6 +119,10 @@ def tri_blend(l_prob, r_prob, lr_prob, tri_value, minimize=False):
     abs_left = np.clip(np.sum(np.absolute(left)), 0, 500)
     abs_right = np.clip(np.sum(np.absolute(right)), 0, 500)
     centers = [(abs_right * left + abs_left * right) / (abs_left + abs_right), tri_value[:,1:2], tri_value[:,2:3]]
+  elif minimize2:
+    curve_left = np.clip(left[-1]-left[4], 0, 500)
+    curve_right = np.clip(right[4]-right[-1], 0, 500)
+    centers = [(curve_right * left + curve_left * right) / (curve_left + curve_right), tri_value[:,1:2], tri_value[:,2:3]]
   else:
     centers = [0.5 * left + 0.5 * right, tri_value[:,1:2], tri_value[:,2:3]]
   return centers
@@ -150,17 +154,12 @@ angle_bias = 0
 total_offset = 0.0
 advanceSteer = 1
 accel_limit = np.arange(15, dtype=np.float) / 7.5
-#one_deg_per_sec = np.ones((OUTPUT_ROWS,1)) / 15
 left_center = np.zeros((OUTPUT_ROWS))
 right_center = np.zeros((OUTPUT_ROWS))
 calc_center = [np.zeros((3,OUTPUT_ROWS)),np.zeros((3,OUTPUT_ROWS))]
-#left_center = np.zeros((OUTPUT_ROWS,1))
-#right_center = np.zeros((OUTPUT_ROWS,1))
-#calc_center = [np.zeros((3,OUTPUT_ROWS,1)),np.zeros((3,OUTPUT_ROWS,1))]
 super_center = np.zeros((OUTPUT_ROWS))
 smooth_center = np.zeros((OUTPUT_ROWS))
 fast_angles = np.zeros((OUTPUT_ROWS,1))
-#center_limit = np.reshape(0.5 * np.arange(OUTPUT_ROWS) + 10,(OUTPUT_ROWS,1))
 accel_counter = 0   
 upper_limit = 0
 lower_limit = 0
@@ -333,7 +332,7 @@ while 1:
           camera_flags[1+i*16] == 0
           camera_flags[2+i*16] == 0
 
-      camera_input = np.array(np.concatenate(([0, 0], np.minimum(1, camera_flags),
+      camera_input = np.array(np.concatenate(([0, 0], camera_flags,
                                               [cs.camFarLeft.parm10,  cs.camFarLeft.parm2,  cs.camFarLeft.parm1,  cs.camFarLeft.parm3,  cs.camFarLeft.parm4,  cs.camFarLeft.parm5,  cs.camFarLeft.parm7,  cs.camFarLeft.parm9], 
                                               [cs.camFarRight.parm10, cs.camFarRight.parm2, cs.camFarRight.parm1, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm7, cs.camFarRight.parm9],
                                               [cs.camLeft.parm10,     cs.camLeft.parm2,     cs.camLeft.parm1,     cs.camLeft.parm3,     cs.camLeft.parm4,     cs.camLeft.parm5,     cs.camLeft.parm7,     cs.camLeft.parm9],    
@@ -365,7 +364,7 @@ while 1:
 
     camera_input[-32:] *= camera_scaler
     lo_res_data[:,:,-1,:6] = hi_res_data[:,:,-1,6:]
-    lo_res_data[:,:,-1,6:] = camera_input
+    lo_res_data[:,:,-1,6:] = np.clip(camera_input, -1, 1)
 
     profiler.checkpoint('scale1')
 
@@ -394,15 +393,17 @@ while 1:
     if lr_prob > 0:
       model_index = min(1, int(abs(fast_angles[1][10,8] + model_bias[5]) * model_factor))
   
-    calc_center[model_index] = np.array(tri_blend(l_prob, r_prob, lr_prob, descaled_output[model_index,:,angle_speed_count::3], minimize=use_minimize))
+    calc_center[0] = np.array(tri_blend(l_prob, r_prob, descaled_output[0,:,angle_speed_count::3]))
+    calc_center[1] = np.array(tri_blend(l_prob, r_prob, descaled_output[1,:,angle_speed_count::3]))
+
     if model_index == 0:
       angle_plan = np.clip(fast_angles[0], fast_angles[1] + model_bias - accel_limit, fast_angles[1] + model_bias + accel_limit)
       
-      if lr_prob > 0: smooth_center = calc_center[0][0,:,0]
+      use_center = calc_center[0][0,:,0]
     else:
       angle_plan = np.clip(fast_angles[1] + model_bias, angle_plan - accel_limit, angle_plan + accel_limit)
       
-      if lr_prob > 0: smooth_center += (((lr_prob * (calc_center[1][0,:,0] + center_bias) + (1 - lr_prob) * smooth_center) - smooth_center) / max(1, min(15, 2 * (abs(cs.steeringRate) - 0))))
+      use_center = calc_center[1][0,:,0] + center_bias
     
     future_steering = cs.steeringAngle + cs.steeringRate * projected_rate
     angle_plan = np.clip(angle_plan, future_steering - accel_limit, future_steering + accel_limit)
@@ -417,14 +418,9 @@ while 1:
     path_send.pathPlan.angleBias = angle_bias
     path_send.pathPlan.modelIndex = model_index
     path_send.pathPlan.paramsValid = calibrated
-    if model_index == 0:
-      path_send.pathPlan.cPoly = [float(x) for x in smooth_center]
-      path_send.pathPlan.lPoly = [float(x) for x in (calc_center[0][1,:,0] + 0.5 * lane_width)]
-      path_send.pathPlan.rPoly = [float(x) for x in (calc_center[0][2,:,0] - 0.5 * lane_width)]
-    else:
-      path_send.pathPlan.cPoly = [float(x) for x in smooth_center]
-      path_send.pathPlan.lPoly = [float(x) for x in (calc_center[1][1,:,0] + 0.5 * lane_width)]
-      path_send.pathPlan.rPoly = [float(x) for x in (calc_center[1][2,:,0] - 0.5 * lane_width)]
+    path_send.pathPlan.cPoly = [float(x) for x in use_center]
+    path_send.pathPlan.lPoly = [float(x) for x in (calc_center[0][0,:,0] + 0.5 * lane_width)]
+    path_send.pathPlan.rPoly = [float(x) for x in (calc_center[1][0,:,0] - 0.5 * lane_width)]
     path_send.pathPlan.lProb = float(l_prob)
     path_send.pathPlan.rProb = float(r_prob)
     path_send.pathPlan.cProb = float(lr_prob)
@@ -446,7 +442,7 @@ while 1:
       elif calc_center[0][0,5,0] < 0:
         angle_bias += (0.00001 * cs.vEgo)
   
-      calc_center[1] = np.array(tri_blend(l_prob, r_prob, lr_prob, descaled_output[1,:,angle_speed_count::3], minimize=use_minimize))
+      #calc_center[1] = np.array(tri_blend(l_prob, r_prob, descaled_output[1,:,angle_speed_count::3]))
 
       model_bias += (0.00001 * cs.vEgo * lr_prob * (fast_angles[0][5,:] - fast_angles[1][5,:] - model_bias))
       center_bias += (0.00001 * cs.vEgo * lr_prob * (calc_center[0][0,:,0] - calc_center[1][0,:,0] - center_bias))

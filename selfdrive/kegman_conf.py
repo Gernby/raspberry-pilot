@@ -160,6 +160,12 @@ class kegman_conf():
       self.config.update({"lastModel": "6"})
       self.config.update({"modelFactor": "0.5"})
       self.element_updated = True
+    
+    if "BP1" not in self.config:
+      self.config.update({"BP1":"0"})
+      self.config.update({"BP2":"0"})
+      self.config.update({"V1":"0"})
+      self.config.update({"V2":"0"})
 
     if self.element_updated:
       self.write_config(self.config)

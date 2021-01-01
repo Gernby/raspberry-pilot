@@ -248,12 +248,19 @@ for col in range(len(adj_items)):
 
 kegtime_prev = 0
 angle_speed_count = model_output[0].shape[2] - 7
+model_bias = np.zeros((OUTPUT_ROWS), np.float)
+center_bias = np.zeros((OUTPUT_ROWS), np.float)
   
 calibrated = True
 calibration_data = params.get("CalibrationParams")
 if not calibration_data is None:
   calibration_data =  json.loads(calibration_data)
   calibration = np.array(calibration_data['calibration'])
+  if 'center_bias' in calibration_data:
+    center_bias = calibration_data['center_bias']
+  if 'model_bias' in calibration_data:
+    model_bias = calibration_data['model_bias']
+
 if calibration_data is None or len(calibration) != (len(calibration_items[0]) + len(calibration_items[1])):
   calibration = [np.zeros(len(calibration_items[0])), np.zeros(len(calibration_items[1]))]
   calibrated = False
@@ -263,13 +270,6 @@ else:
   calibration = [np.array(calibration[:len(calibration_items[0])]), np.array(calibration[len(calibration_items[0]):])]
   lane_width = calibration_data['lane_width']
   angle_bias = calibration_data['angle_bias']
-
-model_bias = np.zeros((OUTPUT_ROWS), np.float)
-center_bias = np.zeros((OUTPUT_ROWS), np.float)
-if 'center_bias' in calibration_data:
-  center_bias = calibration_data['center_bias']
-if 'model_bias' in calibration_data:
-  model_bias = calibration_data['model_bias']
 
 print(calibration)
 

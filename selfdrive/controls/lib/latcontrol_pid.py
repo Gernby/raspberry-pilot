@@ -244,10 +244,10 @@ class LatControlPID(object):
           if (self.damp_angle_steers - self.damp_angle_steers_des) * (angle_steers - self.damp_angle_steers_des) < 0:
             self.damp_angle_steers = self.damp_angle_steers_des
 
-        accel_factor = gernterp(abs(angle_steers - path_plan.angleOffset), [0, 5], [v_ego, 2])
+        accel_factor = gernterp(abs(angle_steers - path_plan.angleOffset), [0, 5], [1, 0.2]) * v_ego
         self.angle_rate_des = float(min(self.angle_rate_des + self.accel_limit * accel_factor, max(self.angle_rate_des - self.accel_limit * accel_factor, self.damp_angle_steers_des + float(self.projected_lane_error) - self.limited_damp_angle_steers_des)))
         self.limited_damp_angle_steers_des += self.angle_rate_des
-        wiggle_angle = gernterp(abs(angle_steers - path_plan.angleOffset), [0, 2], [0, self.wiggle_angle])
+        wiggle_angle = gernterp(abs(angle_steers - path_plan.angleOffset), [0, 1], [self.wiggle_angle, 0])
         requested_angle = min(self.limited_damp_angle_steers_des + wiggle_angle, max(self.limited_damp_angle_steers_des - wiggle_angle, self.angle_steers_des))
 
         angle_feedforward = float(requested_angle - path_plan.angleOffset)

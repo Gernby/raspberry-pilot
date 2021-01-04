@@ -384,7 +384,11 @@ while 1:
     fast_angles = [np.transpose(fast_angles[0]), np.transpose(fast_angles[1])]
     
     if lr_prob > 0:
-      model_index = min(1, int(abs(fast_angles[1][10,8] + model_bias[5]) * model_factor))
+      if (abs(fast_angles[0][10,6]) < abs(fast_angles[1][10,6] + model_bias[6]) or model_index == 1) and int(abs(fast_angles[1][10,8] + model_bias[8]) * model_factor) > 0:
+        model_index = 1
+      else:
+        model_index = 0
+      #model_index = min(1, int(max(abs(fast_angles[0][10,6]), abs(fast_angles[1][10,5] + model_bias[6])) * model_factor))
   
     calc_center[0] = np.array(tri_blend(l_prob, r_prob, descaled_output[0,:,angle_speed_count::3]))
     calc_center[1] = np.array(tri_blend(l_prob, r_prob, descaled_output[1,:,angle_speed_count::3]))

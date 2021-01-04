@@ -76,10 +76,16 @@ class LatControlPID(object):
       self.params = Params()
       lateral_params = self.params.get("LateralGain")
       lateral_params = json.loads(lateral_params)
-      self.angle_ff_gain = max(0.1, float(lateral_params['angle_ff_gain']))
+      try:
+        self.angle_ff_gain = [max(0.1, float(lateral_params['angle_ff_gain'][0])), max(0.1, float(lateral_params['angle_ff_gain'][1]))]
+        self.angle_ff_offset = float(lateral_params['angle_ff_offset'])
+      except:
+        self.angle_ff_gain = [max(0.1, float(lateral_params['angle_ff_gain'])), max(0.1, float(lateral_params['angle_ff_gain']))]
+        self.angle_ff_offset = 0.
     except:
       self.params.put("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
-      self.angle_ff_gain = 1.0
+      self.angle_ff_gain = [1.0, 1.0]
+      self.angle_ff_offset = 0.
 
   def live_tune(self, CP):
     if self.frame % 300 == 0:
@@ -153,11 +159,15 @@ class LatControlPID(object):
   def reset(self):
     self.pid.reset()
 
-  def adjust_angle_gain(self):
+  def adjust_angle_gain(self, ff_index):
     if (self.pid.f > 0) == (self.pid.i > 0) and abs(self.pid.i) >= abs(self.previous_integral):
-      if not abs(self.pid.f + self.pid.i) > 1: self.angle_ff_gain *= 1.0001
-    elif self.angle_ff_gain > 1.0:
-      self.angle_ff_gain *= 0.9999
+      if not abs(self.pid.f + self.pid.i) > 1: self.angle_ff_gain[ff_index] *= 1.0001
+    elif self.angle_ff_gain[ff_index] > 1.0:
+      self.angle_ff_gain[ff_index] *= 0.9999
+    if self.angle_ff_gain[0] > self.angle_ff_gain[1]:
+      self.angle_ff_offset -= 0.00001
+    else:
+      self.angle_ff_offset += 0.00001
     self.previous_integral = self.pid.i
 
   def update(self, active, cruise_enabled, v_ego, angle_steers, angle_steers_rate, steer_override, CP, path_plan, canTime, blinker_on):
@@ -165,9 +175,9 @@ class LatControlPID(object):
     pid_log = car.CarState.LateralPIDState.new_message()
     cur_time = time.time()
     path_age = (cur_time - path_plan.sysTime * 1e-3)
-    if (angle_steers - path_plan.angleOffset >= 0) == (self.prev_angle_steers < 0):
+    if (angle_steers - path_plan.angleOffset - self.angle_ff_offset >= 0) == (self.prev_angle_steers < 0):
       self.zero_steer_crossed = cur_time
-    self.prev_angle_steers = angle_steers - path_plan.angleOffset
+    self.prev_angle_steers = angle_steers - path_plan.angleOffset - self.angle_ff_offset
 
     #print(path_plan.canTime, self.last_plan_time, self.last_plan_recv)
     if (path_plan.canTime != self.last_plan_time or path_plan.modelIndex != self.last_model_index) and len(path_plan.fastAngles) > 1:
@@ -182,18 +192,36 @@ class LatControlPID(object):
       self.last_plan_time = path_plan.canTime
       self.avg_plan_age += 0.01 * (path_age - self.avg_plan_age)
       self.c_prob = path_plan.cProb
+      self.fast_angles = np.array(path_plan.fastAngles)
+      
       self.projected_lane_error = float(min(0.5, max(-0.5, self.c_prob * self.poly_factor * sum(np.array(path_plan.cPoly)))))
+      if np.sign(self.projected_lane_error) != np.sign(self.prev_projected_lane_error):
+        self.zero_poly_crossed = cur_time
+
+      if v_ego > 10 and self.c_prob > 0:
+        if np.sign(self.projected_lane_error) == np.sign(self.prev_projected_lane_error) and \
+          (abs(self.projected_lane_error) <= abs(self.prev_projected_lane_error) or \
+          np.sign(path_plan.cPoly[0]) == -np.sign(path_plan.cPoly[-1])) and \
+          (np.sign(self.output_steer) == -np.sign(self.fast_angles[-1,-1] - path_plan.angleOffset - self.angle_ff_offset) or \
+          np.sign(self.output_steer) == -np.sign(self.fast_angles[-1,-1] - self.fast_angles[5,-1])):
+          self.prev_projected_lane_error = self.projected_lane_error
+          self.projected_lane_error *= 0.5
+          self.zero_poly_crossed = cur_time
+          self.zero_steer_crossed = cur_time
+          self.use_deadzone = False
+        else:
+          self.prev_projected_lane_error = self.projected_lane_error
+          self.use_deadzone = True
+
+        if np.sign(path_plan.cPoly[-1] - path_plan.cPoly[0]) == -np.sign(self.fast_angles[-1,-1] - self.fast_angles[0,-1]):
+          self.projected_lane_error *= 0.5
+      else:
+        self.prev_projected_lane_error = self.projected_lane_error
+
       self.center_angles.append(float(self.projected_lane_error))
       if len(self.center_angles) > 15: self.center_angles.pop(0)
-      if (self.projected_lane_error >= 0) == (self.prev_projected_lane_error < 0):
-        self.zero_poly_crossed = cur_time
-      self.prev_projected_lane_error = self.projected_lane_error
-      if cur_time - max(self.zero_poly_crossed, self.zero_steer_crossed) < 4:
-        self.use_deadzone = False
+      if cur_time - max(self.zero_poly_crossed, self.zero_steer_crossed) < 4 and abs(self.damp_angle_steers - path_plan.angleOffset - self.angle_ff_offset) < 2:
         self.projected_lane_error -= (float(self.c_prob * self.poly_damp * self.center_angles[0]))
-      else:
-        self.use_deadzone = True
-      self.fast_angles = np.array(path_plan.fastAngles)
       self.profiler.checkpoint('path_plan')
 
     if path_plan.paramsValid: self.angle_index = max(0., 100. * (self.react_mpc + path_age))
@@ -201,7 +229,7 @@ class LatControlPID(object):
     self.max_index = max(self.max_index, self.angle_index)
 
     if self.frame % 300 == 0 and self.frame > 0:
-      print("old plans:  %d  avg plan age:  %0.3f   avg plan freq:  %0.1f   min index:  %d  max_index:  %d   center_steer:  %0.2f" % (self.old_plan_count, self.avg_plan_age, self.avg_plan_freq, self.min_index, self.max_index, self.projected_lane_error))
+      print("old plans:  %d  avg plan age:  %0.3f   avg plan freq:  %0.1f   min index:  %d  max_index:  %d   angle_ff_offset:  %0.5f" % (self.old_plan_count, self.avg_plan_age, self.avg_plan_freq, self.min_index, self.max_index, self.angle_ff_offset))
       self.min_index = 100
       self.max_index = 0
 
@@ -213,10 +241,10 @@ class LatControlPID(object):
     if v_ego < 0.3 or not path_plan.paramsValid:
       if self.frame > self.next_params_put and v_ego == 0 and not cruise_enabled:
         self.next_params_put = self.frame + 36000
-        put_nonblocking("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
+        put_nonblocking("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain, 'angle_ff_offset': self.angle_ff_offset}))
         #self.params.put("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
         self.profiler.checkpoint('params_put')
-      output_steer = 0.0
+      self.output_steer = 0.0
       self.stage = "0"
       self.lane_changing = 0.0
       self.previous_integral = 0.0
@@ -237,50 +265,55 @@ class LatControlPID(object):
           self.limited_damp_angle_steers_des = angle_steers
           self.angle_rate_des = 0
         else:
-          react_steer = self.react_steer + self.react_center[min(len(self.react_center)-1, int(abs(angle_steers - path_plan.angleOffset)))]
+          react_steer = self.react_steer + self.react_center[min(len(self.react_center)-1, int(abs(angle_steers - path_plan.angleOffset - self.angle_ff_offset)))]
           self.damp_angle_steers += (angle_steers + angle_steers_rate * (self.damp_steer + float(react_steer)) - self.damp_angle_steers) / max(1.0, self.damp_steer * 100.)
           self.angle_steers_des = interp(self.angle_index, self.path_index, self.fast_angles[min(len(self.fast_angles)-1, int(self.polyReact))])
           self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des + self.projected_lane_error) / max(1.0, self.damp_mpc * 100.)
           if (self.damp_angle_steers - self.damp_angle_steers_des) * (angle_steers - self.damp_angle_steers_des) < 0:
             self.damp_angle_steers = self.damp_angle_steers_des
 
-        accel_factor = gernterp(abs(angle_steers - path_plan.angleOffset), [0, 5], [1, 0.2]) * v_ego
+        accel_factor = gernterp(abs(angle_steers - path_plan.angleOffset - self.angle_ff_offset), [0, 5], [1, 0.5]) * v_ego
         self.angle_rate_des = float(min(self.angle_rate_des + self.accel_limit * accel_factor, max(self.angle_rate_des - self.accel_limit * accel_factor, self.damp_angle_steers_des + float(self.projected_lane_error) - self.limited_damp_angle_steers_des)))
         self.limited_damp_angle_steers_des += self.angle_rate_des
-        wiggle_angle = gernterp(abs(angle_steers - path_plan.angleOffset), [0, 1], [self.wiggle_angle, 0])
+        wiggle_angle = gernterp(abs(angle_steers - path_plan.angleOffset - self.angle_ff_offset), [0, 1], [self.wiggle_angle, 0])
         requested_angle = min(self.limited_damp_angle_steers_des + wiggle_angle, max(self.limited_damp_angle_steers_des - wiggle_angle, self.angle_steers_des))
 
-        angle_feedforward = float(requested_angle - path_plan.angleOffset)
+        angle_feedforward = float(requested_angle - path_plan.angleOffset - self.angle_ff_offset)
+        ff_index = 0 if angle_feedforward > 0 else 1
         self.angle_ff_ratio = float(gernterp(abs(angle_feedforward), self.angle_ff_bp[0], self.angle_ff_bp[1]))
-        rate_feedforward = (1.0 - self.angle_ff_ratio) * self.rate_ff_gain * self.angle_rate_des
-        steer_feedforward = float(v_ego)**2 * (rate_feedforward + angle_feedforward * self.angle_ff_ratio * self.angle_ff_gain)
+        rate_feedforward = float((1.0 - self.angle_ff_ratio) * self.rate_ff_gain * (requested_angle - self.damp_angle_steers))   #self.angle_rate_des
+        steer_feedforward = float(v_ego)**2 * (rate_feedforward + angle_feedforward * self.angle_ff_ratio * self.angle_ff_gain[ff_index])
 
         if not steer_override and v_ego > 10.0:
           if abs(angle_steers) > (self.angle_ff_bp[0][1] / 2.0):
-            self.adjust_angle_gain()
+            self.adjust_angle_gain(ff_index)
           else:
             self.previous_integral = self.pid.i
 
         if (angle_feedforward > 0) == (self.pid.p > 0) or (path_plan.cProb > 0 and (path_plan.cPoly[-1] > 0) == (self.pid.p > 0)):
           p_scale = 1.0 
-        elif abs(angle_feedforward) < 1:
-          p_scale = min(1.0, 5 / (0.001 + abs(angle_steers_rate)))
         else:
-          p_scale = max(0.2, min(1.0, 1 / (0.001 + abs(angle_feedforward)), 1 / (0.001 + abs(angle_steers_rate)-3)))
+          p_scale = float(gernterp(abs(angle_feedforward), [0., 10.], [max(0.3, min(1.0, 1 / (0.001 + abs(angle_steers_rate)))), max(0.3, min(1.0, 1 / (0.001 + abs(angle_feedforward)), 1 / (0.001 + abs(angle_steers_rate))))]))
+        
+        if (abs(angle_feedforward) < 1 and abs(angle_steers_rate) == 0 and self.use_deadzone) or np.sign(angle_steers_rate) == -np.sign(steer_feedforward):
+          deadzone = self.deadzone
+        else:
+          deadzone = 0.0
+        
         self.profiler.checkpoint('pre-pid')
 
-        output_steer = self.pid.update(requested_angle, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override, p_scale=p_scale,
-                                      add_error=0, feedforward=steer_feedforward, speed=v_ego, deadzone=(self.deadzone if abs(angle_feedforward) < 1 and self.use_deadzone else 0.0))  #-self.deadzone))
+        self.output_steer = self.pid.update(requested_angle, self.damp_angle_steers, check_saturation=(v_ego > 10), override=steer_override, p_scale=p_scale,
+                                      add_error=0, feedforward=steer_feedforward, speed=v_ego, deadzone=deadzone)  #-self.deadzone))
         self.profiler.checkpoint('pid_update')
 
       except:
-        output_steer = 0
+        self.output_steer = 0
         self.pid.reset()
         print("angle error!")
         pass
     
-      driver_opposing_op = steer_override and (angle_steers - self.prev_angle_steers) * output_steer < 0
-      self.update_lane_state(angle_steers, driver_opposing_op, blinker_on, path_plan)
+      #driver_opposing_op = steer_override and (angle_steers - self.prev_angle_steers) * self.output_steer < 0
+      #self.update_lane_state(angle_steers, driver_opposing_op, blinker_on, path_plan)
       self.profiler.checkpoint('lane_change')
 
     output_factor = self.lane_change_adjustment if pid_log.active else 0
@@ -293,11 +326,11 @@ class LatControlPID(object):
     self.pid.f *= output_factor
     self.pid.i *= output_factor
     self.pid.p *= output_factor
-    output_steer *= output_factor
+    self.output_steer *= output_factor
     pid_log.p = float(self.pid.p)
     pid_log.i = float(self.pid.i)
     pid_log.f = float(self.pid.f)
-    pid_log.output = float(output_steer)
+    pid_log.output = float(self.output_steer)
     pid_log.p2 = float(self.projected_lane_error)
     pid_log.saturated = bool(self.pid.saturated)
     pid_log.angleFFRatio = self.angle_ff_ratio
@@ -310,4 +343,4 @@ class LatControlPID(object):
       self.profiler.display()
       self.profiler.reset(True)
 
-    return output_steer, float(self.angle_steers_des), pid_log
+    return self.output_steer, float(self.angle_steers_des), pid_log

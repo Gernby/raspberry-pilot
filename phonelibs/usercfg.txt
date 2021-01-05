@@ -11,5 +11,5 @@ dtoverlay=dwc2,dr_mode=host
 
 # overclock it
 over_voltage=5
-arm_freq=2000
+arm_freq=1750
 #gpu_freq=750

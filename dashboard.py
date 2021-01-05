@@ -5,6 +5,7 @@ import gc
 import os
 import sys
 import json
+import psutil
 from cereal import log, car
 import selfdrive.messaging as messaging
 from selfdrive.services import service_list
@@ -207,7 +208,7 @@ while 1:
         send_data1 = tuple(float(x) for x in tuple(pp.rPoly)[:7:1])
         send_data2 = tuple(float(x) for x in tuple(pp.cPoly)[:7:1])
         #print(len(pp.fastAngles), len(pp.fastAngles[0]), np.round(pp.fastAngles,1))
-        send_data3 = (pp.fastAngles[0][0], pp.fastAngles[0][1], pp.fastAngles[0][2], pp.fastAngles[0][3], pp.fastAngles[0][4], pp.fastAngles[0][6], pp.fastAngles[-1][0], pp.fastAngles[-1][1], pp.fastAngles[-1][2], pp.fastAngles[-1][3], pp.fastAngles[-1][4], pp.fastAngles[-1][6], pp.lProb, pp.rProb, pp.cProb, pp.centerCompensation, pp.laneWidth, pp.angleSteers, pp.rateSteers, pp.angleOffset, pp.lateralOffset, cs.steeringAngle, pp.canTime - pp.canTime, pp.modelIndex, cs.canTime)
+        send_data3 = (pp.fastAngles[0][0], pp.fastAngles[0][1], pp.fastAngles[0][2], pp.fastAngles[0][3], pp.fastAngles[0][4], pp.fastAngles[0][6], pp.fastAngles[-1][0], pp.fastAngles[-1][1], pp.fastAngles[-1][2], pp.fastAngles[-1][3], pp.fastAngles[-1][4], pp.fastAngles[-1][6], pp.lProb, pp.rProb, pp.cProb, pp.centerCompensation, pp.laneWidth, pp.angleSteers, pp.rateSteers, pp.angleOffset, pp.lateralOffset, cs.steeringAngle, pp.canTime - cs.canTime, pp.modelIndex, pp.canTime)
 
         if do_influx:
           localPathDataString.append("".join([localPathFormatString1 % send_data0, localPathFormatString2 % send_data1, localPathFormatString3 % send_data2, localPathFormatString4 % send_data3]))
@@ -275,6 +276,11 @@ while 1:
         kegtime_prev = kegtime
         kegman = kegman_conf() 
         kegmanInsertString = ["tuneData,user=" + user_id + " "]
+        #kegmanInsertString.append('cpu_pct=')
+        #kegmanInsertString.append(psutil.cpu_percent())
+        #kegmanInsertString.append(',cpu_temp=')
+        #kegmanInsertString.append(psutil.sensors_temperatures(False)['cpu-thermal'][0].current)
+        #kegmanInsertString.append(',')
         for key in kegman.conf:
           if is_number(str(kegman.conf[key])) and key not in ['identifier']:
             kegmanInsertString.append(key)

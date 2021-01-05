@@ -67,13 +67,6 @@ ansible localhost -b -m service -a "name=NetworkManager state=started"
 # connect to Wifi (these are optional parameters and won't block the script from running)
 sudo nmcli d wifi connect $1 password $2
 
-# update Ubuntu and clean up
-echo "Updating Ubuntu and removing unneeded packages.."
-#sudo apt full-upgrade -y
-#sudo apt autoremove -y
-ansible localhost -v -b -m apt -a "upgrade=full"
-ansible localhost -v -b -m apt -a "autoremove=yes"
-
 # install dependencies
 echo "Installing dependencies.."
 sudo apt install -y build-essential make python3.7-dev python3-pip libzmq3-dev python3-zmq

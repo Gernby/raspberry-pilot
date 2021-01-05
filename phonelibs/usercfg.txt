@@ -10,6 +10,6 @@ dtoverlay=dwc2,dr_mode=host
 #dtoverlay=pi4-disable-bt
 
 # overclock it
-over_voltage=6
-arm_freq=2147
-gpu_freq=750
+over_voltage=5
+arm_freq=2000
+#gpu_freq=750

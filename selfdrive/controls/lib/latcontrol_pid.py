@@ -71,6 +71,7 @@ class LatControlPID(object):
     self.zero_poly_crossed = 0
     self.zero_steer_crossed = 0
     self.lane_changing = 0
+    self.output_steer = 0.
 
     try:
       self.params = Params()
@@ -178,6 +179,7 @@ class LatControlPID(object):
     if (angle_steers - path_plan.angleOffset - self.angle_ff_offset >= 0) == (self.prev_angle_steers < 0):
       self.zero_steer_crossed = cur_time
     self.prev_angle_steers = angle_steers - path_plan.angleOffset - self.angle_ff_offset
+    driver_opposing = steer_override and (angle_steers - self.prev_angle_steers) * self.output_steer < 0
 
     #print(path_plan.canTime, self.last_plan_time, self.last_plan_recv)
     if (path_plan.canTime != self.last_plan_time or path_plan.modelIndex != self.last_model_index) and len(path_plan.fastAngles) > 1:
@@ -213,7 +215,7 @@ class LatControlPID(object):
           self.prev_projected_lane_error = self.projected_lane_error
           self.use_deadzone = True
 
-        if np.sign(path_plan.cPoly[-1] - path_plan.cPoly[0]) == -np.sign(self.fast_angles[-1,-1] - self.fast_angles[0,-1]):
+        if driver_opposing or np.sign(path_plan.cPoly[-1] - path_plan.cPoly[0]) == -np.sign(self.fast_angles[-1,-1] - self.fast_angles[0,-1]):
           self.projected_lane_error *= 0.5
       else:
         self.prev_projected_lane_error = self.projected_lane_error
@@ -312,8 +314,7 @@ class LatControlPID(object):
         print("angle error!")
         pass
     
-      #driver_opposing_op = steer_override and (angle_steers - self.prev_angle_steers) * self.output_steer < 0
-      #self.update_lane_state(angle_steers, driver_opposing_op, blinker_on, path_plan)
+      #self.update_lane_state(angle_steers, driver_opposing, blinker_on, path_plan)
       self.profiler.checkpoint('lane_change')
 
     output_factor = self.lane_change_adjustment if pid_log.active else 0

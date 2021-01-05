@@ -356,7 +356,7 @@ while 1:
     profiler.checkpoint('process_inputs1')
 
     camera_input[-32:] *= camera_scaler
-    lo_res_data[:,:,-1,:6] = hi_res_data[:,:,-1,6:]
+    lo_res_data[:,:,-1,:6] = np.clip(hi_res_data[:,:,-1,6:], -1, 1)
     lo_res_data[:,:,-1,6:] = np.clip(camera_input, -1, 1)
 
     profiler.checkpoint('scale1')

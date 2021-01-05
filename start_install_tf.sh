@@ -119,7 +119,21 @@ sudo /bin/systemctl daemon-reload
 # Install the TensorFlow 2.3 components and dependencies
 wget https://github.com/lhelontra/tensorflow-on-arm/releases/download/v2.3.0/tensorflow-2.3.0-cp37-none-linux_aarch64.whl
 python3.7 -m pip install -U pip
-python3.7 -m pip install -r requirements.txt
+python3.7 -m pip install -U pyzmq==19.0.1
+python3.7 -m pip install cython==0.29.21
+python3.7 -m pip install tensorflow-2.3.0-cp37-none-linux_aarch64.whl
+python3.7 -m pip install scikit-learn==0.23.1
+python3.7 -m pip install sklearn
+python3.7 -m pip install pyzmq==19.0.1
+python3.7 -m pip install pkgconfig
+python3.7 -m pip install pycapnp==0.6.4
+python3.7 -m pip install setproctitle==1.1.10
+python3.7 -m pip install cffi==1.14.0
+python3.7 -m pip install cython==0.29.21
+python3.7 -m pip install pandacan==0.0.9
+python3.7 -m pip install pycrypto==2.6.1
+python3.7 -m pip install pycryptodome==3.9.8
+python3.7 -m pip install psutil==5.7.2
 
 # Create folders for storing various hdf5 files; supports switching models via remote ssh commands (DEPRECATED)
 mkdir ~/buttons

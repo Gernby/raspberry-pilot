@@ -294,8 +294,7 @@ print("done loading!")
 while 1:
   vehicle_array = list(vehicle_array)
   for _cs in carState.recv_multipart():
-    if start_time == 0: print("got first packet!")
-    start_time = time.time()  
+    start_time = time.time() * 1000
     profiler.checkpoint('inputs_recv', False)
 
     cs = log.Event.from_bytes(_cs).carState
@@ -336,7 +335,7 @@ while 1:
   r_prob =     min(1, max(0, cs.camRight.parm4 / 127))
   lr_prob =    (l_prob + r_prob) - l_prob * r_prob
 
-  if len(vehicle_array) >= round(history_rows[-1]*6.6666667):
+  if len(vehicle_array) >= round(history_rows[-1]*6.6666667) and start_time - cs.sysTime < 30:
 
     vehicle_array = vehicle_array[-round(history_rows[-1]*6.66666667):]
     vehicle_input = np.array([[vehicle_array],[vehicle_array]])
@@ -465,7 +464,7 @@ while 1:
       profiler.checkpoint('calibrate')
 
     if frame % 60 == 0:
-      print('lane_width: %0.1f angle bias: %0.2f  distance_driven:  %0.2f   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs  adjusted_speed:  %0.1f' % (lane_width, angle_bias, distance_driven, calc_center[0][0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,1,0], descaled_output[1,1,1], execution_time_avg, max(10, rate_adjustment * cs.vEgo)))
+      print('lane_width: %0.1f angle bias: %0.2f  distance_driven:  %0.2f   center: %0.1f  l_prob:  %0.2f  r_prob:  %0.2f  l_offset:  %0.2f  r_offset:  %0.2f  model_angle:  %0.2f  model_center_offset:  %0.2f  model exec time:  %0.4fs  adjusted_speed:  %0.1f' % (lane_width, angle_bias, distance_driven, calc_center[0][0][-1], l_prob, r_prob, cs.camLeft.parm2, cs.camRight.parm2, descaled_output[1,1,0], descaled_output[1,1,1], 0.001 * execution_time_avg, max(10, rate_adjustment * cs.vEgo)))
 
     if ((cs.vEgo < 10 and not cs.cruiseState.enabled) or not calibrated) and distance_driven > next_params_distance:
       next_params_distance = distance_driven + 133000
@@ -503,7 +502,7 @@ while 1:
     
       profiler.checkpoint('kegman')
         
-    execution_time_avg += (max(0.0001, time_factor) * ((time.time() - start_time) - execution_time_avg))
+    execution_time_avg += (max(0.0001, time_factor) * ((time.time()*1000 - start_time) - execution_time_avg))
     time_factor *= 0.96
 
     if frame % 100 == 0 and profiler.enabled:

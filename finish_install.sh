@@ -26,8 +26,6 @@ sudo cp ~/raspilot/phonelibs/btcmd.txt /boot/firmware
 sudo cp ~/raspilot/phonelibs/usercfg.txt /boot/firmware/usercfg.txt
 sudo cp ~/raspilot/phonelibs/influxdb.conf /etc/influxdb/influxdb.conf
 
-sudo apt --fix-broken install -y
-sudo apt clean -y
 sudo bash phonelibs/install_capnp.sh
 
 sudo chown -R 1000:1000 ~/raspilot/node-red
@@ -36,3 +34,12 @@ sudo docker run -it --network host -v /home/ubuntu/raspilot/node-red:/data --nam
 #python3 -m pipenv --python 3.7
 #python3 -m pipenv install
 sh build_all.sh
+
+# update Ubuntu and clean up
+echo "Updating Ubuntu and removing unneeded packages.."
+#sudo apt full-upgrade -y
+#sudo apt autoremove -y
+ansible localhost -v -b -m apt -a "upgrade=full"
+ansible localhost -v -b -m apt -a "autoremove=yes"
+sudo apt --fix-broken install -y
+sudo apt clean -y

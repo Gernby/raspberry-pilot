@@ -67,13 +67,6 @@ ansible localhost -b -m service -a "name=NetworkManager state=started"
 # connect to Wifi (these are optional parameters and won't block the script from running)
 sudo nmcli d wifi connect $1 password $2
 
-# update Ubuntu and clean up
-echo "Updating Ubuntu and removing unneeded packages.."
-#sudo apt full-upgrade -y
-#sudo apt autoremove -y
-ansible localhost -v -b -m apt -a "upgrade=full"
-ansible localhost -v -b -m apt -a "autoremove=yes"
-
 # install dependencies
 echo "Installing dependencies.."
 sudo apt install -y build-essential make python3.7-dev python3-pip libzmq3-dev python3-zmq
@@ -126,19 +119,21 @@ sudo /bin/systemctl daemon-reload
 # Install the TensorFlow 2.3 components and dependencies
 wget https://github.com/lhelontra/tensorflow-on-arm/releases/download/v2.3.0/tensorflow-2.3.0-cp37-none-linux_aarch64.whl
 python3.7 -m pip install -U pip
-python3.7 -m pip install -U pyzmq
-python3.7 -m pip install cython
+python3.7 -m pip install -U pyzmq==19.0.1
+python3.7 -m pip install cython==0.29.21
 python3.7 -m pip install tensorflow-2.3.0-cp37-none-linux_aarch64.whl
+python3.7 -m pip install scikit-learn==0.23.1
 python3.7 -m pip install sklearn
-python3.7 -m pip install pyzmq
+python3.7 -m pip install pyzmq==19.0.1
 python3.7 -m pip install pkgconfig
-python3.7 -m pip install pycapnp
-python3.7 -m pip install setproctitle
-python3.7 -m pip install cffi
-python3.7 -m pip install cython
-python3.7 -m pip install pandacan
-python3.7 -m pip install pycrypto
-python3.7 -m pip install pycryptodome
+python3.7 -m pip install pycapnp==0.6.4
+python3.7 -m pip install setproctitle==1.1.10
+python3.7 -m pip install cffi==1.14.0
+python3.7 -m pip install cython==0.29.21
+python3.7 -m pip install pandacan==0.0.9
+python3.7 -m pip install pycrypto==2.6.1
+python3.7 -m pip install pycryptodome==3.9.8
+python3.7 -m pip install psutil==5.7.2
 
 # Create folders for storing various hdf5 files; supports switching models via remote ssh commands (DEPRECATED)
 mkdir ~/buttons

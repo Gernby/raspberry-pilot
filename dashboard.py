@@ -5,7 +5,7 @@ import gc
 import os
 import sys
 import json
-import psutil
+#import psutil
 from cereal import log, car
 import selfdrive.messaging as messaging
 from selfdrive.services import service_list

@@ -9,7 +9,7 @@ import numpy as np
 import requests
 import sys 
 import gc
-import psutil
+#import psutil
 from selfdrive.kegman_conf import kegman_conf
 from common.params import Params
 if len(sys.argv) < 2 or sys.argv[1] == 0:
@@ -20,7 +20,7 @@ elif sys.argv[1] == '1':
   destination = "192.168.1.2"
 print("using %s" % destination)
 
-print(psutil.cpu_percent(), psutil.sensors_temperatures(False)['cpu-thermal'][0].current)
+#print(psutil.cpu_percent(), psutil.sensors_temperatures(False)['cpu-thermal'][0].current)
 kegman = kegman_conf()
 do_import_local = True if kegman.conf['useLocalImport'] == "1" else False
 print("useLocalImport = ", do_import_local)

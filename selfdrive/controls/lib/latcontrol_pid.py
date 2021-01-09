@@ -201,28 +201,26 @@ class LatControlPID(object):
         self.zero_poly_crossed = cur_time
 
       if v_ego > 10 and self.c_prob > 0:
-        if np.sign(self.projected_lane_error) == np.sign(self.prev_projected_lane_error) and \
-          (abs(self.projected_lane_error) <= abs(self.prev_projected_lane_error) or \
-          np.sign(path_plan.cPoly[0]) == -np.sign(path_plan.cPoly[-1])) and \
-          (np.sign(self.output_steer) == -np.sign(self.fast_angles[-1,-1] - path_plan.angleOffset - self.angle_ff_offset) or \
-          np.sign(self.output_steer) == -np.sign(self.fast_angles[-1,-1] - self.fast_angles[5,-1])):
-          self.prev_projected_lane_error = self.projected_lane_error
-          self.projected_lane_error *= 0.5
-          self.zero_poly_crossed = cur_time
-          self.zero_steer_crossed = cur_time
+        if driver_opposing:
+          self.zero_poly_crossed = 0
+          self.zero_steer_crossed = 0
+          self.use_deadzone = False
+          self.projected_lane_error = 0.
+        elif np.sign(self.projected_lane_error) == np.sign(self.prev_projected_lane_error) and \
+           (abs(self.projected_lane_error) < abs(self.prev_projected_lane_error) or \
+            np.sign(path_plan.cPoly[-7]) == -np.sign(path_plan.cPoly[-1])) and \
+           (np.sign(self.output_steer) == -np.sign(self.fast_angles[-7,-1] - path_plan.angleOffset - self.angle_ff_offset) or \
+            np.sign(self.output_steer) == -np.sign(self.fast_angles[-7,-1] - self.fast_angles[0,-1])):
+          self.zero_poly_crossed = max(cur_time - 4, self.zero_poly_crossed)
+          self.zero_steer_crossed = max(cur_time - 4, self.zero_steer_crossed)
           self.use_deadzone = False
         else:
-          self.prev_projected_lane_error = self.projected_lane_error
           self.use_deadzone = True
-
-        if driver_opposing or np.sign(path_plan.cPoly[-1] - path_plan.cPoly[0]) == -np.sign(self.fast_angles[-1,-1] - self.fast_angles[0,-1]):
-          self.projected_lane_error *= 0.5
-      else:
-        self.prev_projected_lane_error = self.projected_lane_error
+      self.prev_projected_lane_error = self.projected_lane_error
 
       self.center_angles.append(float(self.projected_lane_error))
       if len(self.center_angles) > 15: self.center_angles.pop(0)
-      if cur_time - max(self.zero_poly_crossed, self.zero_steer_crossed) < 4 and abs(self.damp_angle_steers - path_plan.angleOffset - self.angle_ff_offset) < 2:
+      if cur_time - max(self.zero_poly_crossed, self.zero_steer_crossed) <= 4 and abs(self.damp_angle_steers - path_plan.angleOffset - self.angle_ff_offset) < 2:
         self.projected_lane_error -= (float(self.c_prob * self.poly_damp * self.center_angles[0]))
       self.profiler.checkpoint('path_plan')
 

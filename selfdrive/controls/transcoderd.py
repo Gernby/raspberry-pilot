@@ -55,11 +55,11 @@ for filename in os.listdir('models/'):
       with open('models/models.json', 'r') as f:
         models = []
         for md in json.load(f)['models']:
+          print("loading %s" % md)
           models.append(load_model(os.path.expanduser('models/%s' % md)))
           models[-1] = tf.function(models[-1].predict_step)
           model_output = models[-1]([hi_res_data[0,:,-round(history_rows[0]*6.6666667):,:6], lo_res_data[0,:,-history_rows[0]:,:-16],lo_res_data[0,:,-history_rows[0]:,-16:-8], lo_res_data[0,:,-history_rows[0]:,-8:], fingerprint, \
                                      hi_res_data[1,:,-round(history_rows[1]*6.6666667):,:6], lo_res_data[1,:,-history_rows[1]:,:-16],lo_res_data[1,:,-history_rows[1]:,-16:-8], lo_res_data[1,:,-history_rows[1]:,-8:], fingerprint])
-          print("loaded %s" % md)
       break
     elif MODEL_NAME == '':
       MODEL_NAME = filename

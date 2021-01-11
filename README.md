@@ -92,8 +92,8 @@ sh start_install_tf.sh
 2. Install should take just under 3 hours. If it finishes too quickly, come to Discord to discuss.
 3. If the process completes successfully, reboot the Pi and log back in as the "ubuntu" user
 4. Run the command `top -u ubuntu`
-5. Look for `controlsd`, `boardd`, `ubloxd` and `dashboard` in the rightmost column of the list.
-6. If you see all four, let Gernby know you're ready for the model. He will get it to you one way or another. You are ready to flash your Panda.
+5. Look for `controlsd`, `boardd`, `ubloxd`, `transcoderd`, and `dashboard` in the rightmost column of the list.
+6. If you see all five, you are ready to flash your Panda and go for a drive.
 
 ## Flashing the Panda
 
@@ -115,20 +115,11 @@ sh start_install_tf.sh
 4. Power up the Pi and wait two minutes. The Panda should cycle through several colors, before ending in a slow pulsing color or combination of colors. If it the process ends in a fast flashing green LED, it was not successful.
 5. Unplug the power supply from the Pi. Remove the USB A-to-A cable from the Pi and the Panda.
 
-Bring the Pi (and power supply and USB A-to-A if needed) back inside to your work area. Come to Discord to let us know if the flash was successful or not. If it was successful, you're ready to receive the model. If not, we'll talk about alternative approaches to flashing the Panda.
-
-## Loading the Model
-
-1. When you receive the model from Gernby, delete all files in `~/raspilot/models` and unzip the new archive in that folder. The process to copy the file will vary by operating system and selected tool (scp, filezilla, etc.)
-2. Reboot the Pi, and log back in
-3. Run `top -u ubuntu`
-4. Look for `controlsd`, `boardd`, `ubloxd`, `dashboard`, and `transcoderd` this time
-5. If all five processes are present, you are ready to train the software and see how it drives
-6. Take the Pi back out to the car and connect it via the standard configuration: USB A in the Panda, USB C in the Pi
+If you have successfully flashed the Panda, you are ready to calibrate and go for your first drive. If you are unable to flash the Panda or are not convinced that you have, come to Discord to discuss the issue. As a reminder, if you flashed a White or Gray Panda, you will need to reconfigure your setup to back to the standard configuration: the Panda is connected to the Pi via the USB A-to-C cable, with the USB A end in the Panda and the USB C end in the power port on the Pi. The USB A-to-A cable is not used during standard operation.
 
 ## First Drive and Training
 
-1. With the model loaded, the Panda flashed and the Pi and Panda connected in the standard configuration, you should be ready to train the software and drive
+1. With the output of the `top` command verified, the Panda flashed and the Pi and Panda connected in the standard configuration, you should be ready to train the software and drive
 2. Turn on the car and watch the dash. The `ACC` and `LKAS` indicators should only appear Orange for a couple of seconds before turning Green.
 3. After about a minute, the lane marking indicators should light up but show as outlines. You do not need to wait for this to show up before driving.
 4. Drive to a road with well-marked lines on both sides of the car and with minimal curves and breaks in the lines -- an interstate is preferred

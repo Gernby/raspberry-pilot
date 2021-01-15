@@ -274,7 +274,7 @@ else:
 print(calibration)
 
 stock_cam_frame_prev = -1
-combine_flags = 1
+combine_flags = 0
 vehicle_array = []
 first_model = 0
 last_model = len(models)-1
@@ -496,6 +496,7 @@ while 1:
         speed_factor = abs(float(kegman.conf['speedFactor']))
         width_factor = abs(float(kegman.conf['widthFactor']))
         wiggle_angle = abs(float(kegman.conf['wiggleAngle']))
+        combine_flags = abs(int(kegman.conf['useCombineFlags']))
         accel_limit = max(0, abs(float(kegman.conf['accelLimit'])) * 6.7) * np.arange(15, dtype=np.float)
         lateral_factor = abs(float(kegman.conf['lateralFactor']))
         yaw_factor = abs(float(kegman.conf['yawFactor']))

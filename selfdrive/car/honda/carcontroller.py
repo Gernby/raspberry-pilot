@@ -163,15 +163,15 @@ class CarController():
       STEER_MAX = 0x1000
     
     if self.BP2 is None:
-      self.BP2 = int(kegman.conf['BP2']) if int(kegman.conf['BP2']) != 0 else STEER_MAX
-      self.BP1 = int(kegman.conf['BP1']) if int(kegman.conf['BP1']) != 0 else 2560
+      self.BP2 = float(kegman.conf['BP2']) if float(kegman.conf['BP2']) != 0.0 else STEER_MAX
+      self.BP1 = float(kegman.conf['BP1']) if float(kegman.conf['BP1']) != 0.0 else 2560
       print("torque breakpoints set!",  self.BP1, self.BP2)
 
     # steer torque is converted back to CAN reference (positive when steering right)
     apply_gas = clip(actuators.gas, 0., 1.)
     apply_brake = int(clip(self.brake_last * BRAKE_MAX, 0, BRAKE_MAX - 1))
     #apply_steer = int(clip(-actuators.steer * STEER_MAX, -STEER_MAX, STEER_MAX))
-    apply_steer = int(interp(-actuators.steer * self.BP2, [-self.BP2, -self.BP1 , 0 , self.BP1, self.BP2], [-STEER_MAX, -self.BP1, 0 , self.BP1, STEER_MAX]))
+    apply_steer = int(interp(-actuators.steer * self.BP2, [-self.BP2, -self.BP1, self.BP1, self.BP2], [-STEER_MAX, -self.BP1, self.BP1, STEER_MAX]))
 
     lkas_active = not CS.steer_not_allowed and CS.lkMode
 

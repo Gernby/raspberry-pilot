@@ -16,8 +16,8 @@ class PIController(object):
     self._k_i = k_i # integral gain
     self.k_f = k_f  # feedforward gain
 
-    self.pos_limit = 1.0
-    self.neg_limit = -1.0
+    self.pos_limit = 4.0
+    self.neg_limit = -4.0
 
     self.sat_count_rate = 1.0 / rate
     self.i_unwind_rate = 0.3 / rate

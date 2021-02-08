@@ -16,8 +16,8 @@ class PIController(object):
     self._k_i = k_i # integral gain
     self.k_f = k_f  # feedforward gain
 
-    self.pos_limit = 4.0
-    self.neg_limit = -4.0
+    self.pos_limit = 5.0
+    self.neg_limit = -5.0
 
     self.sat_count_rate = 1.0 / rate
     self.i_unwind_rate = 0.3 / rate
@@ -75,8 +75,8 @@ class PIController(object):
 
       # Update when changing i will move the control away from the limits
       # or when i will move towards the sign of the error
-      if ((error >= 0 and (control <= self.pos_limit or i < 0.0)) or \
-          (error <= 0 and (control >= self.neg_limit or i > 0.0))) and \
+      if ((error >= 0 and (control <= 1.0 or i < 0.0)) or \
+          (error <= 0 and (control >= -1.0 or i > 0.0))) and \
          not freeze_integrator and not error * add_error < 0:
         self.i = i
 

@@ -196,7 +196,7 @@ class LatControlPID(object):
       self.c_prob = path_plan.cProb
       self.fast_angles = np.array(path_plan.fastAngles)
       
-      self.projected_lane_error += (self.c_prob * 0.5 * float(min(0.5, max(-0.5, self.poly_factor * sum(np.array(path_plan.cPoly)))) - self.projected_lane_error))
+      self.projected_lane_error += (self.c_prob * 1 * float(min(1, max(-1, self.poly_factor * sum(np.array(path_plan.cPoly)))) - self.projected_lane_error))
       if np.sign(self.projected_lane_error) != np.sign(self.prev_projected_lane_error):
         self.zero_poly_crossed = cur_time
 
@@ -213,7 +213,7 @@ class LatControlPID(object):
             np.sign(self.output_steer) == -np.sign(self.fast_angles[-7,-1] - self.fast_angles[0,-1])):
           self.zero_poly_crossed = max(cur_time - 4, self.zero_poly_crossed)
           self.zero_steer_crossed = max(cur_time - 4, self.zero_steer_crossed)
-          self.use_deadzone = False
+          self.use_deadzone = True
         else:
           self.use_deadzone = True
       self.prev_projected_lane_error = self.projected_lane_error
@@ -302,7 +302,7 @@ class LatControlPID(object):
         else:
           p_scale = float(gernterp(abs(angle_feedforward), [0., 10.], [max(0.3, min(1.0, 1 / (0.001 + abs(angle_steers_rate)))), max(0.3, min(1.0, 1 / (0.001 + abs(angle_feedforward)), 1 / (0.001 + abs(angle_steers_rate))))]))
         
-        if (abs(angle_feedforward) < 1 and abs(angle_steers_rate) == 0 and self.use_deadzone) or np.sign(angle_steers_rate) == -np.sign(steer_feedforward):
+        if (abs(angle_feedforward) < 1 and abs(angle_steers_rate) == 0 and self.use_deadzone): # or np.sign(angle_steers_rate) == -np.sign(steer_feedforward):
           deadzone = self.deadzone
         else:
           deadzone = 0.0

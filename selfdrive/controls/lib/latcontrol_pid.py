@@ -58,8 +58,6 @@ class LatControlPID(object):
     self.use_deadzone = False
     self.starting_angle = 0.
     self.projected_lane_error = 0.
-    self.projected_lane_error_damp = 0.
-    self.lane_error_damp_factor = 0.
     self.prev_projected_lane_error = 0.
     self.path_index = None #np.arange((30.))*100.0/15.0
     self.accel_limit = 0.05      # 100x degrees/sec**2
@@ -178,10 +176,10 @@ class LatControlPID(object):
     pid_log = car.CarState.LateralPIDState.new_message()
     cur_time = time.time()
     path_age = (cur_time - path_plan.sysTime * 1e-3)
-    if (angle_steers - path_plan.angleOffset - self.angle_ff_offset >= 0) == (self.prev_angle_steers < 0):
+    if (angle_steers - path_plan.angleOffset - self.angle_ff_offset >= 0) == (self.prev_angle_steers - path_plan.angleOffset - self.angle_ff_offset < 0):
       self.zero_steer_crossed = cur_time
-    self.prev_angle_steers = angle_steers - path_plan.angleOffset - self.angle_ff_offset
     driver_opposing = steer_override and (angle_steers - self.prev_angle_steers) * self.output_steer < 0
+    self.prev_angle_steers = angle_steers
 
     if (path_plan.canTime != self.last_plan_time or path_plan.modelIndex != self.last_model_index) and len(path_plan.fastAngles) > 1:
       if path_age > 0.23: self.old_plan_count += 1
@@ -196,7 +194,7 @@ class LatControlPID(object):
       self.c_prob = path_plan.cProb
       self.fast_angles = np.array(path_plan.fastAngles)
       
-      self.projected_lane_error += (self.c_prob * 1 * float(min(1, max(-1, self.poly_factor * sum(np.array(path_plan.cPoly)))) - self.projected_lane_error))
+      self.projected_lane_error = float(min(0.5, max(-0.5, self.c_prob * self.poly_factor * sum(np.array(path_plan.cPoly)))))
       if np.sign(self.projected_lane_error) != np.sign(self.prev_projected_lane_error):
         self.zero_poly_crossed = cur_time
 
@@ -213,27 +211,20 @@ class LatControlPID(object):
             np.sign(self.output_steer) == -np.sign(self.fast_angles[-7,-1] - self.fast_angles[0,-1])):
           self.zero_poly_crossed = max(cur_time - 4, self.zero_poly_crossed)
           self.zero_steer_crossed = max(cur_time - 4, self.zero_steer_crossed)
-          self.use_deadzone = True
+          self.use_deadzone = False
         else:
           self.use_deadzone = True
       self.prev_projected_lane_error = self.projected_lane_error
 
       self.center_angles.append(float(self.projected_lane_error))
       if len(self.center_angles) > 15: self.center_angles.pop(0)
-      #if cur_time - max(self.zero_poly_crossed, self.zero_steer_crossed) <= 10 and abs(self.damp_angle_steers - path_plan.angleOffset - self.angle_ff_offset) < 2:
-      #  self.projected_lane_error -= (float(self.c_prob * self.poly_damp * self.center_angles[0]))
-      self.projected_lane_error_damp = float(self.c_prob * self.poly_damp * self.center_angles[0])
+      if cur_time - max(self.zero_poly_crossed, self.zero_steer_crossed) <= 4 and abs(self.damp_angle_steers - path_plan.angleOffset - self.angle_ff_offset) < 2:
+        self.projected_lane_error -= (float(self.c_prob * self.poly_damp * self.center_angles[0]))
       self.profiler.checkpoint('path_plan')
 
     if path_plan.paramsValid: self.angle_index = max(0., 100. * (self.react_mpc + path_age))
     self.min_index = min(self.min_index, self.angle_index)
     self.max_index = max(self.max_index, self.angle_index)
-
-    if max(self.zero_poly_crossed, self.zero_steer_crossed) < 3:
-      self.lane_error_damp_factor = min(1.0, self.lane_error_damp_factor + 0.1)
-    else:
-      self.lane_error_damp_factor = max(0.0, self.lane_error_damp_factor - 0.01)
-    this_projected_lane_error = self.projected_lane_error - self.lane_error_damp_factor * self.projected_lane_error_damp
 
     if self.frame % 300 == 0 and self.frame > 0:
       print("old plans:  %d  avg plan age:  %0.3f   avg plan freq:  %0.1f   min index:  %d  max_index:  %d   angle_ff_offset:  %0.5f" % (self.old_plan_count, self.avg_plan_age, self.avg_plan_freq, self.min_index, self.max_index, self.angle_ff_offset))
@@ -274,8 +265,9 @@ class LatControlPID(object):
         else:
           react_steer = self.react_steer + self.react_center[min(len(self.react_center)-1, int(abs(angle_steers - path_plan.angleOffset - self.angle_ff_offset)))]
           self.damp_angle_steers += (angle_steers + angle_steers_rate * (self.damp_steer + float(react_steer)) - self.damp_angle_steers) / max(1.0, self.damp_steer * 100.)
-          self.angle_steers_des = interp(self.angle_index, self.path_index, self.fast_angles[min(len(self.fast_angles)-1, int(self.polyReact))])
-          self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des + this_projected_lane_error) / max(1.0, self.damp_mpc * 100.)
+          self.angle_steers_des = interp(self.angle_index, self.path_index, self.fast_angles[min(len(self.fast_angles)-1, int(self.polyReact))]) + self.projected_lane_error
+          self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des) / max(1.0, self.damp_mpc * 100.)
+          #self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des + self.projected_lane_error) / max(1.0, self.damp_mpc * 100.)
           if (self.damp_angle_steers - self.damp_angle_steers_des) * (angle_steers - self.damp_angle_steers_des) < 0:
             self.damp_angle_steers = self.damp_angle_steers_des
 
@@ -302,7 +294,7 @@ class LatControlPID(object):
         else:
           p_scale = float(gernterp(abs(angle_feedforward), [0., 10.], [max(0.3, min(1.0, 1 / (0.001 + abs(angle_steers_rate)))), max(0.3, min(1.0, 1 / (0.001 + abs(angle_feedforward)), 1 / (0.001 + abs(angle_steers_rate))))]))
         
-        if (abs(angle_feedforward) < 1 and abs(angle_steers_rate) == 0 and self.use_deadzone): # or np.sign(angle_steers_rate) == -np.sign(steer_feedforward):
+        if (abs(angle_feedforward) < 1 and abs(angle_steers_rate) == 0 and self.use_deadzone) or np.sign(angle_steers_rate) == -np.sign(steer_feedforward):
           deadzone = self.deadzone
         else:
           deadzone = 0.0
@@ -326,7 +318,7 @@ class LatControlPID(object):
 
     if self.lane_change_adjustment < 1 and self.lane_changing > 0:
       self.damp_angle_steers_des = self.angle_steers_des
-      self.limit_damp_angle_steers_des = self.angle_steers_des
+      self.limited_damp_angle_steers_des = self.angle_steers_des
 
     self.prev_override = steer_override
     self.pid.f *= output_factor
@@ -337,7 +329,7 @@ class LatControlPID(object):
     pid_log.i = float(self.pid.i)
     pid_log.f = float(self.pid.f)
     pid_log.output = float(self.output_steer)
-    pid_log.p2 = float(this_projected_lane_error)
+    pid_log.p2 = float(self.projected_lane_error)
     pid_log.saturated = bool(self.pid.saturated)
     pid_log.angleFFRatio = self.angle_ff_ratio
     pid_log.steerAngle = float(self.damp_angle_steers)

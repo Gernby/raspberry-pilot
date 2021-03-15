@@ -24,7 +24,7 @@ from cereal import log, car
 from setproctitle import setproctitle
 from common.params import Params, put_nonblocking
 from common.profiler import Profiler
-from tensorflow.python.keras.models import load_model 
+from tensorflow.python.keras.models import load_model
 import tensorflow as tf
 
 setproctitle('transcoderd')
@@ -58,8 +58,8 @@ for filename in os.listdir('models/'):
           print("loading %s" % md)
           models.append(load_model(os.path.expanduser('models/%s' % md)))
           models[-1] = tf.function(models[-1].predict_step)
-          model_output = models[-1]([hi_res_data[0,:,-round(history_rows[0]*6.6666667):,:6], lo_res_data[0,:,-history_rows[0]:,:-16],lo_res_data[0,:,-history_rows[0]:,-16:-8], lo_res_data[0,:,-history_rows[0]:,-8:], fingerprint, \
-                                     hi_res_data[1,:,-round(history_rows[1]*6.6666667):,:6], lo_res_data[1,:,-history_rows[1]:,:-16],lo_res_data[1,:,-history_rows[1]:,-16:-8], lo_res_data[1,:,-history_rows[1]:,-8:], fingerprint])
+          model_output = models[-1]([hi_res_data[0,:,-round(history_rows[0]*6.6666667-7):,:6], lo_res_data[0,:,-history_rows[0]:,:-16],lo_res_data[0,:,-history_rows[0]:,-16:-8], lo_res_data[0,:,-history_rows[0]:,-8:], fingerprint, \
+                                     hi_res_data[1,:,-round(history_rows[1]*6.6666667-7):,:6], lo_res_data[1,:,-history_rows[1]:,:-16],lo_res_data[1,:,-history_rows[1]:,-16:-8], lo_res_data[1,:,-history_rows[1]:,-8:], fingerprint])
       break
     elif MODEL_NAME == '':
       MODEL_NAME = filename
@@ -73,6 +73,7 @@ os.system("pkill -f controlsd")
 os.system("taskset -a --cpu-list 0,1 python ~/raspilot/selfdrive/controls/controlsd.py &")
 os.system("pkill -f dashboard")
 os.system("taskset -a --cpu-list 2,3 python ~/raspilot/dashboard.py &")
+os.system("bash ~/raspilot/fix_niceness.sh")
 
 def dump_sock(sock, wait_for_one=False):
   if wait_for_one:
@@ -184,8 +185,8 @@ os.system("taskset -a -cp --cpu-list 2,3 %d" % os.getpid())
 
 #['Civic','CRV_5G','Accord_15','Insight', 'Accord']
 for md in range(len(models)):
-  model_output = models[md]([hi_res_data[0,:,-round(history_rows[0]*6.6666667):,:6], lo_res_data[0,:,-history_rows[0]:,:-16],lo_res_data[0,:,-history_rows[0]:,-16:-8], lo_res_data[0,:,-history_rows[0]:,-8:], fingerprint, \
-                             hi_res_data[1,:,-round(history_rows[1]*6.6666667):,:6], lo_res_data[1,:,-history_rows[1]:,:-16],lo_res_data[1,:,-history_rows[1]:,-16:-8], lo_res_data[1,:,-history_rows[1]:,-8:], fingerprint])  
+  model_output = models[md]([hi_res_data[0,:,-round(history_rows[0]*6.6666667-7):,:6], lo_res_data[0,:,-history_rows[0]:,:-16],lo_res_data[0,:,-history_rows[0]:,-16:-8], lo_res_data[0,:,-history_rows[0]:,-8:], fingerprint, \
+                             hi_res_data[1,:,-round(history_rows[1]*6.6666667-7):,:6], lo_res_data[1,:,-history_rows[1]:,:-16],lo_res_data[1,:,-history_rows[1]:,-16:-8], lo_res_data[1,:,-history_rows[1]:,-8:], fingerprint])  
 
 print(model_output)
 while model_output[0].shape[2] > output_scaler.data_max_.shape[0]:
@@ -335,9 +336,9 @@ while 1:
   r_prob =     min(1, max(0, cs.camRight.parm4 / 127))
   lr_prob =    (l_prob + r_prob) - l_prob * r_prob
 
-  if len(vehicle_array) >= round(history_rows[-1]*6.6666667) and start_time - cs.sysTime < 30:
+  if len(vehicle_array) >= round(history_rows[-1]*6.6666667-7) and start_time - cs.sysTime < 30:
 
-    vehicle_array = vehicle_array[-round(history_rows[-1]*6.66666667):]
+    vehicle_array = vehicle_array[-round(history_rows[-1]*6.66666667-7):]
     vehicle_input = np.array([[vehicle_array],[vehicle_array]])
 
     profiler.checkpoint('process_inputs1')
@@ -360,8 +361,8 @@ while 1:
 
     profiler.checkpoint('scale1')
 
-    model_output = models[0]([hi_res_data[0,:,-round(history_rows[0]*6.6666667):,:6], lo_res_data[0,:,-history_rows[0]:,:-16], lo_res_data[0,:,-history_rows[0]:,-16:-8], lo_res_data[0,:,-history_rows[0]:,-8:], fingerprint, \
-                              hi_res_data[1,:,-round(history_rows[1]*6.6666667):,:6], lo_res_data[1,:,-history_rows[1]:,:-16], lo_res_data[1,:,-history_rows[1]:,-16:-8], lo_res_data[1,:,-history_rows[1]:,-8:], fingerprint])
+    model_output = models[0]([hi_res_data[0,:,-round(history_rows[0]*6.6666667-7):,:6], lo_res_data[0,:,-history_rows[0]:,:-16], lo_res_data[0,:,-history_rows[0]:,-16:-8], lo_res_data[0,:,-history_rows[0]:,-8:], fingerprint, \
+                              hi_res_data[1,:,-round(history_rows[1]*6.6666667-7):,:6], lo_res_data[1,:,-history_rows[1]:,:-16], lo_res_data[1,:,-history_rows[1]:,-16:-8], lo_res_data[1,:,-history_rows[1]:,-8:], fingerprint])
 
     profiler.checkpoint('predict')
 

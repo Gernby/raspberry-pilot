@@ -274,7 +274,7 @@ class LatControlPID(object):
         accel_factor = gernterp(abs(angle_steers - path_plan.angleOffset - self.angle_ff_offset), [0, 5], [1, 0.5]) * v_ego
         self.angle_rate_des = float(min(self.angle_rate_des + self.accel_limit * accel_factor, max(self.angle_rate_des - self.accel_limit * accel_factor, self.damp_angle_steers_des - self.limited_damp_angle_steers_des)))
         self.limited_damp_angle_steers_des += self.angle_rate_des
-        wiggle_angle = gernterp(abs(angle_steers - path_plan.angleOffset - self.angle_ff_offset), [0, 1], [self.wiggle_angle, 0])
+        wiggle_angle = gernterp(abs(angle_steers - path_plan.angleOffset - self.angle_ff_offset), [0, 1], [self.wiggle_angle, self.wiggle_angle * 0.25])
         requested_angle = min(self.limited_damp_angle_steers_des + wiggle_angle, max(self.limited_damp_angle_steers_des - wiggle_angle, self.angle_steers_des))
 
         angle_feedforward = float(requested_angle - path_plan.angleOffset - self.angle_ff_offset)
@@ -294,6 +294,7 @@ class LatControlPID(object):
         else:
           p_scale = float(gernterp(abs(angle_feedforward), [0., 10.], [max(0.3, min(1.0, 1 / (0.001 + abs(angle_steers_rate)))), max(0.3, min(1.0, 1 / (0.001 + abs(angle_feedforward)), 1 / (0.001 + abs(angle_steers_rate))))]))
         
+        #if self.deadzone > 0 or (abs(angle_feedforward) < 1 and abs(angle_steers_rate) == 0 and self.use_deadzone) or np.sign(angle_steers_rate) == -np.sign(steer_feedforward):
         if (abs(angle_feedforward) < 1 and abs(angle_steers_rate) == 0 and self.use_deadzone) or np.sign(angle_steers_rate) == -np.sign(steer_feedforward):
           deadzone = self.deadzone
         else:

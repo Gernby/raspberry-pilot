@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+cd raspilot 
+branch=$(git status | head -n 1)
+echo "Current Branch: $branch"
+read -p "Would you like to change branch? [yes,no]" answer
+if [ $answer = yes ]; then
+	echo "Enter desired branch name:"
+	read branchname
+	git reset --hard
+	git checkout $branchname
+	git fetch
+	git pull
+else 
+	echo "Keeping current branch"
+
+fi
+
+cd
+echo "Enter Model version number:"
+read version
+echo "Enter model URL:"
+read URL
+wget $URL
+cd raspilot
+git fetch
+git pull
+cd models
+rm *
+unzip ~/Model-$version.zip
+if [ -f Model-$version.hdf5 ]; then
+	echo "$(tput setaf 2)Update Successful!"
+else
+	echo "$(tput setaf 1)Update Failed!"
+
+fi 
+

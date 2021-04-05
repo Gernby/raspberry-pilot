@@ -430,7 +430,7 @@ while 1:
     path_send.init('pathPlan')
  
     max_width_step = 0.05 * cs.vEgo * l_prob * r_prob
-    lane_width = max(570, lane_width - max_width_step * 2, min(1200, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
+    lane_width = max(570, lane_width - max_width_step * 2, min(1700, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
 
     steer_override_timer -= 1
     if model_index == 0 and steer_override_timer < 0 and abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and (abs(cs.steeringTorque) < 300 or ((cs.steeringTorque < 0) == (calc_center[0][0][3,0] < 0))):

@@ -32,9 +32,9 @@
 2. Remove the SD card adapter from the computer and remove the microSD card from the adapter
 3. Insert the microSD card into the Rasperry Pi 4 with the contacts facing "up" towards the bottom of the mainboard
 4. If you are using a local console, connect the keyboard, micro-HDMI adapter and the HDMI cable
-5. Connect the Pi to a high-power USB port via the USB A-to-C cable.
-6. Connect the Pi to a physical Ethernet connection using an Ethernet cable. This can be done either by connecting the Pi directly to your router or to a laptop with an unused RJ-45 port if you are familiar with the process.
-7. Allow the Pi to boot and wait at least two minutes. If you are using the console, wait for several lines of text to appear before attempting to log in.
+5. Connect the Pi to a physical Ethernet connection using an Ethernet cable. This can be done either by connecting the Pi directly to your router or to a laptop with an unused RJ-45 port if you are familiar with the process.
+6. Connect the Pi to a high-power USB port via the USB A-to-C cable.
+7. Allow the Pi to boot and wait for at least one minute. If you are using the console, wait for a few lines of text to appear before attempting to log in.
 8. Locate the Pi IP address in your home WiFi router or your laptop if you are using your laptop to provide a network connection to the Pi
 9. Log into the Pi using "ubuntu" for the username and "raspilot" for the password
 10. Try to `ping 8.8.8.8`. If successful, continue to the next section. If not, reboot and log in again with ubuntu/ubuntu.

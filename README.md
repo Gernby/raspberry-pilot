@@ -37,7 +37,7 @@
 7. Locate the Pi IP address in your home WiFi router or your laptop if you are using your laptop to provide a network connection to the Pi
 8. Log into the Pi using "ubuntu" for the username and "raspilot" for the password
 9. Try to `ping 8.8.8.8`. If successful, continue to the next section. If not, reboot and log in again with ubuntu/ubuntu.
-10. If you still need to setup WiFi for use in the car, use the `nmcli` command to configure all of the WiFi access points you want to use in the car (home WiFi, cellular hotsopt). Run this command only once for every WiFi network name you plan to use only if you did not configure the WiFi prior to the first boot:
+10. Use the `nmcli` command to configure all of the WiFi access points you want to use in the car (home WiFi, cellular hotsopt). Run this command only once for every WiFi network name you plan to use:
 
 `sudo nmcli d wifi connect <SSID> password <password>`
 

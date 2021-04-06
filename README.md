@@ -51,14 +51,15 @@
 2. Turn on the car
 3. SSH into the Pi
 4. Edit `~/kegman.json` and change the value in `useAutoFlash` from `0` to `1`.
-5. Turn the car off and unplug the Pi.
+5. Reboot the Pi and wait two minutes. The Panda should cycle through several colors before ending in a slow pulsing red. If the process ends in a fast flashing green LED, the process was not successful and you should reboot the Pi to try again.
+6. Once the flash is successful, you may wish to reboot the Pi before going out for your first drive.
 
 ### White or Gray Panda
 
 1. Before taking the Pi outside, edit `~/kegman.json` and change the value in `useAutoFlash` from `0` to `1`. Safely shut down the Pi.
 2. Take the Pi outside with a separate power source, a USB C cable to power the Pi, and the USB A-to-A cable for flashing the Panda
 3. Connect the USB A-to-A cable between the Pi and the Panda
-4. Power up the Pi and wait two minutes. The Panda should cycle through several colors, before ending in a slow pulsing color or combination of colors. If it the process ends in a fast flashing green LED, it was not successful.
+4. Power up the Pi and wait two minutes. The Panda should cycle through several colors before ending in a slow pulsing color or combination of colors. If it the process ends in a fast flashing green LED, it was not successful.
 5. Unplug the power supply from the Pi. Remove the USB A-to-A cable from the Pi and the Panda.
 
 If you have successfully flashed the Panda, you are ready to calibrate and go for your first drive. If you are unable to flash the Panda or are not convinced that you have, come to Discord to discuss the issue. As a reminder, if you flashed a White or Gray Panda, you will need to reconfigure your setup to back to the standard configuration: the Panda is connected to the Pi via the USB A-to-C cable, with the USB A end in the Panda and the USB C end in the power port on the Pi. The USB A-to-A cable is not used during standard operation.

@@ -61,7 +61,7 @@ If you have successfully flashed the Panda, you are ready to calibrate and go fo
 
 ## First Drive and Training
 
-1. With the output of the `top` command verified, the Panda flashed and the Pi and Panda connected in the standard configuration, you should be ready to train the software and drive
+1. With the Panda flashed and the Pi and Panda connected in the standard configuration, you should be ready to train the software and drive
 2. Turn on the car and watch the dash. The `ACC` and `LKAS` indicators should only appear Orange for a couple of seconds before turning Green.
 3. After about a minute, the lane marking indicators should light up but show as outlines. You do not need to wait for this to show up before driving.
 4. Drive to a road with well-marked lines on both sides of the car and with minimal curves and breaks in the lines -- an interstate is preferred

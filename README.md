@@ -33,11 +33,12 @@
 3. Insert the microSD card into the Rasperry Pi 4 with the contacts facing "up" towards the bottom of the mainboard
 4. If you are using a local console, connect the keyboard, micro-HDMI adapter and the HDMI cable
 5. Connect the Pi to a high-power USB port via the USB A-to-C cable.
-6. Allow the Pi to boot and wait at least two minutes. If you are using the console, wait for several lines of text to appear before attempting to log in.
-7. Locate the Pi IP address in your home WiFi router or your laptop if you are using your laptop to provide a network connection to the Pi
-8. Log into the Pi using "ubuntu" for the username and "raspilot" for the password
-9. Try to `ping 8.8.8.8`. If successful, continue to the next section. If not, reboot and log in again with ubuntu/ubuntu.
-10. Use the `nmcli` command to configure all of the WiFi access points you want to use in the car (home WiFi, cellular hotsopt). Run this command only once for every WiFi network name you plan to use:
+6. Connect the Pi to a physical Ethernet connection using an Ethernet cable. This can be done either by connecting the Pi directly to your router or to a laptop with an unused RJ-45 port if you are familiar with the process.
+7. Allow the Pi to boot and wait at least two minutes. If you are using the console, wait for several lines of text to appear before attempting to log in.
+8. Locate the Pi IP address in your home WiFi router or your laptop if you are using your laptop to provide a network connection to the Pi
+9. Log into the Pi using "ubuntu" for the username and "raspilot" for the password
+10. Try to `ping 8.8.8.8`. If successful, continue to the next section. If not, reboot and log in again with ubuntu/ubuntu.
+11. Use the `nmcli` command to configure all of the WiFi access points you want to use in the car (home WiFi, cellular hotsopt). Run this command only once for every WiFi network name you plan to use:
 
 `sudo nmcli d wifi connect <SSID> password <password>`
 
@@ -45,24 +46,18 @@
 
 **Note: If you can't hit your household WiFi from your car, be sure to configure the Pi to hit your cellular hotspot and turn on your hotspot before booting up the Pi in the car.**
 
-### Black Panda
+Bring the Pi out the car. If you're using a White or Gray Panda, be sure to also bring a separate power supply and USB A to A cable.
 
-1. Connect the Pi to the Black Panda using the standard configuration (USB A on the Panda to USB C on the Pi)
+1a. For the Black Panda, connect the Pi to the Black Panda using the standard configuration (USB A on the Panda to USB C on the Pi)
+1b. For the White or Gray Panda, connect the power supply to the Pi via the USB C port and connect the Pi to the Panda using the USB A to A cable
 2. Turn on the car
 3. SSH into the Pi
-4. Edit `~/kegman.json` and change the value in `useAutoFlash` from `0` to `1`.
-5. Reboot the Pi and wait two minutes. The Panda should cycle through several colors before ending in a slow pulsing red. If the process ends in a fast flashing green LED, the process was not successful and you should reboot the Pi to try again.
-6. Once the flash is successful, you may wish to reboot the Pi before going out for your first drive.
+4. Run `sudo sudo sh ~/raspilot/flash_panda.sh recover`
+5. Once the flash is successful, you may wish to reboot the Pi before going out for your first drive.
 
-### White or Gray Panda
+If you're using a White or Gray Panda, remember to unplug the power supply from the Pi and remove the USB A-to-A cable from the Pi and the Panda. Then connect the Pi to the Panda using the standard configuration (USB A in the Panda to USB C on the Pi). The USB A to A cable is not used under normal conditions.
 
-1. Before taking the Pi outside, edit `~/kegman.json` and change the value in `useAutoFlash` from `0` to `1`. Safely shut down the Pi.
-2. Take the Pi outside with a separate power source, a USB C cable to power the Pi, and the USB A-to-A cable for flashing the Panda
-3. Connect the USB A-to-A cable between the Pi and the Panda
-4. Power up the Pi and wait two minutes. The Panda should cycle through several colors before ending in a slow pulsing color or combination of colors. If it the process ends in a fast flashing green LED, it was not successful.
-5. Unplug the power supply from the Pi. Remove the USB A-to-A cable from the Pi and the Panda.
-
-If you have successfully flashed the Panda, you are ready to calibrate and go for your first drive. If you are unable to flash the Panda or are not convinced that you have, come to Discord to discuss the issue. As a reminder, if you flashed a White or Gray Panda, you will need to reconfigure your setup to back to the standard configuration: the Panda is connected to the Pi via the USB A-to-C cable, with the USB A end in the Panda and the USB C end in the power port on the Pi. The USB A-to-A cable is not used during standard operation.
+If you have successfully flashed the Panda, you are ready to calibrate and go for your first drive. If you are unable to flash the Panda or are not convinced that you have, come to Discord to discuss the issue. 
 
 ## First Drive and Training
 

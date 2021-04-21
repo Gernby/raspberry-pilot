@@ -122,6 +122,7 @@ python3 -m pip install -U pip
 python3 -m pip install -U pyzmq
 python3 -m pip install cython
 #python3 -m pip install tensorflow-2.3.0-cp37-none-linux_aarch64.whl
+python3 -m pip install onnxruntime
 python3 -m pip install scikit-learn
 python3 -m pip install sklearn
 python3 -m pip install pyzmq

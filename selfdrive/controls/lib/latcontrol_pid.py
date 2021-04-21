@@ -312,7 +312,7 @@ class LatControlPID(object):
         print("angle error!")
         pass
     
-      #self.update_lane_state(angle_steers, driver_opposing, blinker_on, path_plan)
+      self.update_lane_state(angle_steers, driver_opposing, blinker_on, path_plan)
       self.profiler.checkpoint('lane_change')
 
     output_factor = self.lane_change_adjustment if pid_log.active else 0

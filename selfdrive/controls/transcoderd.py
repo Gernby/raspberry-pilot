@@ -24,10 +24,18 @@ from cereal import log, car
 from setproctitle import setproctitle
 from common.params import Params, put_nonblocking
 from common.profiler import Profiler
-from tensorflow.python.keras.models import load_model
-import tensorflow as tf
+import onnxruntime as ort
 
 setproctitle('transcoderd')
+
+options = ort.SessionOptions()
+options.intra_op_num_threads = 2
+options.inter_op_num_threads = 2
+options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+provider = 'CPUExecutionProvider'
+ort_session = ort.InferenceSession(os.path.expanduser('models/Model-165.onnx'), options)
+ort_session.set_providers([provider], None)
 
 params = Params()
 profiler = Profiler(False, 'transcoder')
@@ -38,36 +46,28 @@ BIT_MASK = [1, 128, 64, 32, 8, 4, 2, 8,
             1, 128, 64, 32, 8, 4, 2, 8] 
 
 history_rows = [2,5]
-fingerprint = np.zeros((1, 4), dtype=np.int)
-
 OUTPUT_ROWS = 15
-MAX_CENTER_OPPOSE = np.reshape(np.arange(15) * 200, (OUTPUT_ROWS,1))
 
-lo_res_data = np.zeros((2,1, 5, INPUTS-6))
-hi_res_data = np.zeros((2,1, 50, 12))
-
-tf.config.threading.set_inter_op_parallelism_threads(2)
-tf.config.threading.set_intra_op_parallelism_threads(8)
+lo_res_data = np.zeros((2,1, 5, INPUTS-6), dtype=np.float32)
+hi_res_data = np.zeros((2,1, 50, 12), dtype=np.float32)
+fingerprint = np.zeros((1, 4), dtype=np.float32)
 
 for filename in os.listdir('models/'):
-  if filename[-5:] == '.hdf5':
-    if os.path.exists('models/models.json'):
-      with open('models/models.json', 'r') as f:
-        models = []
-        for md in json.load(f)['models']:
-          print("loading %s" % md)
-          models.append(load_model(os.path.expanduser('models/%s' % md)))
-          models[-1] = tf.function(models[-1].predict_step)
-          model_output = models[-1]([hi_res_data[0,:,-round(history_rows[0]*6.6666667-7):,:6], lo_res_data[0,:,-history_rows[0]:,:-16],lo_res_data[0,:,-history_rows[0]:,-16:-8], lo_res_data[0,:,-history_rows[0]:,-8:], fingerprint, \
-                                     hi_res_data[1,:,-round(history_rows[1]*6.6666667-7):,:6], lo_res_data[1,:,-history_rows[1]:,:-16],lo_res_data[1,:,-history_rows[1]:,-16:-8], lo_res_data[1,:,-history_rows[1]:,-8:], fingerprint])
-      break
-    elif MODEL_NAME == '':
-      MODEL_NAME = filename
-      models = [load_model(os.path.expanduser('models/%s' % (MODEL_NAME)))]
-      history_rows = [models[-1].layers[0].input.shape[1]]
-    else:
-      print("\n\n   More than one model found!  Exiting!\n\n")
-      exit()
+  if os.path.exists('models/models.json'):
+    with open('models/models.json', 'r') as f:
+      models = []
+      for md in json.load(f)['models']:
+        model_output = ort_session.run(None, {'vehicle0:0': hi_res_data[0,:,-round(history_rows[0]*6.6666667-7):,:6], 
+                                              'outer_camera0:0': lo_res_data[0,:,-history_rows[0]:,:-16],
+                                              'camera_left0:0': lo_res_data[0,:,-history_rows[0]:,-16:-8], 
+                                              'camera_right0:0': lo_res_data[0,:,-history_rows[0]:,-8:], 
+                                              'fingerprints0:0': fingerprint, 
+                                              'vehicle1:0': hi_res_data[1,:,-round(history_rows[1]*6.6666667-7):,:6], 
+                                              'outer_camera1:0': lo_res_data[1,:,-history_rows[1]:,:-16],
+                                              'camera_left1:0': lo_res_data[1,:,-history_rows[1]:,-16:-8], 
+                                              'camera_right1:0': lo_res_data[1,:,-history_rows[1]:,-8:], 
+                                              'fingerprints1:0': fingerprint
+                                              })
 
 os.system("pkill -f controlsd")
 os.system("taskset -a --cpu-list 0,1 python ~/raspilot/selfdrive/controls/controlsd.py &")
@@ -164,10 +164,8 @@ calc_center_prev = calc_center
 angle_factor = 1.0
 angle_speed = 3
 projected_rate = np.arange(0., 0.10066667,0.0066666)[1:]
-print(projected_rate)
 use_discrete_angle = True
-use_optimize = True
-use_minimize = True
+use_minimize = False
 
 execution_time_avg = 0.027
 time_factor = 1.0
@@ -178,18 +176,18 @@ next_params_distance = 133000.0
 distance_driven = 0.0
 steer_override_timer = 0
 
-model_output = None
+#model_output = None
 start_time = 0
 
 os.system("taskset -a -cp --cpu-list 2,3 %d" % os.getpid())
 
 #['Civic','CRV_5G','Accord_15','Insight', 'Accord']
-for md in range(len(models)):
-  model_output = models[md]([hi_res_data[0,:,-round(history_rows[0]*6.6666667-7):,:6], lo_res_data[0,:,-history_rows[0]:,:-16],lo_res_data[0,:,-history_rows[0]:,-16:-8], lo_res_data[0,:,-history_rows[0]:,-8:], fingerprint, \
-                             hi_res_data[1,:,-round(history_rows[1]*6.6666667-7):,:6], lo_res_data[1,:,-history_rows[1]:,:-16],lo_res_data[1,:,-history_rows[1]:,-16:-8], lo_res_data[1,:,-history_rows[1]:,-8:], fingerprint])  
+#for md in range(len(models)):
+#  model_output = models[md]([hi_res_data[0,:,-round(history_rows[0]*6.6666667-7):,:6], lo_res_data[0,:,-history_rows[0]:,:-16],lo_res_data[0,:,-history_rows[0]:,-16:-8], lo_res_data[0,:,-history_rows[0]:,-8:], fingerprint, \
+#                             hi_res_data[1,:,-round(history_rows[1]*6.6666667-7):,:6], lo_res_data[1,:,-history_rows[1]:,:-16],lo_res_data[1,:,-history_rows[1]:,-16:-8], lo_res_data[1,:,-history_rows[1]:,-8:], fingerprint])  
 
 print(model_output)
-while model_output[0].shape[2] > output_scaler.data_max_.shape[0]:
+while np.array(model_output[0]).shape[2] > output_scaler.data_max_.shape[0]:
   output_scaler.data_max_ = np.concatenate((output_scaler.data_max_[:1], output_scaler.data_max_),axis=0)
   output_scaler.data_min_ = np.concatenate((output_scaler.data_min_[:1], output_scaler.data_min_),axis=0)
   output_scaler.data_range_ = np.concatenate((output_scaler.data_range_[:1], output_scaler.data_range_),axis=0)
@@ -361,8 +359,20 @@ while 1:
 
     profiler.checkpoint('scale1')
 
-    model_output = models[0]([hi_res_data[0,:,-round(history_rows[0]*6.6666667-7):,:6], lo_res_data[0,:,-history_rows[0]:,:-16], lo_res_data[0,:,-history_rows[0]:,-16:-8], lo_res_data[0,:,-history_rows[0]:,-8:], fingerprint, \
-                              hi_res_data[1,:,-round(history_rows[1]*6.6666667-7):,:6], lo_res_data[1,:,-history_rows[1]:,:-16], lo_res_data[1,:,-history_rows[1]:,-16:-8], lo_res_data[1,:,-history_rows[1]:,-8:], fingerprint])
+    #model_output = models[0]([hi_res_data[0,:,-round(history_rows[0]*6.6666667-7):,:6], lo_res_data[0,:,-history_rows[0]:,:-16], lo_res_data[0,:,-history_rows[0]:,-16:-8], lo_res_data[0,:,-history_rows[0]:,-8:], fingerprint, \
+    #                          hi_res_data[1,:,-round(history_rows[1]*6.6666667-7):,:6], lo_res_data[1,:,-history_rows[1]:,:-16], lo_res_data[1,:,-history_rows[1]:,-16:-8], lo_res_data[1,:,-history_rows[1]:,-8:], fingerprint])
+
+    model_output = ort_session.run(None, {'vehicle0:0': hi_res_data[0,:,-round(history_rows[0]*6.6666667-7):,:6], 
+                                          'outer_camera0:0': lo_res_data[0,:,-history_rows[0]:,:-16],
+                                          'camera_left0:0': lo_res_data[0,:,-history_rows[0]:,-16:-8], 
+                                          'camera_right0:0': lo_res_data[0,:,-history_rows[0]:,-8:], 
+                                          'fingerprints0:0': fingerprint, 
+                                          'vehicle1:0': hi_res_data[1,:,-round(history_rows[1]*6.6666667-7):,:6], 
+                                          'outer_camera1:0': lo_res_data[1,:,-history_rows[1]:,:-16],
+                                          'camera_left1:0': lo_res_data[1,:,-history_rows[1]:,-16:-8], 
+                                          'camera_right1:0': lo_res_data[1,:,-history_rows[1]:,-8:], 
+                                          'fingerprints1:0': fingerprint
+                                          })
 
     profiler.checkpoint('predict')
 
@@ -389,9 +399,9 @@ while 1:
       else:
         model_index = 0
       #model_index = min(1, int(max(abs(fast_angles[0][10,6]), abs(fast_angles[1][10,5] + model_bias[6])) * model_factor))
-  
-    calc_center[0] = np.array(tri_blend(l_prob, r_prob, descaled_output[0,:,angle_speed_count::3]))
-    calc_center[1] = np.array(tri_blend(l_prob, r_prob, descaled_output[1,:,angle_speed_count::3]))
+    descaled_output[0,:,angle_speed_count+1:] = descaled_output[1,:,angle_speed_count+1:] 
+    calc_center[0] = np.array(tri_blend(l_prob, r_prob, descaled_output[0,:,angle_speed_count::3], minimize=use_minimize))
+    calc_center[1] = np.array(tri_blend(l_prob, r_prob, descaled_output[1,:,angle_speed_count::3], minimize=use_minimize))
 
     if model_index == 0:
       angle_plan = np.clip(fast_angles[0], fast_angles[1] + model_bias - accel_limit, fast_angles[1] + model_bias + accel_limit)

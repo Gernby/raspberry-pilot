@@ -195,9 +195,9 @@ while np.array(model_output[0]).shape[2] > output_scaler.data_max_.shape[0]:
   output_scaler.scale_ = np.concatenate((output_scaler.scale_[:1], output_scaler.scale_),axis=0)
 from sklearn.preprocessing import MinMaxScaler, QuantileTransformer, StandardScaler, normalize, MaxAbsScaler
 
-output_scaler = np.array(output_scaler.data_max_)
-vehicle_scaler = np.array(1/vehicle_scaler.data_max_)
-camera_scaler = np.array(1/camera_scaler.data_max_)
+output_scaler = np.array(output_scaler.data_max_, dtype=np.float32)
+vehicle_scaler = np.array(1/vehicle_scaler.data_max_, dtype=np.float32)
+camera_scaler = np.array(1/camera_scaler.data_max_, dtype=np.float32)
 
 path_send = log.Event.new_message()
 path_send.init('pathPlan')
@@ -235,7 +235,7 @@ all_items = [['v_ego','angle_steers','lateral_accelleration','angle_rate', 'angl
             'left_10',     'left_2',      'left_1',      'left_3',      'left_4',      'left_5',      'left_7',      'left_9',      
             'right_10',    'right_2',     'right_1',     'right_3',     'right_4',     'right_5',     'right_7',     'right_9']]
 cal_col = [np.zeros((len(all_items[0])),dtype=np.int),np.zeros((len(all_items[1])),dtype=np.int)]
-cal_factor = [np.zeros((len(all_items[0])),dtype=np.float),np.zeros((len(all_items[1])),dtype=np.float)]
+cal_factor = [np.zeros((len(all_items[0])),dtype=np.float),np.zeros((len(all_items[1])),dtype=np.float32)]
 for i in range(2):
   for col in range(len(all_items[i])):
     cal_col[i][col] = 1 if all_items[i][col] in calibration_items[i] else 0
@@ -254,19 +254,19 @@ calibrated = True
 calibration_data = params.get("CalibrationParams")
 if not calibration_data is None:
   calibration_data =  json.loads(calibration_data)
-  calibration = np.array(calibration_data['calibration'])
+  calibration = np.array(calibration_data['calibration'], dtype=np.float32)
   if 'center_bias' in calibration_data:
     center_bias = calibration_data['center_bias']
   if 'model_bias' in calibration_data:
     model_bias = calibration_data['model_bias']
 
 if calibration_data is None or len(calibration) != (len(calibration_items[0]) + len(calibration_items[1])):
-  calibration = [np.zeros(len(calibration_items[0])), np.zeros(len(calibration_items[1]))]
+  calibration = [np.zeros(len(calibration_items[0]), dtype=np.float32), np.zeros(len(calibration_items[1]), dtype=np.float32)]
   calibrated = False
   print("resetting calibration")
   params.delete("CalibrationParams")
 else:
-  calibration = [np.array(calibration[:len(calibration_items[0])]), np.array(calibration[len(calibration_items[0]):])]
+  calibration = [np.array(calibration[:len(calibration_items[0])], dtype=np.float32), np.array(calibration[len(calibration_items[0]):], dtype=np.float32)]
   lane_width = calibration_data['lane_width']
   angle_bias = calibration_data['angle_bias']
 
@@ -286,7 +286,7 @@ width_factor = 1
 angle_plan = 0
 wiggle_angle = 0
 model_index = 0
-fast_angles = [np.array([[0],[0]]),np.array([[0],[0]])]
+fast_angles = [np.array([[0],[0]], dtype=np.float32),np.array([[0],[0]], dtype=np.float32)]
 rate_matrix = np.ones((12,1), dtype=np.float32)
 
 print("done loading!")
@@ -327,7 +327,7 @@ while 1:
                                               [cs.camFarLeft.parm10,  cs.camFarLeft.parm2,  cs.camFarLeft.parm1,  cs.camFarLeft.parm3,  cs.camFarLeft.parm4,  cs.camFarLeft.parm5,  cs.camFarLeft.parm7,  cs.camFarLeft.parm9], 
                                               [cs.camFarRight.parm10, cs.camFarRight.parm2, cs.camFarRight.parm1, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm7, cs.camFarRight.parm9],
                                               [cs.camLeft.parm10,     cs.camLeft.parm2,     cs.camLeft.parm1,     cs.camLeft.parm3,     cs.camLeft.parm4,     cs.camLeft.parm5,     cs.camLeft.parm7,     cs.camLeft.parm9],    
-                                              [cs.camRight.parm10,    cs.camRight.parm2,    cs.camRight.parm1,    cs.camRight.parm3,    cs.camRight.parm4,    cs.camRight.parm5,    cs.camRight.parm7,    cs.camRight.parm9]),axis=0), dtype=float)
+                                              [cs.camRight.parm10,    cs.camRight.parm2,    cs.camRight.parm1,    cs.camRight.parm3,    cs.camRight.parm4,    cs.camRight.parm5,    cs.camRight.parm7,    cs.camRight.parm9]),axis=0), dtype=np.float32)
       profiler.checkpoint('process_inputs2')
 
   l_prob =     min(1, max(0, cs.camLeft.parm4 / 127))
@@ -337,7 +337,7 @@ while 1:
   if len(vehicle_array) >= round(history_rows[-1]*6.6666667-7) and start_time - cs.sysTime < 30:
 
     vehicle_array = vehicle_array[-round(history_rows[-1]*6.66666667-7):]
-    vehicle_input = np.array([[vehicle_array],[vehicle_array]])
+    vehicle_input = np.array([[vehicle_array],[vehicle_array]], dtype=np.float32)
 
     profiler.checkpoint('process_inputs1')
 
@@ -350,7 +350,7 @@ while 1:
     hi_res_data = np.clip(vehicle_scaler * vehicle_input, -1, 1)
 
     rate_adjustment = np.interp(cs.vEgo, [0., 40.], [speed_factor, 1.00])
-    hi_res_data[0,:,:,:] *= np.array([[[rate_adjustment, 1.0, rate_adjustment, rate_adjustment, rate_adjustment, rate_adjustment, rate_adjustment, 1.0 , 1.0, 1.0, rate_adjustment, rate_adjustment ]]])
+    hi_res_data[0,:,:,:] *= np.array([[[rate_adjustment, 1.0, rate_adjustment, rate_adjustment, rate_adjustment, rate_adjustment, rate_adjustment, 1.0 , 1.0, 1.0, rate_adjustment, rate_adjustment ]]], dtype=np.float32)
     profiler.checkpoint('process_inputs1')
 
     camera_input[-32:] *= camera_scaler

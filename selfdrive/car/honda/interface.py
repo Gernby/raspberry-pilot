@@ -491,7 +491,7 @@ class CarInterface(CarInterfaceBase):
     #ret.steeringAdvance = float(self.CS.steer_advance)
 
     # gear shifter lever
-    ret.gearShifter = self.CS.gear_shifter
+    #ret.gearShifter = self.CS.gear_shifter
 
     ret.steeringTorque = self.CS.steer_torque_driver
     ret.steeringPressed = self.CS.steer_override
@@ -674,8 +674,8 @@ class CarInterface(CarInterfaceBase):
       events.append(create_event('steerTempUnavailable', [ET.WARNING]))
     if self.CS.brake_error:
       events.append(create_event('brakeUnavailable', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE, ET.PERMANENT]))
-    if not ret.gearShifter in ['drive', 'sport', 'low']:
-      events.append(create_event('wrongGear', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
+    #if not ret.gearShifter in ['drive', 'sport', 'low']:
+    #  events.append(create_event('wrongGear', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
     if ret.doorOpen:
       events.append(create_event('doorOpen', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
     if ret.seatbeltUnlatched:
@@ -684,8 +684,8 @@ class CarInterface(CarInterfaceBase):
       events.append(create_event('espDisabled', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
     if not self.CS.main_on or self.CS.cruise_mode:
       events.append(create_event('wrongCarMode', [ET.NO_ENTRY, ET.USER_DISABLE]))
-    if ret.gearShifter == 'reverse':
-      events.append(create_event('reverseGear', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
+    #if ret.gearShifter == 'reverse':
+    #  events.append(create_event('reverseGear', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
     if self.CS.brake_hold and self.CS.CP.carFingerprint not in HONDA_BOSCH:
       events.append(create_event('brakeHold', [ET.NO_ENTRY, ET.USER_DISABLE]))
     if self.CS.park_brake:

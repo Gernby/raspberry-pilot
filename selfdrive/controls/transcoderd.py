@@ -289,6 +289,8 @@ model_index = 0
 fast_angles = [np.array([[0],[0]], dtype=np.float32),np.array([[0],[0]], dtype=np.float32)]
 rate_matrix = np.ones((12,1), dtype=np.float32)
 
+print("CalibrationParams", json.dumps({'calibration': list(np.concatenate(([[float(x) for x in calibration[0]],[float(x) for x in calibration[0]]]))),'lane_width': float(lane_width),'angle_bias': float(angle_bias), 'center_bias': list([float(x) for x in center_bias]), 'model_bias': list([float(x) for x in model_bias])}))
+
 print("done loading!")
 while 1:
   vehicle_array = list(vehicle_array)
@@ -481,9 +483,9 @@ while 1:
       next_params_distance = distance_driven + 133000
       print(np.round(calibration[0],2))
       if calibrated:
-        put_nonblocking("CalibrationParams", json.dumps({'calibration': list(np.concatenate((calibration))),'lane_width': lane_width,'angle_bias': angle_bias, 'center_bias': list(center_bias), 'model_bias': list(model_bias)}))
+        put_nonblocking("CalibrationParams", json.dumps({'calibration': list(np.concatenate(([[float(x) for x in calibration[0]],[float(x) for x in calibration[0]]]))),'lane_width': float(lane_width),'angle_bias': float(angle_bias), 'center_bias': list([float(x) for x in center_bias]), 'model_bias': list([float(x) for x in model_bias])}))
       else:
-        params.put("CalibrationParams", json.dumps({'calibration': list(np.concatenate((calibration))),'lane_width': lane_width,'angle_bias': angle_bias, 'center_bias': list(center_bias), 'model_bias': list(model_bias)}))
+        params.put("CalibrationParams", json.dumps({'calibration': list(np.concatenate(([[float(x) for x in calibration[0]],[float(x) for x in calibration[0]]]))),'lane_width': float(lane_width),'angle_bias': float(angle_bias), 'center_bias': list([float(x) for x in center_bias]), 'model_bias': list([float(x) for x in model_bias])}))
       #params = None
       calibrated = True
       profiler.checkpoint('save_cal')

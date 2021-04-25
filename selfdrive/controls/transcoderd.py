@@ -34,7 +34,7 @@ options.inter_op_num_threads = 2
 options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
 options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
 provider = 'CPUExecutionProvider'
-ort_session = ort.InferenceSession(os.path.expanduser('models/Model-165.onnx'), options)
+ort_session = ort.InferenceSession(os.path.expanduser('models/Model-166.onnx'), options)
 ort_session.set_providers([provider], None)
 
 params = Params()
@@ -51,6 +51,7 @@ OUTPUT_ROWS = 15
 lo_res_data = np.zeros((2,1, 5, INPUTS-6), dtype=np.float32)
 hi_res_data = np.zeros((2,1, 50, 12), dtype=np.float32)
 fingerprint = np.zeros((1, 4), dtype=np.float32)
+steer_torque = np.zeros((2,1, 5, 1), dtype=np.float32)
 
 for filename in os.listdir('models/'):
   if os.path.exists('models/models.json'):
@@ -62,11 +63,13 @@ for filename in os.listdir('models/'):
                                               'camera_left0:0': lo_res_data[0,:,-history_rows[0]:,-16:-8], 
                                               'camera_right0:0': lo_res_data[0,:,-history_rows[0]:,-8:], 
                                               'fingerprints0:0': fingerprint, 
+                                              'steer_torque0:0': steer_torque[0,:,-history_rows[0]:,:],
                                               'vehicle1:0': hi_res_data[1,:,-round(history_rows[1]*6.6666667-7):,:6], 
                                               'outer_camera1:0': lo_res_data[1,:,-history_rows[1]:,:-16],
                                               'camera_left1:0': lo_res_data[1,:,-history_rows[1]:,-16:-8], 
                                               'camera_right1:0': lo_res_data[1,:,-history_rows[1]:,-8:], 
-                                              'fingerprints1:0': fingerprint
+                                              'fingerprints1:0': fingerprint,
+                                              'steer_torque1:0': steer_torque[1,:,-history_rows[1]:,:],
                                               })
 
 os.system("pkill -f controlsd")
@@ -350,6 +353,8 @@ while 1:
 
     lo_res_data[:,:,:-1,:] = lo_res_data[:,:,1:,:]
     hi_res_data = np.clip(vehicle_scaler * vehicle_input, -1, 1)
+    steer_torque[:,:,:-1,:] = steer_torque[:,:,1:,:]
+    steer_torque[:,:,-1,:] = cs.steeringTorque / 4900
 
     rate_adjustment = np.interp(cs.vEgo, [0., 40.], [speed_factor, 1.00])
     hi_res_data[0,:,:,:] *= np.array([[[rate_adjustment, 1.0, rate_adjustment, rate_adjustment, rate_adjustment, rate_adjustment, rate_adjustment, 1.0 , 1.0, 1.0, rate_adjustment, rate_adjustment ]]], dtype=np.float32)
@@ -369,11 +374,13 @@ while 1:
                                           'camera_left0:0': lo_res_data[0,:,-history_rows[0]:,-16:-8], 
                                           'camera_right0:0': lo_res_data[0,:,-history_rows[0]:,-8:], 
                                           'fingerprints0:0': fingerprint, 
+                                          'steer_torque0:0': steer_torque[0,:,-history_rows[0]:,:],
                                           'vehicle1:0': hi_res_data[1,:,-round(history_rows[1]*6.6666667-7):,:6], 
                                           'outer_camera1:0': lo_res_data[1,:,-history_rows[1]:,:-16],
                                           'camera_left1:0': lo_res_data[1,:,-history_rows[1]:,-16:-8], 
                                           'camera_right1:0': lo_res_data[1,:,-history_rows[1]:,-8:], 
-                                          'fingerprints1:0': fingerprint
+                                          'fingerprints1:0': fingerprint,
+                                          'steer_torque0:0': steer_torque[1,:,-history_rows[1]:,:]
                                           })
 
     profiler.checkpoint('predict')

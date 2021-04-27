@@ -88,7 +88,7 @@ class CarInterface(CarInterfaceBase):
     self.cp = get_can_parser(CP)
     self.cp_cam = get_cam_can_parser(CP.isPandaBlack)
     self.CP.canIds = [[int(x) for x in self.cp.addr], [int(x) for x in self.cp_cam.addr]]
-
+    
     # *** init the major players ***
     self.CS = CarState(CP)
     #self.VM = VehicleModel(CP)
@@ -158,8 +158,8 @@ class CarInterface(CarInterfaceBase):
       ret.enableGasInterceptor = 0x201 in fingerprint
       ret.openpilotLongitudinalControl = ret.enableCamera
 
-    cloudlog.warn("ECU Camera Simulated: %r", ret.enableCamera)
-    cloudlog.warn("ECU Gas Interceptor: %r", ret.enableGasInterceptor)
+    #cloudlog.warn("ECU Camera Simulated: %r", ret.enableCamera)
+    #cloudlog.warn("ECU Gas Interceptor: %r", ret.enableGasInterceptor)
 
     ret.enableCruise = not ret.enableGasInterceptor
 
@@ -431,16 +431,14 @@ class CarInterface(CarInterfaceBase):
     #self.canTime = max(int(time.time() * 100) * 10, self.canTime + 10)
     #if self.frame % 100 == 0: print(self.canTime)
 
+
     self.cp.update_strings(can_strings)
-    profiler.checkpoint('cp_update')
-    #self.cp.update(0, False)
+
     if not self.cp_cam is None: 
       self.cp_cam.update_strings(can_strings)
-      profiler.checkpoint('cp_cam_update')
-      #self.cp_cam.update(0, False)
 
     self.CS.update(self.cp, self.cp_cam)
-    profiler.checkpoint('cs_update')
+    #profiler.checkpoint('cs_update')
 
     # create message
     #print(len(can_strings), can_strings)
@@ -491,7 +489,7 @@ class CarInterface(CarInterfaceBase):
     #ret.steeringAdvance = float(self.CS.steer_advance)
 
     # gear shifter lever
-    #ret.gearShifter = self.CS.gear_shifter
+    ret.gearShifter = self.CS.gear_shifter
 
     ret.steeringTorque = self.CS.steer_torque_driver
     ret.steeringPressed = self.CS.steer_override
@@ -506,6 +504,7 @@ class CarInterface(CarInterfaceBase):
     #ret.readdistancelines = self.CS.read_distance_lines
     ret.lkMode = self.CS.lkMode
 
+    #cam_thread.join()
     if not self.cp_cam is None:
       camLeft1 = self.cp_cam.vl["CUR_LANE_LEFT_1"]
       camLeft2 = self.cp_cam.vl["CUR_LANE_LEFT_2"]
@@ -674,8 +673,8 @@ class CarInterface(CarInterfaceBase):
       events.append(create_event('steerTempUnavailable', [ET.WARNING]))
     if self.CS.brake_error:
       events.append(create_event('brakeUnavailable', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE, ET.PERMANENT]))
-    #if not ret.gearShifter in ['drive', 'sport', 'low']:
-    #  events.append(create_event('wrongGear', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
+    if not ret.gearShifter in ['drive', 'sport', 'low']:
+      events.append(create_event('wrongGear', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
     if ret.doorOpen:
       events.append(create_event('doorOpen', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
     if ret.seatbeltUnlatched:
@@ -684,8 +683,8 @@ class CarInterface(CarInterfaceBase):
       events.append(create_event('espDisabled', [ET.NO_ENTRY, ET.SOFT_DISABLE]))
     if not self.CS.main_on or self.CS.cruise_mode:
       events.append(create_event('wrongCarMode', [ET.NO_ENTRY, ET.USER_DISABLE]))
-    #if ret.gearShifter == 'reverse':
-    #  events.append(create_event('reverseGear', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
+    if ret.gearShifter == 'reverse':
+      events.append(create_event('reverseGear', [ET.NO_ENTRY, ET.IMMEDIATE_DISABLE]))
     if self.CS.brake_hold and self.CS.CP.carFingerprint not in HONDA_BOSCH:
       events.append(create_event('brakeHold', [ET.NO_ENTRY, ET.USER_DISABLE]))
     if self.CS.park_brake:
@@ -748,7 +747,6 @@ class CarInterface(CarInterfaceBase):
     self.gas_pressed_prev = ret.gasPressed
     self.brake_pressed_prev = ret.brakePressed
     profiler.checkpoint('create_events')
-
 
     # cast to reader so it can't be modified
     return ret

@@ -73,8 +73,8 @@ def fingerprint(logcan, sendcan, is_panda_black):
   else:
     vin = ""  #  VIN_UNKNOWN
   
-  cloudlog.warning("VIN %s", vin)
-  Params().put("CarVin", vin)
+  #cloudlog.warning("VIN %s", vin)
+  #Params().put("CarVin", vin)
 
   finger = {i: {} for i in range(0, 4)}  # collect on all buses
   candidate_cars = {i: all_known_cars() for i in [0, 1]}  # attempt fingerprint on both bus 0 and 1

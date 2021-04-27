@@ -29,8 +29,8 @@ import onnxruntime as ort
 setproctitle('transcoderd')
 
 options = ort.SessionOptions()
-options.intra_op_num_threads = 2
-options.inter_op_num_threads = 2
+#options.intra_op_num_threads = 2
+#options.inter_op_num_threads = 2
 options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
 options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
 provider = 'CPUExecutionProvider'
@@ -38,7 +38,7 @@ ort_session = ort.InferenceSession(os.path.expanduser('models/Model-166.onnx'), 
 ort_session.set_providers([provider], None)
 
 params = Params()
-profiler = Profiler(False, 'transcoder')
+profiler = Profiler(True, 'transcoder')
 
 BIT_MASK = [1, 128, 64, 32, 8, 4, 2, 8, 
             1, 128, 64, 32, 8, 4, 2, 8, 
@@ -296,7 +296,7 @@ print("CalibrationParams", json.dumps({'calibration': list([float(x) for x in ca
 
 print("done loading!")
 while 1:
-  vehicle_array = list(vehicle_array)
+  #vehicle_array = list(vehicle_array)
   for _cs in carState.recv_multipart():
     start_time = time.time() * 1000
     profiler.checkpoint('inputs_recv', False)
@@ -368,8 +368,13 @@ while 1:
 
     #model_output = models[0]([hi_res_data[0,:,-round(history_rows[0]*6.6666667-7):,:6], lo_res_data[0,:,-history_rows[0]:,:-16], lo_res_data[0,:,-history_rows[0]:,-16:-8], lo_res_data[0,:,-history_rows[0]:,-8:], fingerprint, \
     #                          hi_res_data[1,:,-round(history_rows[1]*6.6666667-7):,:6], lo_res_data[1,:,-history_rows[1]:,:-16], lo_res_data[1,:,-history_rows[1]:,-16:-8], lo_res_data[1,:,-history_rows[1]:,-8:], fingerprint])
+    lo_res_data = lo_res_data.astype('float32')
+    hi_res_data = hi_res_data.astype('float32')
+    fingerprint = fingerprint.astype('float32')
+    steer_torque = steer_torque.astype('float32')
+    profiler.checkpoint('convert to float32')
 
-    model_output = ort_session.run(None, {'vehicle0:0': hi_res_data[0,:,-round(history_rows[0]*6.6666667-7):,:6], 
+    input_dict = dict({'vehicle0:0': hi_res_data[0,:,-round(history_rows[0]*6.6666667-7):,:6], 
                                           'outer_camera0:0': lo_res_data[0,:,-history_rows[0]:,:-16],
                                           'camera_left0:0': lo_res_data[0,:,-history_rows[0]:,-16:-8], 
                                           'camera_right0:0': lo_res_data[0,:,-history_rows[0]:,-8:], 
@@ -382,6 +387,9 @@ while 1:
                                           'fingerprints1:0': fingerprint,
                                           'steer_torque1:0': steer_torque[1,:,-history_rows[1]:,:]
                                           })
+    profiler.checkpoint('create input dict')
+    
+    model_output = ort_session.run(None, input_dict)
 
     profiler.checkpoint('predict')
 
@@ -488,11 +496,13 @@ while 1:
 
     if ((cs.vEgo < 10 and not cs.cruiseState.enabled) or not calibrated) and distance_driven > next_params_distance:
       next_params_distance = distance_driven + 133000
-      print(np.round(calibration[0],2))
+      #print(np.round(calibration[0],2))
       if calibrated:
-        put_nonblocking("CalibrationParams", json.dumps({'calibration': list([float(x) for x in calibration[0]]),'lane_width': float(lane_width),'angle_bias': float(angle_bias), 'center_bias': list([float(x) for x in center_bias]), 'model_bias': list([float(x) for x in model_bias])}))
+        print(np.round(calibration[0],2))
+        put_nonblocking("CalibrationParams", json.dumps({'calibration': list(np.concatenate(([float(x) for x in calibration[0]],[float(x) for x in calibration[1]]), axis=0)),'lane_width': float(lane_width),'angle_bias': float(angle_bias), 'center_bias': list([float(x) for x in center_bias]), 'model_bias': list([float(x) for x in model_bias])}))
       else:
-        params.put("CalibrationParams", json.dumps({'calibration': list([float(x) for x in calibration[0]]),'lane_width': float(lane_width),'angle_bias': float(angle_bias), 'center_bias': list([float(x) for x in center_bias]), 'model_bias': list([float(x) for x in model_bias])}))
+        print(list(np.concatenate(([float(x) for x in calibration[0]],[float(x) for x in calibration[1]]), axis=0)))
+        params.put("CalibrationParams", json.dumps({'calibration': list(np.concatenate(([float(x) for x in calibration[0]],[float(x) for x in calibration[1]]), axis=0)),'lane_width': float(lane_width),'angle_bias': float(angle_bias), 'center_bias': list([float(x) for x in center_bias]), 'model_bias': list([float(x) for x in model_bias])}))
       #params = None
       calibrated = True
       profiler.checkpoint('save_cal')
@@ -529,3 +539,4 @@ while 1:
     if frame % 100 == 0 and profiler.enabled:
       profiler.display()
       profiler.reset(True)
+    profiler.checkpoint('profiling')

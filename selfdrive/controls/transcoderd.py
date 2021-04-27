@@ -380,7 +380,7 @@ while 1:
                                           'camera_left1:0': lo_res_data[1,:,-history_rows[1]:,-16:-8], 
                                           'camera_right1:0': lo_res_data[1,:,-history_rows[1]:,-8:], 
                                           'fingerprints1:0': fingerprint,
-                                          'steer_torque0:0': steer_torque[1,:,-history_rows[1]:,:]
+                                          'steer_torque1:0': steer_torque[1,:,-history_rows[1]:,:]
                                           })
 
     profiler.checkpoint('predict')

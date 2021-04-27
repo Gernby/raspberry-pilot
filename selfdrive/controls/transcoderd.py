@@ -289,6 +289,7 @@ width_factor = 1
 angle_plan = 0
 wiggle_angle = 0
 model_index = 0
+steering_torque = 0.
 fast_angles = [np.array([[0],[0]], dtype=np.float32),np.array([[0],[0]], dtype=np.float32)]
 rate_matrix = np.ones((12,1), dtype=np.float32)
 
@@ -306,6 +307,7 @@ while 1:
                           max(-40, min(40, steer_factor * cs.steeringRate / angle_factor)), max(-40, min(40, cs.steeringTorqueEps)), 
                           yaw_factor * cs.yawRateCAN, max(10, cs.vEgo), cs.longAccel,  width_factor * max(570, lane_width + width_trim), 
                           max(-30, min(30, steer_factor * cs.steeringAngle / angle_factor)), lateral_factor * cs.lateralAccel, yaw_factor * cs.yawRateCAN])
+    steering_torque += 0.25 * (cs.steeringTorque - steering_torque)
 
     profiler.checkpoint('process_inputs1')
 
@@ -354,7 +356,7 @@ while 1:
     lo_res_data[:,:,:-1,:] = lo_res_data[:,:,1:,:]
     hi_res_data = np.clip(vehicle_scaler * vehicle_input, -1, 1)
     steer_torque[:,:,:-1,:] = steer_torque[:,:,1:,:]
-    steer_torque[:,:,-1,:] = cs.steeringTorque / 4900
+    steer_torque[:,:,-1,:] = steering_torque / 4900
 
     rate_adjustment = np.interp(cs.vEgo, [0., 40.], [speed_factor, 1.00])
     hi_res_data[0,:,:,:] *= np.array([[[rate_adjustment, 1.0, rate_adjustment, rate_adjustment, rate_adjustment, rate_adjustment, rate_adjustment, 1.0 , 1.0, 1.0, rate_adjustment, rate_adjustment ]]], dtype=np.float32)
@@ -533,6 +535,10 @@ while 1:
     
       profiler.checkpoint('kegman')
         
+    if frame % 30 == 0:
+      gc.collect()
+      profiler.checkpoint('gc.collect')
+
     execution_time_avg += (max(0.0001, time_factor) * ((time.time()*1000 - start_time) - execution_time_avg))
     time_factor *= 0.96
 

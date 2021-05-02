@@ -67,9 +67,9 @@ if os.path.exists('models/models.json'):
 
 #os.system("pkill -f controlsd")
 #os.system("taskset -a --cpu-list 0,1 python ~/raspilot/selfdrive/controls/controlsd.py &")
-os.system("pkill -f dashboard")
-os.system("taskset -a --cpu-list 2,3 python ~/raspilot/dashboard.py &")
-os.system("bash ~/raspilot/fix_niceness.sh")
+#os.system("pkill -f dashboard")
+#os.system("taskset -a --cpu-list 2,3 python ~/raspilot/dashboard.py &")
+#os.system("bash ~/raspilot/fix_niceness.sh")
 
 def dump_sock(sock, wait_for_one=False):
   if wait_for_one:
@@ -172,15 +172,7 @@ next_params_distance = 133000.0
 distance_driven = 0.0
 steer_override_timer = 0
 
-#model_output = None
 start_time = 0
-
-os.system("taskset -a -cp --cpu-list 2,3 %d" % os.getpid())
-
-#['Civic','CRV_5G','Accord_15','Insight', 'Accord']
-#for md in range(len(models)):
-#  model_output = models[md]([hi_res_data[0,:,-round(history_rows[0]*6.6666667-7):,:6], lo_res_data[0,:,-history_rows[0]:,:-16],lo_res_data[0,:,-history_rows[0]:,-16:-8], lo_res_data[0,:,-history_rows[0]:,-8:], fingerprint, \
-#                             hi_res_data[1,:,-round(history_rows[1]*6.6666667-7):,:6], lo_res_data[1,:,-history_rows[1]:,:-16],lo_res_data[1,:,-history_rows[1]:,-16:-8], lo_res_data[1,:,-history_rows[1]:,-8:], fingerprint])  
 
 print(model_output)
 while np.array(model_output[0]).shape[2] > output_scaler.data_max_.shape[0]:

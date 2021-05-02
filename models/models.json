@@ -1,3 +1,3 @@
 {
-		"models": ["Model-164-20-dropout.hdf5"]
+		"models": ["simModel-167-2.onnx","simModel-167-5.onnx"]
 }

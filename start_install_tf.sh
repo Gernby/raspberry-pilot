@@ -35,14 +35,14 @@ cd ~/raspilot
 # sudo apt-key add grafana.gpg.key
 # sudo add-apt-repository "deb https://packages.grafana.com/oss/deb stable main"
 
-echo "Install grafana gpg signing key..."
-ansible localhost -v -b -m apt_key -a "file=/home/ubuntu/raspilot/grafana.gpg.key"
+#echo "Install grafana gpg signing key..."
+#ansible localhost -v -b -m apt_key -a "file=/home/ubuntu/raspilot/grafana.gpg.key"
 
-echo "Add grafana repo..."
-ansible localhost -v -b -m apt_repository -a "repo='deb https://packages.grafana.com/oss/deb stable main'"
+#echo "Add grafana repo..."
+#ansible localhost -v -b -m apt_repository -a "repo='deb https://packages.grafana.com/oss/deb stable main'"
 
-echo "Install grafana server.."
-ansible localhost -v -b -m apt -a "name=grafana update_cache=yes"
+#echo "Install grafana server.."
+#ansible localhost -v -b -m apt -a "name=grafana update_cache=yes"
 # sudo apt install grafana -y
 
 # update software from repository
@@ -56,7 +56,7 @@ echo "Installing Network Manager for better WiFi management.."
 # sudo sed -i -e 's/REGDOMAIN=/REGDOMAIN=US/' /etc/default/crda
 ansible localhost -b -m apt -a "name=network-manager"
 ansible localhost -b -m lineinfile -a "path=/etc/default/crda regexp='^REGDOMAIN=' line='REGDOMAIN=US'"
-
+ 
 echo "Starting Network Manager.."
 # sudo systemctl start NetworkManager
 ansible localhost -b -m service -a "name=NetworkManager state=started"
@@ -69,7 +69,7 @@ sudo nmcli d wifi connect $1 password $2
 
 # install dependencies
 echo "Installing dependencies.."
-sudo apt install -y build-essential make python3.7-dev python3-pip libzmq3-dev python3-zmq
+sudo apt install -y build-essential make python3-pip libzmq3-dev python3-zmq
 sudo apt install -y openjdk-8-jdk automake zip unzip libtool swig libpng-dev pkg-config
 sudo apt install -y libhdf5-dev clang libarchive-dev
 sudo apt install -y libssl-dev libswscale-dev
@@ -99,8 +99,8 @@ sudo apt install -y influxdb influxdb-client apt-transport-https adduser dfu-uti
 # change default python
 echo "Changing the default python.."
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
-sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.7 2
-sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 3
+sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 2
+sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3 3
 
 # fix apt_pkg missing error due to python3 breaking it :)
 sudo cp /usr/lib/python3/dist-packages/apt_pkg.cpython-*-aarch64-linux-gnu.so /usr/lib/python3/dist-packages/apt_pkg.so
@@ -117,22 +117,24 @@ sudo /bin/systemctl daemon-reload
 # ansible localhost -b -m service -a "name=influxdb state=started"
 
 # Install the TensorFlow 2.3 components and dependencies
-wget https://github.com/lhelontra/tensorflow-on-arm/releases/download/v2.3.0/tensorflow-2.3.0-cp37-none-linux_aarch64.whl
-python3.7 -m pip install -U pip
-python3.7 -m pip install -U pyzmq
-python3.7 -m pip install cython
-python3.7 -m pip install tensorflow-2.3.0-cp37-none-linux_aarch64.whl
-python3.7 -m pip install sklearn
-python3.7 -m pip install pyzmq
-python3.7 -m pip install pkgconfig
-python3.7 -m pip install pycapnp
-python3.7 -m pip install setproctitle
-python3.7 -m pip install cffi
-python3.7 -m pip install cython
-python3.7 -m pip install pandacan
-python3.7 -m pip install pycrypto
-python3.7 -m pip install pycryptodome
-python3.7 -m pip install psutil
+#wget https://github.com/lhelontra/tensorflow-on-arm/releases/download/v2.3.0/tensorflow-2.3.0-cp37-none-linux_aarch64.whl
+python3 -m pip install -U pip
+python3 -m pip install -U pyzmq
+python3 -m pip install cython
+#python3 -m pip install tensorflow-2.3.0-cp37-none-linux_aarch64.whl
+python3 -m pip install onnxruntime
+python3 -m pip install scikit-learn
+python3 -m pip install sklearn
+python3 -m pip install pyzmq
+python3 -m pip install pkgconfig
+python3 -m pip install pycapnp
+python3 -m pip install setproctitle
+python3 -m pip install cffi
+python3 -m pip install cython
+python3 -m pip install pandacan
+python3 -m pip install pycrypto
+python3 -m pip install pycryptodome
+python3 -m pip install psutil
 
 # Create folders for storing various hdf5 files; supports switching models via remote ssh commands (DEPRECATED)
 mkdir ~/buttons

@@ -28,8 +28,8 @@ sudo cp ~/raspilot/phonelibs/influxdb.conf /etc/influxdb/influxdb.conf
 
 sudo bash phonelibs/install_capnp.sh
 
-sudo chown -R 1000:1000 ~/raspilot/node-red
-sudo docker run -it --network host -v /home/ubuntu/raspilot/node-red:/data --name nodered-raspilot nodered/node-red 
+#sudo chown -R 1000:1000 ~/raspilot/node-red
+#sudo docker run -it --network host -v /home/ubuntu/raspilot/node-red:/data --name nodered-raspilot nodered/node-red 
 
 #python3 -m pipenv --python 3.7
 #python3 -m pipenv install
@@ -39,7 +39,7 @@ sh build_all.sh
 echo "Updating Ubuntu and removing unneeded packages.."
 #sudo apt full-upgrade -y
 #sudo apt autoremove -y
-ansible localhost -v -b -m apt -a "upgrade=full"
-ansible localhost -v -b -m apt -a "autoremove=yes"
+#ansible localhost -v -b -m apt -a "upgrade=full"
+#ansible localhost -v -b -m apt -a "autoremove=yes"
 sudo apt --fix-broken install -y
 sudo apt clean -y

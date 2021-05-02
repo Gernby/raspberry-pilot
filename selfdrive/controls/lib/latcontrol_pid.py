@@ -295,7 +295,7 @@ class LatControlPID(object):
           p_scale = float(gernterp(abs(angle_feedforward), [0., 10.], [max(0.3, min(1.0, 1 / (0.001 + abs(angle_steers_rate)))), max(0.3, min(1.0, 1 / (0.001 + abs(angle_feedforward)), 1 / (0.001 + abs(angle_steers_rate))))]))
         
         #if self.deadzone > 0 or (abs(angle_feedforward) < 1 and abs(angle_steers_rate) == 0 and self.use_deadzone) or np.sign(angle_steers_rate) == -np.sign(steer_feedforward):
-        if (abs(angle_feedforward) < 1 and abs(angle_steers_rate) == 0 and self.use_deadzone) or np.sign(angle_steers_rate) == -np.sign(steer_feedforward):
+        if (abs(angle_feedforward) < 1 and abs(angle_steers_rate) == 0 and self.use_deadzone) or (np.sign(angle_steers_rate) == -np.sign(steer_feedforward) and self.deadzone < 0):
           deadzone = self.deadzone
         else:
           deadzone = 0.0
@@ -312,7 +312,7 @@ class LatControlPID(object):
         print("angle error!")
         pass
     
-      #self.update_lane_state(angle_steers, driver_opposing, blinker_on, path_plan)
+      self.update_lane_state(angle_steers, driver_opposing, blinker_on, path_plan)
       self.profiler.checkpoint('lane_change')
 
     output_factor = self.lane_change_adjustment if pid_log.active else 0

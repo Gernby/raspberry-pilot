@@ -26,8 +26,8 @@ class AlertManager(object):
     added_alert.start_time = frame * DT_CTRL
 
     # if new alert is higher priority, log it
-    if not self.alertPresent() or added_alert.alert_priority > self.activealerts[0].alert_priority:
-          cloudlog.event('alert_add', alert_type=alert_type, enabled=enabled)
+    #if not self.alertPresent() or added_alert.alert_priority > self.activealerts[0].alert_priority:
+    #      cloudlog.event('alert_add', alert_type=alert_type, enabled=enabled)
 
     self.activealerts.append(added_alert)
 

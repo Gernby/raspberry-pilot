@@ -17,7 +17,7 @@
     "Ki": "0.18",
     "Kp": "0.6",
     "accelLimit": "0.6",
-    "advanceSteer": "0.6", 
+    "advanceSteer": "0.6",
     "angleFactor": "1.0",
     "dampMPC": "0.17",
     "dampSteer": "0.1",

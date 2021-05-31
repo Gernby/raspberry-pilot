@@ -23,7 +23,7 @@ sleep 2
 echo ""
 pkill -f boardd
 cd ~/raspilot/panda/board
-make clean
+#make clean
 PYTHONPATH=~/raspilot make $1
 echo ""
 echo ""

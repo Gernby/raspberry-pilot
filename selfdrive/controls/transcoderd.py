@@ -59,7 +59,7 @@ if os.path.exists('models/models.json'):
     for md in json.load(f)['models']:
       models.append(ort.InferenceSession(os.path.expanduser('models/%s' % md), options))
       models[-1].set_providers([provider], None)
-      model_output = models[-1].run(None, {'vehicle0:0': hi_res_data[0,:,-round(history_rows[len(models)-1]*6.6666667-7):,:7], 
+      model_output = models[-1].run(None, {'vehicle0:0': hi_res_data[0,:,-round(min(26, history_rows[len(models)-1]*6.6666667)):,:7], 
                                             'outer_camera0:0': lo_res_data[0,:,-history_rows[len(models)-1]:,:-16],
                                             'camera_left0:0': lo_res_data[0,:,-history_rows[len(models)-1]:,-16:-8], 
                                             'camera_right0:0': lo_res_data[0,:,-history_rows[len(models)-1]:,-8:], 
@@ -330,9 +330,9 @@ while 1:
   r_prob =     min(1, max(0, cs.camRight.parm4 / 127))
   lr_prob =    (l_prob + r_prob) - l_prob * r_prob
 
-  if len(vehicle_array) >= round(history_rows[-1]*6.6666667) and start_time - cs.sysTime < 30:
+  if len(vehicle_array) >= round(history_rows[-1]*6.6666667+7): # and start_time - cs.sysTime < 30:
 
-    vehicle_array = vehicle_array[-round(history_rows[-1]*6.66666667):]
+    vehicle_array = vehicle_array[-round(history_rows[-1]*6.66666667+7):]
     vehicle_input = np.array([[vehicle_array],[vehicle_array]], dtype=np.float32)
 
     profiler.checkpoint('process_inputs1')
@@ -377,7 +377,7 @@ while 1:
     fingerprint = fingerprint.astype('float32')
     profiler.checkpoint('convert to float32')'''
 
-    model_output = models[model_index].run(None, dict({'vehicle0:0': hi_res_data[model_index,:,-round(history_rows[model_index]*6.6666667-7):,:7], 
+    model_output = models[model_index].run(None, dict({'vehicle0:0': hi_res_data[model_index,:,-round(min(26,history_rows[model_index]*6.6666667)):,:7], 
                                                        'outer_camera0:0': lo_res_data[model_index,:,-history_rows[model_index]:,:-16],
                                                        'camera_left0:0': lo_res_data[model_index,:,-history_rows[model_index]:,-16:-8], 
                                                        'camera_right0:0': lo_res_data[model_index,:,-history_rows[model_index]:,-8:], 
@@ -438,7 +438,7 @@ while 1:
     other_model_index = min(len(models), abs(model_index - 1))
 
     if len(models) > 1:
-      descaled_output = output_scaler * np.array(models[other_model_index].run(None, dict({'vehicle0:0': hi_res_data[other_model_index,:,-round(history_rows[other_model_index]*6.6666667-7):,:7], 
+      descaled_output = output_scaler * np.array(models[other_model_index].run(None, dict({'vehicle0:0': hi_res_data[other_model_index,:,-round(min(26,history_rows[other_model_index]*6.6666667)):,:7], 
                                                                                            'outer_camera0:0': lo_res_data[other_model_index,:,-history_rows[other_model_index]:,:-16],
                                                                                            'camera_left0:0': lo_res_data[other_model_index,:,-history_rows[other_model_index]:,-16:-8], 
                                                                                            'camera_right0:0': lo_res_data[other_model_index,:,-history_rows[other_model_index]:,-8:], 

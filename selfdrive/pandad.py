@@ -106,6 +106,12 @@ def main(gctx=None):
       update_panda()
     if bool(int(kegman.conf['autoUpload'])): 
       upload_drives()
+    params = Params()
+    panda = Panda.list()
+    serial = Panda(panda[0]).get_serial()[0]
+    print("Panda Serial: %s", serial, panda)
+    if 'unprovisioned' in serial.decode('utf8'): serial = panda[0]
+    params.put("PandaDongleId", serial)
   except:
     pass
 

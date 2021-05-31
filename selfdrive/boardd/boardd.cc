@@ -166,12 +166,12 @@ bool usb_connect() {
   // get panda serial
   err = libusb_control_transfer(dev_handle, 0xc0, 0xd0, 0, 0, serial_buf, 16, TIMEOUT);
 
-  if (err > 0) {
+  /*if (err > 0) {
     serial = (const char *)serial_buf;
     serial_sz = strnlen(serial, err);
     write_db_value(NULL, "PandaDongleId", serial, serial_sz);
     LOGW("panda serial: %.*s\n", serial_sz, serial);
-  }
+  }*/
 
   // power on charging, only the first time. Panda can also change mode and it causes a brief disconneciton
 //#ifndef __x86_64__

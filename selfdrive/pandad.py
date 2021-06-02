@@ -4,11 +4,10 @@ import os
 import subprocess
 import time
 from selfdrive.kegman_conf import kegman_conf
-
+from common.params import Params, put_nonblocking
 from selfdrive.swaglog import cloudlog
 from panda import Panda, PandaDFU, BASEDIR, PandaSerial, PandaWifiStreaming
 from setproctitle import setproctitle
-
 
 def update_panda():
   with open(os.path.join(BASEDIR, "VERSION")) as f:

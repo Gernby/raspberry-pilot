@@ -477,7 +477,7 @@ while 1:
         angle_bias -= (0.00001 * cs.vEgo)
 
       if len(models) > 1:
-        model_bias += (0.00001 * cs.vEgo * lr_prob * (fast_angles[0][5,:] - fast_angles[1][5,:] - model_bias))
+        model_bias += (0.00001 * cs.vEgo * lr_prob * (fast_angles[0][10,:] - fast_angles[1][10,:] - model_bias))
         center_bias += (0.00001 * cs.vEgo * lr_prob * (calc_center[0][0,:,0] - calc_center[1][0,:,0] - center_bias))
 
       if calc_center[0][1,0,0] > calc_center[0][2,0,0]:	

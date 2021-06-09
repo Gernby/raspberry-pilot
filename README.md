@@ -48,12 +48,12 @@
 
 Bring the Pi out the car. If you're using a White or Gray Panda, be sure to also bring a separate power supply and USB A to A cable.
 
-1a. For the Black Panda, connect the Pi to the Black Panda using the standard configuration (USB A on the Panda to USB C on the Pi)
-1b. For the White or Gray Panda, connect the power supply to the Pi via the USB C port and connect the Pi to the Panda using the USB A to A cable
-2. Turn on the car
-3. SSH into the Pi
-4. Run `sudo sudo sh ~/raspilot/flash_panda.sh recover`
-5. Once the flash is successful, you may wish to reboot the Pi before going out for your first drive.
+1. For the Black Panda, connect the Pi to the Black Panda using the standard configuration (USB A on the Panda to USB C on the Pi)
+2. For the White or Gray Panda, connect the power supply to the Pi via the USB C port and connect the Pi to the Panda using the USB A to A cable
+3. Turn on the car
+4. SSH into the Pi
+5. Run `sudo sudo sh ~/raspilot/flash_panda.sh recover`
+6. Once the flash is successful, you may wish to reboot the Pi before going out for your first drive.
 
 If you're using a White or Gray Panda, remember to unplug the power supply from the Pi and remove the USB A-to-A cable from the Pi and the Panda. Then connect the Pi to the Panda using the standard configuration (USB A in the Panda to USB C on the Pi). The USB A to A cable is not used under normal conditions.
 

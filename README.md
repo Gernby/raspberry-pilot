@@ -57,7 +57,7 @@ Bring the Pi out the car. If you're using a White or Gray Panda, be sure to also
 
 If you're using a White or Gray Panda, remember to unplug the power supply from the Pi and remove the USB A-to-A cable from the Pi and the Panda. Then connect the Pi to the Panda using the standard configuration (USB A in the Panda to USB C on the Pi). The USB A to A cable is not used under normal conditions.
 
-The Panda LED should show a slow, pulsing red if the flash was successful. Once you've flashed the Panda, you are ready to calibrate and go for your first drive. If you are unable to flash the Panda or are not convinced that you have, come to Discord to discuss the issue. 
+All Panda LEDs should show a slow, pulsing indicator with one or more colors if the flash was successful. A fast green flashing LED means the update was not successfully completed and you need to try again. Once you've flashed the Panda, you are ready to calibrate and go for your first drive. If you are unable to flash the Panda or are not convinced that you have, come to Discord to discuss the issue. 
 
 ## First Drive and Training
 

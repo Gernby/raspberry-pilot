@@ -438,28 +438,29 @@ while 1:
 
     other_model_index = min(len(models), abs(model_index - 1))
 
-    if len(models) > 1 and other_model_index == 1:
-      descaled_output = [output_scaler.inverse_transform(np.array(models[other_model_index].run(None, dict({'vehicle0:0': hi_res_data[other_model_index,:,-round(min(26,history_rows[other_model_index]*6.6666667)):,:7], 
-                                                                                                   'outer_camera0:0': lo_res_data[other_model_index,:,-history_rows[other_model_index]:,:-16],
-                                                                                                   'camera_left0:0': lo_res_data[other_model_index,:,-history_rows[other_model_index]:,-16:-8], 
-                                                                                                   'camera_right0:0': lo_res_data[other_model_index,:,-history_rows[other_model_index]:,-8:], 
-                                                                                                   'fingerprints0:0': fingerprint, 
-                                                                                                  }))[0][0]))]
-      profiler.checkpoint('predict')
+    if len(models) > 1:
+      if other_model_index == 1:
+        descaled_output = [output_scaler.inverse_transform(np.array(models[other_model_index].run(None, dict({'vehicle0:0': hi_res_data[other_model_index,:,-round(min(26,history_rows[other_model_index]*6.6666667)):,:7], 
+                                                                                                              'outer_camera0:0': lo_res_data[other_model_index,:,-history_rows[other_model_index]:,:-16],
+                                                                                                              'camera_left0:0': lo_res_data[other_model_index,:,-history_rows[other_model_index]:,-16:-8], 
+                                                                                                              'camera_right0:0': lo_res_data[other_model_index,:,-history_rows[other_model_index]:,-8:], 
+                                                                                                              'fingerprints0:0': fingerprint, 
+                                                                                                              }))[0][0]))]
+        profiler.checkpoint('predict')
 
-      calc_center[other_model_index] = np.array(tri_blend(l_prob, r_prob, descaled_output[0][:,angle_speed_count::3], minimize=use_minimize))
+        calc_center[other_model_index] = np.array(tri_blend(l_prob, r_prob, descaled_output[0][:,angle_speed_count::3], minimize=use_minimize))
 
-      if use_discrete_angle:
-        fast_angles[other_model_index] = angle_factor * descaled_output[0][:,:angle_speed_count] + calibration[0][0]
-        '''if angle_limit < 1: 
-          relative_angles = angle_factor * advanceSteer * (descaled_output[:,-1,:,:angle_speed_count] - descaled_output[:,-1,0,:angle_speed_count]) + cs.steeringAngle
-          fast_angles = np.clip(fast_angles[other_model_index], relative_angles - angle_limit, relative_angles + angle_limit)'''
-      else:
-        fast_angles[other_model_index] = angle_factor * advanceSteer * (descaled_output[0][:,:angle_speed_count] - descaled_output[0,0,:angle_speed_count]) + cs.steeringAngle
-        '''if angle_limit < 1 or abs(cs.steeringAngle) > 30: 
-          discrete_angles = angle_factor * descaled_output[:,-1,:,:angle_speed_count] + calibration[0][0]
-          fast_angles = np.clip(fast_angles[other_model_index], discrete_angles - angle_limit, discrete_angles + angle_limit)'''
-      fast_angles[other_model_index] = np.transpose(fast_angles[other_model_index])
+        if use_discrete_angle:
+          fast_angles[other_model_index] = angle_factor * descaled_output[0][:,:angle_speed_count] + calibration[0][0]
+          '''if angle_limit < 1: 
+            relative_angles = angle_factor * advanceSteer * (descaled_output[:,-1,:,:angle_speed_count] - descaled_output[:,-1,0,:angle_speed_count]) + cs.steeringAngle
+            fast_angles = np.clip(fast_angles[other_model_index], relative_angles - angle_limit, relative_angles + angle_limit)'''
+        else:
+          fast_angles[other_model_index] = angle_factor * advanceSteer * (descaled_output[0][:,:angle_speed_count] - descaled_output[0,0,:angle_speed_count]) + cs.steeringAngle
+          '''if angle_limit < 1 or abs(cs.steeringAngle) > 30: 
+            discrete_angles = angle_factor * descaled_output[:,-1,:,:angle_speed_count] + calibration[0][0]
+            fast_angles = np.clip(fast_angles[other_model_index], discrete_angles - angle_limit, discrete_angles + angle_limit)'''
+        fast_angles[other_model_index] = np.transpose(fast_angles[other_model_index])
 
       if lr_prob > 0:
         if (abs(fast_angles[0][10,6]) < abs(fast_angles[1][10,6] + model_bias[6]) or model_index == 1) and int(abs(fast_angles[1][10,8] + model_bias[8]) * model_factor) > 0:

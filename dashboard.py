@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import zmq
 import time
 import gc
@@ -143,9 +142,9 @@ while 1:
           time.sleep(0.00001)
           if not logfile is None: logfile.close()
           previous_minute = cs.canTime//60000
+          time.sleep(0.00001)
           logfile = open('/data/upload/%s_%0.0f.dat' % (user_id, time.time()//60), "a")
           profiler.checkpoint('create_file')
-          time.sleep(0.00001)
 
         fast_calculated_rate = 1000 * (cs.steeringAngle - fast_prev_angle) / max(0.00001, cs.sysTime - fast_prev_time)
         fast_prev_angle = cs.steeringAngle
@@ -177,10 +176,10 @@ while 1:
             localCarStateDataString2.append(localCarStateFormatString2 % send_data)
           profiler.checkpoint('carstate')
           if vEgo > 0:
-            #fileStrings.append(localCarStateFormatString2 % send_data)
-            logfile.write(localCarStateFormatString2 % send_data)
+            fileStrings.append(localCarStateFormatString2 % send_data)
+            #time.sleep(0.00001)
+            #logfile.write(localCarStateFormatString2 % send_data)
             profiler.checkpoint('write_file')
-            time.sleep(0.00001)
           if do_send_live and (frame % 2 == 0 or live_stream_lag < 3) and (vEgo > 0 or frame % 45 == 0):
             serverCarStateDataString2.append(serverCarStateDataFormatString2 % send_data)
 
@@ -190,10 +189,10 @@ while 1:
                             cs.lateralControlState.pidState.steerAngle, cs.lateralControlState.pidState.steerAngleDes, 1.0 - cs.lateralControlState.pidState.angleFFRatio, cs.lateralControlState.pidState.angleFFRatio, fast_calculated_rate, cs.camLeft.frame, cs.camFarRight.frame, cs.canTime - cs.sysTime, cs.canTime)
         
           profiler.checkpoint('carstate')
-          #fileStrings.append(localCarStateFormatString1 % send_data)
-          logfile.write(localCarStateFormatString1 % send_data)
-          profiler.checkpoint('write_file')
-          time.sleep(0.00001)
+          fileStrings.append(localCarStateFormatString1 % send_data)
+          #time.sleep(0.00001)
+          #logfile.write(localCarStateFormatString1 % send_data)
+          #profiler.checkpoint('write_file')
           if do_influx:
             localCarStateDataString1.append(localCarStateFormatString1 % send_data)
           if do_send_live and live_stream_lag < 1.5: 
@@ -291,6 +290,7 @@ while 1:
         kegmanInsertString.append(str(int(cs.canTime)))
         kegmanInsertString.append("\n")
         kegmanInsertString = "".join(kegmanInsertString)
+        time.sleep(0.00001)
         logfile.write(kegmanInsertString)
         if do_send_live:
           tunePush.send_json(kegman.conf)
@@ -364,6 +364,11 @@ while 1:
     profiler.display()
     profiler.reset(True)
   
+  if len(fileStrings) > 0:
+    logfile.writelines(fileStrings)
+    fileStrings.clear()
+    profiler.checkpoint('write_file')
+
   #  time.sleep(0.02)
   #time.sleep(3)
   #tunePush.send_json(config)

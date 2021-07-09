@@ -24,8 +24,8 @@ import onnxruntime as ort
 setproctitle('transcoderd')
 
 options = ort.SessionOptions()
-options.intra_op_num_threads = 1
-options.inter_op_num_threads = 1
+#options.intra_op_num_threads = 1
+#options.inter_op_num_threads = 1
 #options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
 options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
 options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
@@ -331,12 +331,17 @@ while 1:
 
     profiler.checkpoint('calibrate')
     
-    model_output = np.array(models[model_index].run(None, dict({'prod_vehicle1_0:0': vehicle_input[0][0,:, -round(min(26,history_rows[model_index]*6.6666667)):], 
-                                                       'prod_vehicle2_0:0': vehicle_input[1][0,:, -history_rows[model_index]:],
-                                                       'prod_camera1_0:0': camera_input[0][0,:, -history_rows[model_index]:],
-                                                       'prod_camera2_0:0': camera_input[1][0,:, -history_rows[model_index]:],
-                                                       'fingerprints0:0': fingerprint, 
-                                                      }))[0])
+    if model_index == 0:
+      rate_adjustment = np.interp(cs.vEgo, [0., 40.], [speed_factor, 1.00])
+    else:
+      rate_adjustment = 1.0
+
+    model_output = np.array(models[model_index].run(None, dict({'prod_vehicle1_0:0': vehicle_input[0][0,:, -round(min(26,history_rows[model_index]*6.6666667)):] * np.array([[rate_adjustment, 1.0, rate_adjustment, rate_adjustment, rate_adjustment, rate_adjustment, 1.0]], dtype='float32'),
+                                                                'prod_vehicle2_0:0': vehicle_input[1][0,:, -history_rows[model_index]:] * np.array([[rate_adjustment, 1.0 , 1.0, 1.0, rate_adjustment, rate_adjustment]], dtype='float32'),
+                                                                'prod_camera1_0:0': camera_input[0][0,:, -history_rows[model_index]:],
+                                                                'prod_camera2_0:0': camera_input[1][0,:, -history_rows[model_index]:],
+                                                                'fingerprints0:0': fingerprint, 
+                                                                }))[0])
     profiler.checkpoint('predict')
 
     if use_discrete_angle:
@@ -379,33 +384,32 @@ while 1:
     gernPath.send(path_send.to_bytes())
 
     profiler.checkpoint('send')
-    other_model_index = min(len(models), abs(model_index - 1))
 
-    if len(models) > 1 or True:
+    if len(models) > 1:
       time.sleep(0.03)
-      if (other_model_index == 1 and lr_prob > 0):
+      if (model_index == 0 and lr_prob > 0):
 
-        model_output = np.array(models[other_model_index].run(None, dict({'prod_vehicle1_0:0': vehicle_input[0][0,:, -round(min(26,history_rows[other_model_index]*6.6666667)):], 
-                                                                    'prod_vehicle2_0:0': vehicle_input[1][0,:, -history_rows[other_model_index]:],
-                                                                    'prod_camera1_0:0': camera_input[0][0,:, -history_rows[other_model_index]:],
-                                                                    'prod_camera2_0:0': camera_input[1][0,:, -history_rows[other_model_index]:],
-                                                                    'fingerprints0:0': fingerprint, 
-                                                                  }))[0])
+        model_output = np.array(models[1].run(None, dict({'prod_vehicle1_0:0': vehicle_input[0][0,:, -round(min(26,history_rows[1]*6.6666667)):], 
+                                                          'prod_vehicle2_0:0': vehicle_input[1][0,:, -history_rows[1]:],
+                                                          'prod_camera1_0:0': camera_input[0][0,:, -history_rows[1]:],
+                                                          'prod_camera2_0:0': camera_input[1][0,:, -history_rows[1]:],
+                                                          'fingerprints0:0': fingerprint, 
+                                                        }))[0])
         profiler.checkpoint('predict')
 
-        calc_center[other_model_index] = np.array(tri_blend(l_prob, r_prob, model_output[0,:,angle_speed_count::3], minimize=use_minimize))
+        calc_center[1] = np.array(tri_blend(l_prob, r_prob, model_output[0,:,angle_speed_count::3], minimize=use_minimize)) - center_bias[1]
 
         if use_discrete_angle:
-          fast_angles[other_model_index] = angle_factor * model_output[0,:,:angle_speed_count] + calibration[0][0]
+          fast_angles[1] = angle_factor * model_output[0,:,:angle_speed_count] + calibration[0][0]
           '''if angle_limit < 1: 
             relative_angles = angle_factor * advanceSteer * (model_output[:,-1,:,:angle_speed_count] - model_output[:,-1,0,:angle_speed_count]) + cs.steeringAngle
-            fast_angles = np.clip(fast_angles[other_model_index], relative_angles - angle_limit, relative_angles + angle_limit)'''
+            fast_angles = np.clip(fast_angles[1], relative_angles - angle_limit, relative_angles + angle_limit)'''
         else:
-          fast_angles[other_model_index] = angle_factor * advanceSteer * (model_output[0,:,:angle_speed_count] - model_output[0,0,:angle_speed_count]) + cs.steeringAngle
+          fast_angles[1] = angle_factor * advanceSteer * (model_output[0,:,:angle_speed_count] - model_output[0,0,:angle_speed_count]) + cs.steeringAngle
           '''if angle_limit < 1 or abs(cs.steeringAngle) > 30: 
             discrete_angles = angle_factor * model_output[:,-1,:,:angle_speed_count] + calibration[0][0]
-            fast_angles = np.clip(fast_angles[other_model_index], discrete_angles - angle_limit, discrete_angles + angle_limit)'''
-        fast_angles[other_model_index] = np.transpose(fast_angles[other_model_index])
+            fast_angles = np.clip(fast_angles[1], discrete_angles - angle_limit, discrete_angles + angle_limit)'''
+        fast_angles[1] = np.transpose(fast_angles[1]) - model_bias[1]
 
       if (lr_prob > 0 or model_index == 1) and fast_angles[0].shape == fast_angles[1].shape:
         if (abs(fast_angles[0][10,6]) < abs(fast_angles[1][10,6]) or model_index == 1) and int(abs(fast_angles[1][10,8]) * model_factor) > 0 and calibrated:
@@ -419,17 +423,15 @@ while 1:
     lane_width = max(570, lane_width - max_width_step * 2, min(1700, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
 
     steer_override_timer -= 1
-    if model_index == 0 and other_model_index == 1 and steer_override_timer < 0 and abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and (abs(cs.steeringTorque) < 300 or ((cs.steeringTorque < 0) == (calc_center[0][0][3,0] < 0))):
+    if model_index == 0 and steer_override_timer < 0 and abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and (abs(cs.steeringTorque) < 300 or ((cs.steeringTorque < 0) == (calc_center[0][0][3,0] < 0))):
       if use_center[0] > 0:
         angle_bias += (0.00001 * cs.vEgo)
       elif use_center[0] < 0:
         angle_bias -= (0.00001 * cs.vEgo)
 
-      if len(models) > 1:
-        model_bias[0] += (0.000001 * cs.vEgo * lr_prob * fast_angles[0][10,:])
-        model_bias[1] += (0.000001 * cs.vEgo * lr_prob * fast_angles[1][10,:])
-        center_bias[0] += (0.000001 * cs.vEgo * lr_prob * (calc_center[0][0,:,0] - use_center[0]))
-        center_bias[1] += (0.000001 * cs.vEgo * lr_prob * (calc_center[1][0,:,0] - use_center[0]))
+      for i in range(len(models)):
+        model_bias[i] += (0.00001 * cs.vEgo * lr_prob * fast_angles[i][10,:])
+        center_bias[i] += (0.00001 * cs.vEgo * lr_prob * (calc_center[i][0,:,0] - calc_center[i][0,0,0]))
 
       if calc_center[0][1,0,0] > calc_center[0][2,0,0]:	
         width_trim += 0.5	

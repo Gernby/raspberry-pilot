@@ -12,6 +12,8 @@ from numpy import array
 
 import json
 
+STEER_HYSTERESIS = [5, 30]
+
 class LatControlPID(object):
   def __init__(self, CP):
     self.kegman = kegman_conf(CP)
@@ -72,6 +74,7 @@ class LatControlPID(object):
     self.zero_steer_crossed = 0
     self.lane_changing = 0
     self.output_steer = 0.
+    self.hysteresis_state = 1
 
     try:
       self.params = Params()
@@ -337,6 +340,13 @@ class LatControlPID(object):
     pid_log.steerAngleDes = float(self.damp_angle_steers_des)
     self.sat_flag = self.pid.saturated
     self.profiler.checkpoint('post_update')
+
+    if abs(angle_steers) > STEER_HYSTERESIS[1] or (self.hysteresis_state == 0 and abs(angle_steers) > STEER_HYSTERESIS[0]):
+      self.output_steer = 0
+      self.hysteresis_state = 0
+    else:
+      self.hysteresis_state = 1
+
 
     if self.frame % 5000 == 1000 and self.profiler.enabled:
       self.profiler.display()

@@ -40,7 +40,7 @@ BIT_MASK = [0, 0,
             1, 128, 64, 32, 8, 4, 2, 8, 
             1, 128, 64, 32, 8, 4, 2, 8] 
 
-history_rows = [2,5]
+history_rows = []
 OUTPUT_ROWS = 15
 
 lo_res_data = np.zeros((2,1, 5, INPUTS-7), dtype='float32')
@@ -50,10 +50,12 @@ fingerprint = np.zeros((1, 4), dtype='float32')
 if os.path.exists('models/models.json'):
   with open('models/models.json', 'r') as f:
     models = []
-    for md in json.load(f)['models']:
+    models_def = json.load(f)
+    for md in models_def['models']:
       models.append(ort.InferenceSession(os.path.expanduser('models/%s' % md), options))
       models[-1].set_providers([provider], None)
       start_time = time.time()
+      history_rows.append(2 if not '-5' in md else 5)
       for i in range(20):
         model_output = models[-1].run(None, {'prod_vehicle1_0:0': hi_res_data[0,:,-round(min(26, history_rows[len(models)-1]*6.6666667)):,:7], 
                                             'prod_vehicle2_0:0': lo_res_data[0,:,-history_rows[len(models)-1]:,:6],
@@ -234,10 +236,13 @@ calibration_data = params.get("CalibrationParams")
 if not calibration_data is None:
   calibration_data =  json.loads(calibration_data)
   calibration = np.array(calibration_data['calibration'], dtype='float32')
-  if 'center_bias' in calibration_data:
-    center_bias = [calibration_data['center_bias'][:OUTPUT_ROWS], calibration_data['center_bias'][-OUTPUT_ROWS:]]
-  if 'model_bias' in calibration_data:
-    model_bias = [calibration_data['model_bias'][:OUTPUT_ROWS], calibration_data['model_bias'][-OUTPUT_ROWS:]]
+  if not models_def["reset"] or ("models" in calibration_data and calibration_data['models'] == models_def['models']):
+    if 'center_bias' in calibration_data:
+      center_bias = [calibration_data['center_bias'][:OUTPUT_ROWS], calibration_data['center_bias'][-OUTPUT_ROWS:]]
+    if 'model_bias' in calibration_data:
+      model_bias = [calibration_data['model_bias'][:OUTPUT_ROWS], calibration_data['model_bias'][-OUTPUT_ROWS:]]
+  else:
+    print("New models!  Resetting bias")
 
 if calibration_data is None or len(calibration) != (len(calibration_items[0]) + len(calibration_items[1]) + len(calibration_items[3])):
   calibration = [np.zeros(len(calibration_items[0]), dtype='float32'), np.zeros(len(calibration_items[1]), dtype='float32'), [], np.zeros(len(calibration_items[3]), dtype='float32')]
@@ -459,10 +464,10 @@ while 1:
       next_params_distance = distance_driven + 133000
       if calibrated:
         print(np.round(calibration[0],2))
-        put_nonblocking("CalibrationParams", json.dumps({'calibration': list(np.concatenate(([float(x) for x in calibration[0]],[float(x) for x in calibration[1]],[float(x) for x in calibration[2]],[float(x) for x in calibration[3]]), axis=0)),'lane_width': float(lane_width),'angle_bias': float(angle_bias), 'center_bias': list([float(x) for x in np.concatenate((center_bias))]), 'model_bias': list([float(x) for x in np.concatenate((model_bias))])}))
+        put_nonblocking("CalibrationParams", json.dumps({'models': models_def['models'], 'calibration': list(np.concatenate(([float(x) for x in calibration[0]],[float(x) for x in calibration[1]],[float(x) for x in calibration[2]],[float(x) for x in calibration[3]]), axis=0)),'lane_width': float(lane_width),'angle_bias': float(angle_bias), 'center_bias': list([float(x) for x in np.concatenate((center_bias))]), 'model_bias': list([float(x) for x in np.concatenate((model_bias))])}, indent=2))
       else:
         print(list(np.concatenate(([float(x) for x in calibration[0]],[float(x) for x in calibration[1]]), axis=0)))
-        params.put("CalibrationParams", json.dumps({'calibration': list(np.concatenate(([float(x) for x in calibration[0]],[float(x) for x in calibration[1]],[float(x) for x in calibration[2]],[float(x) for x in calibration[3]]), axis=0)),'lane_width': float(lane_width),'angle_bias': float(angle_bias), 'center_bias': list([float(x) for x in np.concatenate((center_bias))]), 'model_bias': list([float(x) for x in np.concatenate((model_bias))])}))
+        params.put("CalibrationParams", json.dumps({'models': models_def['models'], 'calibration': list(np.concatenate(([float(x) for x in calibration[0]],[float(x) for x in calibration[1]],[float(x) for x in calibration[2]],[float(x) for x in calibration[3]]), axis=0)),'lane_width': float(lane_width),'angle_bias': float(angle_bias), 'center_bias': list([float(x) for x in np.concatenate((center_bias))]), 'model_bias': list([float(x) for x in np.concatenate((model_bias))])}, indent=2))
       #params = None
       calibrated = True
       profiler.checkpoint('save_cal')

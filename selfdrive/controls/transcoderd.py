@@ -284,7 +284,7 @@ while 1:
     profiler.checkpoint('inputs_recv', False)
 
     cs = log.Event.from_bytes(_cs).carState
-    vehicle_array[0].append([max(10, cs.vEgo), max(-30, min(30, steer_factor * cs.steeringAngle / angle_factor)), lateral_factor * cs.lateralAccel, 
+    vehicle_array[0].append([cs.vEgo, max(-30, min(30, steer_factor * cs.steeringAngle / angle_factor)), lateral_factor * cs.lateralAccel, 
                             max(-40, min(40, steer_factor * cs.steeringRate / angle_factor)), max(-40, min(40, cs.steeringTorqueEps)), 
                             yaw_factor * cs.yawRateCAN, cs.steeringTorque])
 
@@ -298,7 +298,7 @@ while 1:
       right_missing = 1 if cs.camRight.parm4 == 0 else 0
       far_right_missing = 1 if cs.camFarRight.parm4 == 0 else 0
       
-      vehicle_array[1].append([max(10, cs.vEgo), cs.longAccel,  width_factor * max(570, lane_width + width_trim), max(-30, min(30, steer_factor * cs.steeringAngle / angle_factor)), lateral_factor * cs.lateralAccel, yaw_factor * cs.yawRateCAN])
+      vehicle_array[1].append([cs.vEgo, cs.longAccel,  width_factor * max(570, lane_width + width_trim), max(-30, min(30, steer_factor * cs.steeringAngle / angle_factor)), lateral_factor * cs.lateralAccel, yaw_factor * cs.yawRateCAN])
 
       camera_array[0].append(np.clip(np.bitwise_and([0, 0, left_missing,          cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm8, 
                                                            far_left_missing,      cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm8, 
@@ -336,7 +336,7 @@ while 1:
 
     profiler.checkpoint('calibrate')
     
-    if model_index == 0:
+    if model_index == 0 and lr_prob > 0:
       rate_adjustment = np.interp(cs.vEgo, [0., 40.], [speed_factor, 1.00])
     else:
       rate_adjustment = 1.0
@@ -417,7 +417,8 @@ while 1:
         fast_angles[1] = np.transpose(fast_angles[1]) - model_bias[1]
 
       if (lr_prob > 0 or model_index == 1) and fast_angles[0].shape == fast_angles[1].shape:
-        if (abs(fast_angles[0][10,6]) < abs(fast_angles[1][10,6]) or model_index == 1) and int(abs(fast_angles[1][10,8]) * model_factor) > 0 and calibrated:
+        #if (abs(fast_angles[0][10,6]) < abs(fast_angles[1][10,6]) or model_index == 1) and int(abs(fast_angles[1][10,8]) * model_factor) > 0 and calibrated:
+        if (int(abs(fast_angles[0][10,8]) * model_factor) > 0 or int(abs(fast_angles[1][10,8]) * model_factor) > 0) and calibrated:
           model_index = 1
         else:
           model_index = 0

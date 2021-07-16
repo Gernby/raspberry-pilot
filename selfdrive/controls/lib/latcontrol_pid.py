@@ -12,7 +12,7 @@ from numpy import array
 
 import json
 
-STEER_HYSTERESIS = [5, 30]
+STEER_HYSTERESIS = [5, 90]
 
 class LatControlPID(object):
   def __init__(self, CP):
@@ -341,7 +341,7 @@ class LatControlPID(object):
     self.sat_flag = self.pid.saturated
     self.profiler.checkpoint('post_update')
 
-    if abs(angle_steers) > STEER_HYSTERESIS[1] or (self.hysteresis_state == 0 and abs(angle_steers) > STEER_HYSTERESIS[0]):
+    if abs(angle_steers) > STEER_HYSTERESIS[1] or (self.hysteresis_state == 0 and abs(angle_steers) > STEER_HYSTERESIS[0] and self.c_prob == 0):
       self.output_steer = 0
       self.hysteresis_state = 0
     else:

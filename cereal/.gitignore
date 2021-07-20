@@ -1,6 +1,0 @@
-gen
-node_modules
-package-lock.json
-*.pyc
-__pycache__
-

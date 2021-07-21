@@ -46,6 +46,14 @@ OUTPUT_ROWS = 15
 lo_res_data = np.zeros((2,1, 5, INPUTS-7), dtype='float32')
 hi_res_data = np.zeros((2,1, 50, 13), dtype='float32')
 fingerprint = np.zeros((1, 4), dtype='float32')
+left_center = np.zeros((OUTPUT_ROWS))
+right_center = np.zeros((OUTPUT_ROWS))
+calc_center = [np.zeros((3,OUTPUT_ROWS)),np.zeros((3,OUTPUT_ROWS))]
+super_center = np.zeros((OUTPUT_ROWS))
+smooth_center = np.zeros((OUTPUT_ROWS))
+fast_angles = np.zeros((OUTPUT_ROWS,1))
+accel_limit = np.arange(15, dtype='float32') / 7.5
+projected_rate = np.arange(0., 0.10066667,0.0066666)[1:]
 
 if os.path.exists('models/models.json'):
   with open('models/models.json', 'r') as f:
@@ -127,6 +135,37 @@ def update_calibration(calibration, inputs, cal_col, cs):
     calibration[i] += (cal_factor[i][(cal_col[i] == 1)] * (inputs[1][i-2][-1][-1][-1][(cal_col[i] == 1)] - calibration[i]))
   return cal_factor
 
+def send_path_to_controls(model_index, fast_angles, calc_center, angle_plan, path_send, gernPath, cs, projected_rate, angle_bias, lane_width, width_trim, l_prob, r_prob, lr_prob, calibrated):
+  angle_plan = np.clip(fast_angles[model_index], angle_plan - accel_limit, angle_plan + accel_limit)
+  use_center = calc_center[model_index][0,:,0]
+  
+  future_steering = cs.steeringAngle + cs.steeringRate * projected_rate
+  angle_plan = np.clip(angle_plan, future_steering - accel_limit, future_steering + accel_limit)
+
+  path_send = log.Event.new_message()
+  path_send.init('pathPlan')
+
+  path_send.pathPlan.centerCompensation = 0
+  path_send.pathPlan.angleSteers = float(angle_plan[0][5])
+  path_send.pathPlan.fastAngles = [[float(x) + angle_bias for x in y] for y in angle_plan]
+  path_send.pathPlan.laneWidth = float(lane_width + width_trim)
+  path_send.pathPlan.angleOffset = float(calibration[0][0])
+  path_send.pathPlan.angleBias = angle_bias
+  path_send.pathPlan.modelIndex = model_index
+  path_send.pathPlan.paramsValid = calibrated
+  path_send.pathPlan.cPoly = [float(x) for x in use_center]
+  path_send.pathPlan.lPoly = [float(x) for x in (calc_center[model_index][1,:,0] + 0.5 * lane_width)]
+  path_send.pathPlan.rPoly = [float(x) for x in (calc_center[model_index][2,:,0] - 0.5 * lane_width)]
+  path_send.pathPlan.lProb = float(l_prob)
+  path_send.pathPlan.rProb = float(r_prob)
+  path_send.pathPlan.cProb = float(lr_prob)
+  path_send.pathPlan.canTime = cs.canTime
+  path_send.pathPlan.sysTime = cs.sysTime
+  gernPath.send(path_send.to_bytes())
+
+  return angle_plan, use_center
+
+
 gernPath = pub_sock(service_list['pathPlan'].port)
 carState = sub_sock(service_list['carState'].port, conflate=False)
 
@@ -138,13 +177,6 @@ width_trim = 0
 angle_bias = 0
 total_offset = 0.0
 advanceSteer = 1
-accel_limit = np.arange(15, dtype='float32') / 7.5
-left_center = np.zeros((OUTPUT_ROWS))
-right_center = np.zeros((OUTPUT_ROWS))
-calc_center = [np.zeros((3,OUTPUT_ROWS)),np.zeros((3,OUTPUT_ROWS))]
-super_center = np.zeros((OUTPUT_ROWS))
-smooth_center = np.zeros((OUTPUT_ROWS))
-fast_angles = np.zeros((OUTPUT_ROWS,1))
 accel_counter = 0   
 upper_limit = 0
 lower_limit = 0
@@ -154,7 +186,6 @@ center_rate_prev = 0
 calc_center_prev = calc_center
 angle_factor = 1.0
 angle_speed = 3
-projected_rate = np.arange(0., 0.10066667,0.0066666)[1:]
 use_discrete_angle = True
 use_minimize = False
 
@@ -351,47 +382,18 @@ while 1:
 
     if use_discrete_angle:
       fast_angles[model_index] = angle_factor * model_output[0,:,:angle_speed_count] + calibration[0][0]
-      '''if angle_limit < 1: 
-        relative_angles = angle_factor * advanceSteer * (model_output[:,-1,:,:angle_speed_count] - model_output[:,-1,0,:angle_speed_count]) + cs.steeringAngle
-        fast_angles[model_index] = np.clip(fast_angles[model_index], relative_angles - angle_limit, relative_angles + angle_limit)'''
     else:
       fast_angles[model_index] = angle_factor * advanceSteer * (model_output[0,:,:angle_speed_count] - model_output[0,0,:angle_speed_count]) + cs.steeringAngle
-      '''if angle_limit < 1 or abs(cs.steeringAngle) > 30: 
-        discrete_angles = angle_factor * model_output[:,-1,:,:angle_speed_count] + calibration[0][0]
-        fast_angles = np.clip(fast_angles[model_index], discrete_angles - angle_limit, discrete_angles + angle_limit)'''
 
     fast_angles[model_index] = np.transpose(fast_angles[model_index]) - model_bias[model_index]
     calc_center[model_index] = np.array(tri_blend(l_prob, r_prob, model_output[0,:,angle_speed_count::3], minimize=use_minimize)) - center_bias[model_index]
-    angle_plan = np.clip(fast_angles[model_index], angle_plan - accel_limit, angle_plan + accel_limit)
-    use_center = calc_center[model_index][0,:,0]
-    
-    future_steering = cs.steeringAngle + cs.steeringRate * projected_rate
-    angle_plan = np.clip(angle_plan, future_steering - accel_limit, future_steering + accel_limit)
 
-    profiler.checkpoint('process')
-
-    path_send.pathPlan.centerCompensation = 0
-    path_send.pathPlan.angleSteers = float(angle_plan[0][5])
-    path_send.pathPlan.fastAngles = [[float(x) + angle_bias for x in y] for y in angle_plan]
-    path_send.pathPlan.laneWidth = float(lane_width + width_trim)
-    path_send.pathPlan.angleOffset = float(calibration[0][0])
-    path_send.pathPlan.angleBias = angle_bias
-    path_send.pathPlan.modelIndex = model_index
-    path_send.pathPlan.paramsValid = calibrated
-    path_send.pathPlan.cPoly = [float(x) for x in use_center]
-    path_send.pathPlan.lPoly = [float(x) for x in (calc_center[model_index][1,:,0] + 0.5 * lane_width)]
-    path_send.pathPlan.rPoly = [float(x) for x in (calc_center[model_index][2,:,0] - 0.5 * lane_width)]
-    path_send.pathPlan.lProb = float(l_prob)
-    path_send.pathPlan.rProb = float(r_prob)
-    path_send.pathPlan.cProb = float(lr_prob)
-    path_send.pathPlan.canTime = cs.canTime
-    path_send.pathPlan.sysTime = cs.sysTime
-    gernPath.send(path_send.to_bytes())
-
-    profiler.checkpoint('send')
+    if lr_prob == 0 or len(models) == 1 or model_index == 1 or int(abs(fast_angles[0][10,8]) * model_factor) == 0:
+      angle_plan, use_center = send_path_to_controls(model_index, fast_angles, calc_center, angle_plan, path_send, gernPath, cs, projected_rate, angle_bias, lane_width, width_trim, l_prob, r_prob, lr_prob, calibrated)
+      profiler.checkpoint('send')
+      time.sleep(0.03)
 
     if len(models) > 1:
-      time.sleep(0.03)
       if (model_index == 0 and lr_prob > 0):
 
         model_output = np.array(models[1].run(None, dict({'prod_vehicle1_0:0': vehicle_input[0][0,:, -round(min(26,history_rows[1]*6.6666667)):], 
@@ -402,24 +404,18 @@ while 1:
                                                         }))[0])
         profiler.checkpoint('predict')
 
-        calc_center[1] = np.array(tri_blend(l_prob, r_prob, model_output[0,:,angle_speed_count::3], minimize=use_minimize)) - center_bias[1]
-
         if use_discrete_angle:
           fast_angles[1] = angle_factor * model_output[0,:,:angle_speed_count] + calibration[0][0]
-          '''if angle_limit < 1: 
-            relative_angles = angle_factor * advanceSteer * (model_output[:,-1,:,:angle_speed_count] - model_output[:,-1,0,:angle_speed_count]) + cs.steeringAngle
-            fast_angles = np.clip(fast_angles[1], relative_angles - angle_limit, relative_angles + angle_limit)'''
         else:
           fast_angles[1] = angle_factor * advanceSteer * (model_output[0,:,:angle_speed_count] - model_output[0,0,:angle_speed_count]) + cs.steeringAngle
-          '''if angle_limit < 1 or abs(cs.steeringAngle) > 30: 
-            discrete_angles = angle_factor * model_output[:,-1,:,:angle_speed_count] + calibration[0][0]
-            fast_angles = np.clip(fast_angles[1], discrete_angles - angle_limit, discrete_angles + angle_limit)'''
+
         fast_angles[1] = np.transpose(fast_angles[1]) - model_bias[1]
+        calc_center[1] = np.array(tri_blend(l_prob, r_prob, model_output[0,:,angle_speed_count::3], minimize=use_minimize)) - center_bias[1]
 
       if (lr_prob > 0 or model_index == 1) and fast_angles[0].shape == fast_angles[1].shape:
-        #if (abs(fast_angles[0][10,6]) < abs(fast_angles[1][10,6]) or model_index == 1) and int(abs(fast_angles[1][10,8]) * model_factor) > 0 and calibrated:
-        if (int(abs(fast_angles[0][10,8]) * model_factor) > 0 or int(abs(fast_angles[1][10,8]) * model_factor) > 0) and calibrated:
+        if (int(abs(fast_angles[1][10,8]) * model_factor) > 0) and model_index == 0 and lr_prob > 0 and calibrated:
           model_index = 1
+          angle_plan, use_center = send_path_to_controls(model_index, fast_angles, calc_center, angle_plan, path_send, gernPath, cs, projected_rate, angle_bias, lane_width, width_trim, l_prob, r_prob, lr_prob, calibrated)
         else:
           model_index = 0
       elif fast_angles[0].shape != fast_angles[1].shape:
@@ -501,9 +497,6 @@ while 1:
 
     execution_time_avg += (max(0.0001, time_factor) * ((time.time()*1000 - start_time) - execution_time_avg))
     time_factor *= 0.96
-
-    path_send = log.Event.new_message()
-    path_send.init('pathPlan')
 
     if frame % 100 == 0 and profiler.enabled:
       profiler.display()

@@ -246,6 +246,7 @@ if not calibration_data is None:
                     np.polyval(np.polyfit(np.arange(15), calibration_data['model_bias'][-OUTPUT_ROWS:], 4), np.arange(15))]
     angle_bias = calibration_data['angle_bias']
   else:
+    os.system("cp /data/params/d/CalibrationParams /data/params/d/CalibrationParams%d" % int(time.time()))
     print("New models!  Resetting bias")
 
 if calibration_data is None or len(calibration) != (len(calibration_items[0]) + len(calibration_items[1]) + len(calibration_items[3])):

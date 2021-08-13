@@ -58,10 +58,10 @@ RUN pyenv install 2.7.12
 RUN pyenv global 3.7.3
 RUN pyenv rehash
 
-RUN pip install --upgrade pip==18.0
+RUN pip install --no-cache-dir --upgrade pip==18.0
 
 COPY requirements.txt /tmp/
-RUN pip install -r /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 RUN mkdir -p /home/batman
 ENV HOME /home/batman

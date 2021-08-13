@@ -15,7 +15,7 @@ RUN pyenv install 3.7.3
 RUN pyenv global 3.7.3
 RUN pyenv rehash
 
-RUN pip install pycrypto==2.6.1
+RUN pip install --no-cache-dir pycrypto==2.6.1
 
 # Build esp toolchain
 RUN mkdir -p /panda/boardesp

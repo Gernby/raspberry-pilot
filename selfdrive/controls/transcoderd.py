@@ -171,6 +171,7 @@ distance_driven = 0.0
 steer_override_timer = 0
 react_steer = -1
 start_time = 0
+lane_width = 0
 
 os.system("taskset -a -cp --cpu-list 2,3 %d" % os.getpid())
 

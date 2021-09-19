@@ -42,8 +42,8 @@ BIT_MASK = [0, 0,
 history_rows = []
 OUTPUT_ROWS = 15
 CENTER_POLYS = 4
-ANGLE_POLYS = 4
-CENTER_CROSSINGS = [0.000001,5,11,0,1]
+ANGLE_POLYS = 5 
+CENTER_CROSSINGS = [0.00000051,7,11,0.5,0.5]
 TARGET_ANGLE_INDEX = [3,4,5,6,7,8]
 
 fingerprint = np.zeros((1, 4), dtype='float32')
@@ -375,14 +375,14 @@ while 1:
       print(np.round(model_output[0][0][0,:,12:-2], decimals=1))
       print(-15, np.round(model_output[0][13][0], decimals=7))
       print(-12, np.round(model_output[0][17][0], decimals=7))
-      print(-1, np.array(model_output[0][-1], dtype='int'))
+      print(-1, np.array(model_output[0][-1]))
 
     max_width_step = 0.005 * cs.vEgo * l_prob * r_prob
     if cs.camLeft.parm2 > 0 and cs.camRight.parm2 < 0:
       lane_width = max(570, lane_width - max_width_step * 2, min(1700, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
 
     steer_override_timer -= 1
-    if steer_override_timer < 0 and abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and cs.camLeft.parm2 > 0 and cs.camRight.parm2 < 0 and (abs(cs.steeringTorque) < 300 or ((cs.steeringTorque < 0) == (calc_center[0][4,0] < 0))):
+    if steer_override_timer < 0 and abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and cs.camLeft.parm2 > 0 and cs.camRight.parm2 < 0 and (abs(cs.steeringTorque) < 300 or ((cs.steeringTorque < 0) == (cs.camLeft.parm2 + cs.camRight.parm2 < 0))):
       if cs.camLeft.parm2 + cs.camRight.parm2 > 0:
         angle_bias += (0.00001 * cs.vEgo)
       else:
@@ -394,7 +394,8 @@ while 1:
       center_bias[0][:,0] += (0.00001 * cs.vEgo * lr_prob * model_output[0][13][0])
       center_bias[0][:,1] += (0.00001 * cs.vEgo * lr_prob * model_output[0][14][0])
       center_bias[0][:,2] += (0.00001 * cs.vEgo * lr_prob * model_output[0][15][0])
-      straight_bias[0][:,0] += (0.000001 * cs.vEgo * lr_prob * calc_angles[model_index][10,:])
+      straight_bias[0][:,0] += (0.000001 * cs.vEgo * lr_prob * (calc_angles[model_index][10,:] - calc_angles[model_index][10,0]))
+      model_bias[0][-1,:] = 0.0
 
       if calc_center[0][4,1] > calc_center[0][4,2]:
         width_trim += 0.5	

@@ -200,9 +200,9 @@ class LatControlPID(object):
       self.c_prob = path_plan.cProb
       self.fast_angles = np.array(path_plan.fastAngles)
       self.p_poly = np.poly1d(path_plan.pPoly)
-      self.cPoints = (np.polyval(path_plan.dPoly, np.arange(8))) * 1000
+      self.cPoints = (np.polyval(path_plan.cPoly, np.arange(8))) * 1000
 
-      self.projected_lane_error = float(min(0.75, max(-0.75, self.c_prob * self.poly_factor * sum(np.array(self.cPoints)))))
+      self.projected_lane_error = float(min(0.5, max(-0.5, self.c_prob * self.poly_factor * sum(np.array(self.cPoints)))))
       if np.sign(self.projected_lane_error) != np.sign(self.prev_projected_lane_error):
         self.zero_poly_crossed = cur_time
 

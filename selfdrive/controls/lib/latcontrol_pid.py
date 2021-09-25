@@ -277,7 +277,7 @@ class LatControlPID(object):
         accel_factor = gernterp(abs(angle_steers - path_plan.angleOffset - self.angle_ff_offset), [0, 5], [1, 0.5]) * v_ego
         self.angle_rate_des = float(min(self.angle_rate_des + self.accel_limit * accel_factor, max(self.angle_rate_des - self.accel_limit * accel_factor, self.damp_angle_steers_des - self.limited_damp_angle_steers_des)))
         self.limited_damp_angle_steers_des += self.angle_rate_des
-        wiggle_angle = gernterp(abs(angle_steers - path_plan.angleOffset - self.angle_ff_offset), [0, 1], [self.wiggle_angle, self.wiggle_angle * 0.25])
+        wiggle_angle = self.c_prob * gernterp(abs(angle_steers - path_plan.angleOffset - self.angle_ff_offset), [0, 1], [self.wiggle_angle, self.wiggle_angle * 0.25])
         requested_angle = min(self.limited_damp_angle_steers_des + wiggle_angle, max(self.limited_damp_angle_steers_des - wiggle_angle, self.angle_steers_des))
 
         angle_feedforward = float(requested_angle - path_plan.angleOffset - self.angle_ff_offset)

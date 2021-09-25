@@ -261,7 +261,6 @@ else:
   calibration = [np.array(calibration[:len(calibration_items[0])], dtype='float32'), 
                 np.array(calibration[len(calibration_items[0]):len(calibration_items[0])+len(calibration_items[1])], dtype='float32'), [], 
                 np.array(calibration[len(calibration_items[0])+len(calibration_items[1]):], dtype='float32')]
-  lane_width = calibration_data['lane_width']
 
 print(calibration)
 
@@ -278,6 +277,7 @@ speed_factor = 1
 steer_factor = 1
 width_factor = 1
 model_index = 0
+lane_width = 800
 steering_torque = 0.
 rate_adjustment = 1.0
 

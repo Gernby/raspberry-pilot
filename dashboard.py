@@ -61,7 +61,7 @@ if heartBeatSub != None: poller.register(heartBeatSub, zmq.POLLIN)
 
 kegmanInsertString = ""
 serverCanFormatString="CANData,user=" + user_id + ",src=;pid=; d1=;i,d2=;i; ~"
-serverPathFormatString = "pathPlan,user=" + user_id + " l0=;l1=;l2=;l3=;l5=;l9=;l14=;r0=;r1=;r2=;r3=;r5=;r9=;r14=;c0=;c1=;c2=;c3=;c5=;c9=;c14=;a0=;a1=;a3=;a5=;a7=;a14=;fa0=;fa1=;fa3=;fa5=;fa7=;fa14=;lprob=;rprob=;cprob=;center_comp=;lane_width=;angle=;rate=;angle_offset=;lateral_offset=;actual_angle=;plan_age=;model_index=; ~"
+serverPathFormatString = "pathPlan,user=" + user_id + " l0=;l1=;l2=;l3=;l5=;l9=;l14=;r0=;r1=;r2=;r3=;r5=;r9=;r14=;c0=;c1=;c2=;c3=;c5=;c9=;c14=;p0=;p1=;p2=;p3=;p5=;p9=;p14=;d0=;d1=;d2=;d3=;d5=;d9=;d14=;a0=;a1=;a3=;a5=;a7=;a14=;fa0=;fa1=;fa3=;fa5=;fa7=;fa14=;lprob=;rprob=;cprob=;center_comp=;lane_width=;angle=;rate=;angle_offset=;lateral_offset=;actual_angle=;plan_age=;model_index=; ~"
 #serverPathFormatString = "pathPlan,user=" + user_id + " l0=;l1=;l2=;l3=;l4=;l5=;l6=;l7=;l8=;l9=;l10=;l11=;l12=;l13=;l14=;r0=;r1=;r2=;r3=;r4=;r5=;r6=;r7=;r8=;r9=;r10=;r11=;r12=;r13=;r14=;c0=;c1=;c2=;c3=;c4=;c5=;c6=;c7=;c8=;c9=;c10=;c11=;c12=;c13=;c14=;a0=;a1=;a3=;a5=;a7=;a14=;fa0=;fa1=;fa3=;fa5=;fa7=;fa14=;lprob=;rprob=;cprob=;center_comp=;lane_width=;angle=;rate=;angle_offset=;lateral_offset=;actual_angle=;plan_age=; ~"
 serverPathDataFormatString = "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d,%d|"
 serverPolyDataFormatString = "%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f," #,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,"
@@ -76,10 +76,12 @@ serverCarStateDataFormatString2 = "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.
 serverCarStateDataFormatString1 = "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%d,%d,%d,%d|"
 serverCarStateDataString1 = []
 serverCarStateDataString2 = []
-localPathFormatString1 = 'pathPlan,user=' + user_id + ' l0=%0.3f,l1=%0.3f,l2=%0.3f,l3=%0.3f,l5=%0.3f,l9=%0.3f,l14=%0.3f,' #,l7=%0.3f,' #l8=%0.3f,l9=%0.3f,l10=%0.3f,l11=%0.3f,l12=%0.3f,l13=%0.3f,l14=%0.3f,'
-localPathFormatString2 = "r0=%0.3f,r1=%0.3f,r2=%0.3f,r3=%0.3f,r5=%0.3f,r9=%0.3f,r14=%0.3f," #,r7=%0.3f,r8=%0.3f,r9=%0.3f,r10=%0.3f,r11=%0.3f,r12=%0.3f,r13=%0.3f,r14=%0.3f,"
-localPathFormatString3 = "c0=%0.3f,c1=%0.3f,c2=%0.3f,c3=%0.3f,c5=%0.3f,c9=%0.3f,c14=%0.3f," #,c7=%0.3f," #c8=%0.3f,c9=%0.3f,c10=%0.3f,c11=%0.3f,c12=%0.3f,c13=%0.3f,c14=%0.3f,"
-localPathFormatString4 = "a0=%0.3f,a1=%0.3f,a3=%0.3f,a6=%0.3f,a10=%0.3f,a14=%0.3f,fa0=%0.3f,fa1=%0.3f,fa3=%0.3f,fa6=%0.3f,fa10=%0.3f,fa14=%0.3f,lprob=%0.3f,rprob=%0.3f,cprob=%0.3f,lane_width=%0.3f,angle=%0.3f,rate=%0.3f,angle_offset=%0.2f,lateral_offset=%0.2f,actual_angle=%0.1f,plan_age=%0.3f,model_index=%d %d\n"
+localPathFormatString1 = 'pathPlan,user=' + user_id + ' l0=%0.3f,l1=%0.3f,l2=%0.3f,l3=%0.3f,l4=%0.3f,l5=%0.3f,l6=%0.3f,l7=%0.3f,l8=%0.3f,l9=%0.3f,l10=%0.3f,l11=%0.3f,l12=%0.3f,l13=%0.3f,l14=%0.3f,'
+localPathFormatString2 = "r0=%0.3f,r1=%0.3f,r2=%0.3f,r3=%0.3f,r4=%0.3f,r5=%0.3f,r6=%0.3f,r7=%0.3f,r8=%0.3f,r9=%0.3f,r10=%0.3f,r11=%0.3f,r12=%0.3f,r13=%0.3f,r14=%0.3f,"
+localPathFormatString3 = "c0=%0.3f,c1=%0.3f,c2=%0.3f,c3=%0.3f,c4=%0.3f,c5=%0.3f,c6=%0.3f,c7=%0.3f,c8=%0.3f,c9=%0.3f,c10=%0.3f,c11=%0.3f,c12=%0.3f,c13=%0.3f,c14=%0.3f,"
+localPathFormatString4 = "p0=%0.3f,p1=%0.3f,p2=%0.3f,p3=%0.3f,p4=%0.3f,p5=%0.3f,p6=%0.3f,p7=%0.3f,p8=%0.3f,p9=%0.3f,p10=%0.3f,p11=%0.3f,p12=%0.3f,p13=%0.3f,p14=%0.3f,"
+localPathFormatString5 = "d0=%0.3f,d1=%0.3f,d2=%0.3f,d3=%0.3f,d4=%0.3f,d5=%0.3f,d6=%0.3f,d7=%0.3f,d8=%0.3f,d9=%0.3f,d10=%0.3f,d11=%0.3f,d12=%0.3f,d13=%0.3f,d14=%0.3f,"
+localPathFormatString6 = "a0=%0.3f,a1=%0.3f,a3=%0.3f,a6=%0.3f,a10=%0.3f,a14=%0.3f,fa0=%0.3f,fa1=%0.3f,fa3=%0.3f,fa6=%0.3f,fa10=%0.3f,fa14=%0.3f,lprob=%0.3f,rprob=%0.3f,cprob=%0.3f,lane_width=%0.3f,angle=%0.3f,rate=%0.3f,angle_offset=%0.2f,lateral_offset=%0.2f,actual_angle=%0.1f,plan_age=%0.3f,model_index=%d %d\n"
 #localCarStateFormatString2 = "carState,user=" + user_id + " v_ego=%0.4f,econ_mode=%d,adjusted_angle=%0.2f,angle_steers=%0.4f,angle_rate=%0.4f,driver_torque=%0.4f,request=%0.4f,angle_rate_eps=%0.4f,yaw_rate_can=%0.4f,angle_steers_eps=%0.4f,long_accel=%0.4f,p2=%0.4f,p=%0.4f,i=%0.4f,f=%0.4f,damp_angle_steers=%0.4f,damp_angle_steers_des=%0.4f,ff_rate=%0.4f,ff_angle=%0.4f,left_frame=%d,far_right_frame=%d,wheel_speed_fl=%0.4f,wheel_speed_fr=%0.4f,wheel_speed_rl=%0.4f,wheel_speed_rr=%0.4f,l_blinker=%d,r_blinker=%d,lk_mode=%d,enabled=%d,left_frame=%d,left_1=%d,left_2=%d,left_3=%d,left_4=%d,left_5=%d,left_6=%d,left_7=%d,left_8=%d,left_9=%d,left_10=%d,left_11=%d,left_12=%d,left_13=%d,left_full_1=%d,left_full_2=%d,right_frame=%d,right_1=%d,right_2=%d,right_3=%d,right_4=%d,right_5=%d,right_6=%d,right_7=%d,right_8=%d,right_9=%d,right_10=%d,right_11=%d,right_12=%d,right_13=%d,right_full_1=%d,right_full_2=%d,far_left_frame=%d,far_left_1=%d,far_left_2=%d,far_left_3=%d,far_left_4=%d,far_left_5=%d,far_left_6=%d,far_left_7=%d,far_left_9=%d,far_left_8=%d,far_left_10=%d,far_left_11=%d,far_left_12=%d,far_left_13=%d,far_left_full_1=%d,far_left_full_2=%d,far_right_frame=%d,far_right_1=%d,far_right_2=%d,far_right_3=%d,far_right_4=%d,far_right_5=%d,far_right_6=%d,far_right_7=%d,far_right_8=%d,far_right_9=%d,far_right_10=%d,far_right_11=%d,far_right_12=%d,far_right_13=%d,far_right_full_1=%d,far_right_full_2=%d,time_delta=%d %d\n"
 
 localCarStateFormatString2 = "carState,user=" + user_id + " v_ego=%0.4f,econ_mode=%d,adjusted_angle=%0.2f,angle_steers=%0.4f,angle_rate=%0.4f,driver_torque=%0.4f,request=%0.4f,angle_rate_eps=%0.4f,yaw_rate_can=%0.4f,angle_steers_eps=%0.4f,long_accel=%0.4f,p2=%0.4f,p=%0.4f,i=%0.4f,f=%0.4f,damp_angle_steers=%0.4f,damp_angle_steers_des=%0.4f,ff_rate=%0.4f,ff_angle=%0.4f,calc_rate=%0.4f,fast_calc_rate=%0.4f,left_frame=%d,far_right_frame=%d,wheel_speed_fl=%0.4f,wheel_speed_fr=%0.4f,wheel_speed_rl=%0.4f,wheel_speed_rr=%0.4f,l_blinker=%d,r_blinker=%d,lk_mode=%d,enabled=%d,left_frame=%d,left_1=%d,left_2=%d,left_3=%d,left_4=%d,left_5=%d,left_6=%d,left_7=%d,left_8=%d,left_9=%d,left_10=%d,left_11=%d,left_12=%d,left_13=%d,left_full_1=%d,left_full_2=%d,right_frame=%d,right_1=%d,right_2=%d,right_3=%d,right_4=%d,right_5=%d,right_6=%d,right_7=%d,right_8=%d,right_9=%d,right_10=%d,right_11=%d,right_12=%d,right_13=%d,right_full_1=%d,right_full_2=%d,far_left_frame=%d,far_left_1=%d,far_left_2=%d,far_left_3=%d,far_left_4=%d,far_left_5=%d,far_left_6=%d,far_left_7=%d,far_left_9=%d,far_left_8=%d,far_left_10=%d,far_left_11=%d,far_left_12=%d,far_left_13=%d,far_left_full_1=%d,far_left_full_2=%d,far_right_frame=%d,far_right_1=%d,far_right_2=%d,far_right_3=%d,far_right_4=%d,far_right_5=%d,far_right_6=%d,far_right_7=%d,far_right_8=%d,far_right_9=%d,far_right_10=%d,far_right_11=%d,far_right_12=%d,far_right_13=%d,far_right_full_1=%d,far_right_full_2=%d,gflags=%d,glat=%f,glong=%f,galt=%f,gspeed=%f,gbearing=%f,gaccuracy=%f,gNED0=%f,gNED1=%f,gNED2=%f,gvertAccuracy=%f,gbearingAccuracy=%f,gspeedAccuracy=%f,time_delta=%d %d\n"
@@ -203,18 +205,20 @@ while 1:
     if socket is pathPlan:
       pp = log.Event.from_bytes(pathPlan.recv()).pathPlan
       if not cs is None and not logfile is None:
-        send_data0 = tuple(float(x) for x in tuple(pp.lPoly)[:7:1])
-        send_data1 = tuple(float(x) for x in tuple(pp.rPoly)[:7:1])
-        send_data2 = tuple(float(x) for x in tuple(pp.cPoly)[:7:1])
-        #print(len(pp.fastAngles), len(pp.fastAngles[0]), np.round(pp.fastAngles,1))
-        send_data3 = (pp.fastAngles[0][0], pp.fastAngles[0][1], pp.fastAngles[0][2], pp.fastAngles[0][3], pp.fastAngles[0][4], pp.fastAngles[0][6], pp.fastAngles[-1][0], pp.fastAngles[-1][1], pp.fastAngles[-1][2], pp.fastAngles[-1][3], pp.fastAngles[-1][4], pp.fastAngles[-1][6], pp.lProb, pp.rProb, pp.cProb, pp.centerCompensation, pp.laneWidth, pp.angleSteers, pp.rateSteers, pp.angleOffset, pp.lateralOffset, cs.steeringAngle, pp.canTime - cs.canTime, pp.modelIndex, pp.canTime)
+        send_data0 = tuple(float(x) for x in tuple(np.polyval(pp.lPoly,[0.,1.,2.,3.,5.,7.,9.]) * 1000 + pp.laneWidth / 2)[::1])
+        send_data1 = tuple(float(x) for x in tuple(np.polyval(pp.rPoly,[0.,1.,2.,3.,5.,7.,9.]) * 1000 - pp.laneWidth / 2)[::1])
+        send_data2 = tuple(float(x) for x in tuple(np.polyval(pp.cPoly,[0.,1.,2.,3.,5.,7.,9.]) * 1000)[::1])
+        send_data3 = tuple(float(x) for x in tuple(np.polyval(pp.pPoly,[3.,4.,5.,6.,7.,8.,9.]) * 55 + pp.angleBias + pp.angleOffset)[::1])
+        send_data4 = tuple(float(x) for x in tuple(np.polyval(pp.dPoly,[2.,4.,6.,8.,10.,12.,14.]) * 1000)[::1])
+
+        send_data5 = (pp.fastAngles[0][0], pp.fastAngles[0][1], pp.fastAngles[0][2], pp.fastAngles[0][3], pp.fastAngles[0][4], pp.fastAngles[0][6], pp.fastAngles[-1][0], pp.fastAngles[-1][1], pp.fastAngles[-1][2], pp.fastAngles[-1][3], pp.fastAngles[-1][4], pp.fastAngles[-1][6], pp.lProb, pp.rProb, pp.cProb, pp.centerCompensation, pp.laneWidth, pp.angleSteers, pp.rateSteers, pp.angleOffset, pp.lateralOffset, cs.steeringAngle, pp.canTime - cs.canTime, pp.modelIndex, pp.canTime)
 
         if do_influx:
-          localPathDataString.append("".join([localPathFormatString1 % send_data0, localPathFormatString2 % send_data1, localPathFormatString3 % send_data2, localPathFormatString4 % send_data3]))
+          localPathDataString.append("".join([localPathFormatString1 % send_data0, localPathFormatString2 % send_data1, localPathFormatString3 % send_data2, localPathFormatString4 % send_data3, localPathFormatString5 % send_data4, localPathFormatString6 % send_data5]))
         #if vEgo > 0: 
         #  logfile.write("".join([localPathFormatString1 % send_data0, localPathFormatString2 % send_data1, localPathFormatString3 % send_data2, localPathFormatString4 % send_data3]))
         if do_send_live and (vEgo > 0 or frame % 45 == 0):
-          serverPathDataString.append("".join([serverPolyDataFormatString % send_data0, serverPolyDataFormatString % send_data1, serverPolyDataFormatString % send_data2,serverPathDataFormatString % send_data3]))
+          serverPathDataString.append("".join([serverPolyDataFormatString % send_data0, serverPolyDataFormatString % send_data1, serverPolyDataFormatString % send_data2, serverPolyDataFormatString % send_data3, serverPolyDataFormatString % send_data4,serverPathDataFormatString % send_data5]))
           #serverPathDataString.append("".join([serverPolyDataFormatString % send_data0, serverPolyDataFormatString % send_data1, serverPolyDataFormatString % send_data2,serverPathDataFormatString % send_data3]))
         profiler.checkpoint('pathplan')
 

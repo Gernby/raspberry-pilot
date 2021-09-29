@@ -33,8 +33,7 @@ options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
 options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
 provider = 'CPUExecutionProvider'
 
-BIT_MASK = [0, 0, 
-            1, 128, 64, 32, 8, 4, 2, 8, 
+BIT_MASK = [1, 128, 64, 32, 8, 4, 2, 8, 
             1, 128, 64, 32, 8, 4, 2, 8, 
             1, 128, 64, 32, 8, 4, 2, 8, 
             1, 128, 64, 32, 8, 4, 2, 8] 
@@ -65,28 +64,31 @@ if os.path.exists('models/models.json'):
       for i in range(21):
         if i == 1:
           start_time = time.time()
-        model_output = [models[-1].run(None, {'prod_vehicle1_0': np.zeros((1, 50, 13), dtype='float32')[:,-round(min(26, history_rows[len(models)-1]*6.6666667)):,:7], 
-                                            'prod_vehicle2_0': np.zeros((1, 5, INPUTS-7), dtype='float32')[:,-history_rows[len(models)-1]:,:6],
-                                            'prod_camera1_0': np.zeros((1, 5, INPUTS-7), dtype='float32')[:,-history_rows[len(models)-1]:,6:-32],
-                                            'prod_camera2_0': np.zeros((1, 5, INPUTS-7), dtype='float32')[:,-history_rows[len(models)-1]:,-32:],
-                                            'fingerprints0': [[1,0,0,0]],
-                                            'l_prob': [[0.99]],
-                                            'r_prob': [[0.99]],
-                                            'center_bias': np.array([[[0.0,0,0],[0.001,0,0],[0.002,0,0],[0.04,0,0]]], dtype='float32') * 0,
-                                            'model_bias': [np.ones((ANGLE_POLYS,3),dtype='float32') * 0],
-                                            'center_crossings': [CENTER_CROSSINGS]
-                                          })]
+        model_output = [models[-1].run(None, {'vehicle_inputs': np.zeros((1, 50, 13), dtype='float32')[:,-round(min(26, history_rows[len(models)-1]*6.6666667)):,:7], 
+                                              'vehicle_inputs2': np.zeros((1, 5, 6), dtype='float32'),
+                                              'left_flag_inputs': np.zeros((1, 5, 8), dtype='float32') + 0,
+                                              'outer_left_flag_inputs': np.zeros((1, 5, 8), dtype='float32') + 1,
+                                              'right_flag_inputs': np.zeros((1, 5, 8), dtype='float32') + 0,
+                                              'outer_right_flag_inputs': np.zeros((1, 5, 8), dtype='float32') + 1,
+                                              'outer_left_inputs': np.zeros((1, 5, 8), dtype='float32') + 0.1,
+                                              'outer_right_inputs': np.zeros((1, 5, 8), dtype='float32') + 0.1,
+                                              'left_inputs': np.zeros((1, 5, 8), dtype='float32') + 0.1,
+                                              'right_inputs': np.zeros((1, 5, 8), dtype='float32') + 0.1,
+                                              'fingerprints': [[1,0,0,0]],
+                                              'center_bias': np.array([[[0.0,0,0],[0.001,0,0],[0.002,0,0],[0.04,0,0]]], dtype='float32') * 0,
+                                              'model_bias': [np.ones((ANGLE_POLYS,3),dtype='float32') * 0],
+                                              'center_crossings': [CENTER_CROSSINGS],
+                                            })]
       
       print(np.array(model_output[0][0][0,:,:12], dtype='int32'))
-      print(np.round(model_output[0][0][0,:,12:-2], decimals=1))
-      print(np.round(model_output[0][0][0,:,-2:], decimals=1))
+      print(np.round(model_output[0][0][0,:,12:], decimals=1))
       if len(model_output[0]) > 1:
         for j in range(len(model_output[0])):
           print(j, np.round(model_output[0][j], decimals=7))
       print(np.array(model_output[0][0][0,:,10]))
       print(np.polyval(np.array([model_output[0][11][0][0], model_output[0][11][0][1], model_output[0][11][0][2], model_output[0][11][0][3]]) * 54.938633, np.arange(15)))
       print(13, model_output[0][13])
-      print(17, np.round(model_output[0][17], decimals=7))
+      print(14, np.round(model_output[0][14], decimals=7))
       print(time.time()-start_time, md)
 
 def dump_sock(sock, wait_for_one=False):
@@ -176,7 +178,7 @@ steer_override_timer = 0
 poly_react = 10
 start_time = 0
 
-os.system("taskset -a -cp --cpu-list 2,3 %d" % os.getpid())
+#os.system("taskset -a -cp --cpu-list 2,3 %d" % os.getpid())
 
 path_send = log.Event.new_message()
 path_send.init('pathPlan')
@@ -215,6 +217,12 @@ all_items = [['v_ego','angle_steers','lateral_accelleration','angle_rate', 'angl
             'far_right_10','far_right_2', 'far_right_1', 'far_right_3', 'far_right_4', 'far_right_5', 'far_right_7', 'far_right_9', 
             'left_10',     'left_2',      'left_1',      'left_3',      'left_4',      'left_5',      'left_7',      'left_9',      
             'right_10',    'right_2',     'right_1',     'right_3',     'right_4',     'right_5',     'right_7',     'right_9']]
+
+l_angle_avg = calibration_items[3].index('left_1')
+r_angle_avg = calibration_items[3].index('right_1')
+fl_angle_avg = calibration_items[3].index('far_left_1')
+fr_angle_avg = calibration_items[3].index('far_right_1')
+
 cal_col = [np.zeros((len(all_items[0])),dtype=np.int),np.zeros((len(all_items[1])),dtype=np.int),[], np.zeros((len(all_items[3])),dtype=np.int)]
 cal_factor = [np.zeros((len(all_items[0])),dtype='float32'),np.zeros((len(all_items[1])),dtype='float32'),[],np.zeros((len(all_items[3])),dtype='float32')]
 for i in range(len(all_items)):
@@ -269,6 +277,7 @@ vehicle_array = [[],[]]
 camera_array = [[],[]]
 actual_angles = []
 first_model = 0
+lane_width = 800
 last_model = len(models)-1
 model_factor = 0.5
 lateral_factor = 1
@@ -277,7 +286,6 @@ speed_factor = 1
 steer_factor = 1
 width_factor = 1
 model_index = 0
-lane_width = 800
 steering_torque = 0.
 rate_adjustment = 1.0
 
@@ -295,18 +303,27 @@ while 1:
 
     if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
       stock_cam_frame_prev = cs.camLeft.frame
+      if cs.camLeft.parm4 > 0 and cs.camRight.parm4 > 0 and cs.camLeft.parm1 - calibration[3][l_angle_avg] - 20 > cs.camRight.parm1 - calibration[3][r_angle_avg]:
+        mask_left = cs.camRight.dashed > 0 and cs.camLeft.dashed == 0
+        mask_right = cs.camLeft.dashed > 0 and cs.camRight.dashed == 0
+      else:
+        mask_left = False
+        mask_right = False
 
-      left_missing = 1 if cs.camLeft.parm4 == 0 else 0
-      far_left_missing = 1 if cs.camFarLeft.parm4 == 0 else 0
-      right_missing = 1 if cs.camRight.parm4 == 0 else 0
-      far_right_missing = 1 if cs.camFarRight.parm4 == 0 else 0
+      mask_far_left = cs.camFarLeft.parm4 > 0 and cs.camLeft.parm4 > 0 and cs.camFarLeft.parm1 - calibration[3][fl_angle_avg] - 20 > cs.camLeft.parm1 - calibration[3][l_angle_avg]
+      mask_far_right = cs.camFarRight.parm4 > 0 and cs.camRight.parm4 > 0 and cs.camRight.parm1 - calibration[3][r_angle_avg] - 20 > cs.camFarRight.parm1 - calibration[3][fr_angle_avg]
+
+      left_missing = 1 if cs.camLeft.parm4 == 0 or mask_left else 0
+      far_left_missing = 1 if cs.camFarLeft.parm4 == 0 or mask_far_left or left_missing > 0 else 0
+      right_missing = 1 if cs.camRight.parm4 == 0 or mask_right else 0
+      far_right_missing = 1 if cs.camFarRight.parm4 == 0 or mask_far_right or right_missing > 0 else 0
 
       vehicle_array[1].append([cs.vEgo, cs.longAccel,  width_factor * max(570, lane_width + width_trim), max(-30, min(30, steer_factor * cs.steeringAngle)), lateral_factor * cs.lateralAccel, yaw_factor * cs.yawRateCAN])
 
-      camera_array[0].append(np.clip(np.bitwise_and([0, 0, left_missing,          cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm8, 
-                                                           far_left_missing,      cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm8, 
-                                                           right_missing,         cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm8, 
-                                                           far_right_missing,     cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm8], BIT_MASK), -1, 1))
+      camera_array[0].append(np.clip(np.bitwise_and([left_missing,          cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm8, 
+                                                     far_left_missing,      cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm8, 
+                                                     right_missing,         cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm8, 
+                                                     far_right_missing,     cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm8], BIT_MASK), -1, 1))
 
       camera_array[1].append([cs.camFarLeft.parm10,  cs.camFarLeft.parm2,  cs.camFarLeft.parm1,  cs.camFarLeft.parm3,  cs.camFarLeft.parm4,  cs.camFarLeft.parm5,  cs.camFarLeft.parm7,  cs.camFarLeft.parm9, 
                               cs.camFarRight.parm10, cs.camFarRight.parm2, cs.camFarRight.parm1, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm7, cs.camFarRight.parm9,
@@ -342,40 +359,48 @@ while 1:
     else:
       rate_adjustment = 1.0
 
-    model_output = [models[model_index].run(None, dict({'prod_vehicle1_0': vehicle_input[0][0,:, -round(min(26,history_rows[model_index]*6.6666667)):] * np.array([[rate_adjustment, 1.0, rate_adjustment, rate_adjustment, rate_adjustment, rate_adjustment, 1.0]], dtype='float32'),
-                                                        'prod_vehicle2_0': vehicle_input[1][0,:, -history_rows[model_index]:] * np.array([[rate_adjustment, 1.0 , 1.0, 1.0, rate_adjustment, rate_adjustment]], dtype='float32'),
-                                                        'prod_camera1_0': camera_input[0][0,:, -history_rows[model_index]:],
-                                                        'prod_camera2_0': camera_input[1][0,:, -history_rows[model_index]:],
-                                                        'fingerprints0': fingerprint, 
-                                                        'l_prob': [[l_prob + 0.0001]],
-                                                        'r_prob': [[r_prob + 0.0001]],
+    model_output = [models[model_index].run(None, dict({'vehicle_inputs': vehicle_input[0][0,:, -round(min(26,history_rows[model_index]*6.6666667)):] * np.array([[rate_adjustment, 1.0, rate_adjustment, rate_adjustment, rate_adjustment, rate_adjustment, 1.0]], dtype='float32'),
+                                                        'vehicle_inputs2': vehicle_input[1][0,:, -history_rows[model_index]:] * np.array([[rate_adjustment, 1.0 , 1.0, 1.0, rate_adjustment, rate_adjustment]], dtype='float32'),
+                                                        'left_flag_inputs': camera_input[0][0,:, -history_rows[model_index]:,:8],
+                                                        'outer_left_flag_inputs': camera_input[0][0,:, -history_rows[model_index]:,8:16],
+                                                        'right_flag_inputs': camera_input[0][0,:, -history_rows[model_index]:,16:24],
+                                                        'outer_right_flag_inputs': camera_input[0][0,:, -history_rows[model_index]:,24:],
+                                                        'outer_left_inputs': camera_input[1][0,:, -history_rows[model_index]:,:8],
+                                                        'outer_right_inputs': camera_input[1][0,:, -history_rows[model_index]:,8:16],
+                                                        'left_inputs': camera_input[1][0,:, -history_rows[model_index]:,16:24],
+                                                        'right_inputs': camera_input[1][0,:, -history_rows[model_index]:,24:],
+                                                        'fingerprints': fingerprint, 
                                                         'center_bias': [center_bias[model_index,:,:]],
                                                         'model_bias': [model_bias[model_index,:,:]],
-                                                        'center_crossings': [CENTER_CROSSINGS]
+                                                        'center_crossings': [CENTER_CROSSINGS],
                                                     }))]
 
     profiler.checkpoint('predict') 
     calc_angles[model_index] = np.transpose(model_output[0][0][0,:,:angle_speed_count])
     calc_angles[model_index][10,:] -= straight_bias[0,:,0] 
-    calc_center[model_index] = model_output[0][0][0,:,angle_speed_count:-2]
-    side_angles[model_index] = model_output[0][0][0,:,-2:]
+    calc_center[model_index] = model_output[0][0][0,:,angle_speed_count:-1]
 
-    l_poly = model_output[0][angle_speed_count + 2][0]
-    r_poly = model_output[0][angle_speed_count + 3][0]
-    c_poly = model_output[0][angle_speed_count + 4][0]
-    d_poly = model_output[0][angle_speed_count + 5][0]
+    l_poly = model_output[0][angle_speed_count + 1][0]
+    r_poly = model_output[0][angle_speed_count + 1][0]
+    c_poly = model_output[0][angle_speed_count + 1][0]
+    d_poly = model_output[0][angle_speed_count + 2][0]
     p_poly = model_output[0][poly_react + 1][0]
 
     if lr_prob == 0 or len(models) == 1 or model_index == 1 or (int(abs(calc_angles[0][poly_react,8]) * model_factor) == 0 and int(abs(calc_angles[model_index][poly_react,1]) * model_factor) == 0):
       angle_plan = send_path_to_controls(model_index, calc_angles, calc_center, angle_plan, path_send, gernPath, cs, angle_bias, lane_width, width_trim, l_prob, r_prob, lr_prob, calibrated, c_poly, l_poly, r_poly, d_poly, p_poly)
       profiler.checkpoint('send')
-      time.sleep(0.03)
+      time.sleep(0.001)
     if frame % 151 == 0:
       print(np.round(model_output[0][0][0,:10,:12], decimals=1))
-      print(np.round(model_output[0][0][0,:,12:-2], decimals=1))
-      print(-15, np.round(model_output[0][13][0], decimals=7))
-      print(-12, np.round(model_output[0][17][0], decimals=7))
-      print(-1, np.array(model_output[0][-1]))
+      print(np.round(model_output[0][0][0,:,12:14], decimals=1))
+      print(np.round(model_output[0][13][0], decimals=7))
+      print(np.round(model_output[0][14][0], decimals=7))
+      print(np.array(model_output[0][-1]))
+
+    if cs.camRight.parm4 > 0 and right_missing > 0: print("        Masking right!", right_missing, left_missing)
+    if cs.camLeft.parm4 > 0 and left_missing > 0: print("         Masking left!", left_missing, right_missing)
+    if cs.camFarRight.parm4 > 0 and far_right_missing > 0: print("        Masking far right!", far_right_missing, far_left_missing)
+    if cs.camFarLeft.parm4 > 0 and far_left_missing > 0: print("         Masking far left!", far_left_missing, far_right_missing)
 
     max_width_step = 0.005 * cs.vEgo * l_prob * r_prob
     if cs.camLeft.parm2 > 0 and cs.camRight.parm2 < 0:
@@ -389,19 +414,9 @@ while 1:
         angle_bias -= (0.00001 * cs.vEgo)
 
       model_bias[0][:,0] += (0.00001 * cs.vEgo * lr_prob * model_output[0][poly_react + 1][0])
-      model_bias[0][:,1] += (0.00001 * cs.vEgo * l_prob * model_output[0][18][0])
-      model_bias[0][:,2] += (0.00001 * cs.vEgo * r_prob * model_output[0][19][0]) 
       center_bias[0][:,0] += (0.00001 * cs.vEgo * lr_prob * model_output[0][13][0])
-      center_bias[0][:,1] += (0.00001 * cs.vEgo * lr_prob * model_output[0][14][0])
-      center_bias[0][:,2] += (0.00001 * cs.vEgo * lr_prob * model_output[0][15][0])
       straight_bias[0][:,0] += (0.000001 * cs.vEgo * lr_prob * (calc_angles[model_index][10,:] - calc_angles[model_index][10,0]))
       model_bias[0][-1,:] = 0.0
-
-      if calc_center[0][4,1] > calc_center[0][4,2]:
-        width_trim += 0.5	
-      else:	
-        width_trim -= 1	
-      width_trim = max(-200, min(width_trim, 100))
 
       profiler.checkpoint('bias')
 

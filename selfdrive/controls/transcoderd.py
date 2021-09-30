@@ -178,7 +178,7 @@ steer_override_timer = 0
 poly_react = 10
 start_time = 0
 
-#os.system("taskset -a -cp --cpu-list 2,3 %d" % os.getpid())
+os.system("taskset -a -cp --cpu-list 2,3 %d" % os.getpid())
 
 path_send = log.Event.new_message()
 path_send.init('pathPlan')
@@ -303,15 +303,16 @@ while 1:
 
     if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
       stock_cam_frame_prev = cs.camLeft.frame
-      if cs.camLeft.parm4 > 0 and cs.camRight.parm4 > 0 and cs.camLeft.parm1 - calibration[3][l_angle_avg] - 20 > cs.camRight.parm1 - calibration[3][r_angle_avg]:
+      if cs.camLeft.parm4 > 0 and cs.camRight.parm4 > 0 and (cs.camLeft.parm1 - calibration[3][l_angle_avg] - 20 > cs.camRight.parm1 - calibration[3][r_angle_avg] or \
+                                                             cs.camLeft.parm7 - calibration[3][l_angle_avg + 1] - 20 > cs.camRight.parm7 - calibration[3][r_angle_avg + 1]):
         mask_left = cs.camRight.dashed > 0 and cs.camLeft.dashed == 0
         mask_right = cs.camLeft.dashed > 0 and cs.camRight.dashed == 0
       else:
         mask_left = False
         mask_right = False
 
-      mask_far_left = cs.camFarLeft.parm4 > 0 and cs.camLeft.parm4 > 0 and cs.camFarLeft.parm1 - calibration[3][fl_angle_avg] - 20 > cs.camLeft.parm1 - calibration[3][l_angle_avg]
-      mask_far_right = cs.camFarRight.parm4 > 0 and cs.camRight.parm4 > 0 and cs.camRight.parm1 - calibration[3][r_angle_avg] - 20 > cs.camFarRight.parm1 - calibration[3][fr_angle_avg]
+      mask_far_left = cs.camFarLeft.parm4 > 0 and cs.camLeft.parm4 > 0 and (cs.camFarLeft.parm1 - calibration[3][fl_angle_avg] - 20 > cs.camLeft.parm1 - calibration[3][l_angle_avg] or cs.camFarLeft.parm7 - calibration[3][fl_angle_avg + 1] - 20 > cs.camLeft.parm7 - calibration[3][l_angle_avg + 1])
+      mask_far_right = cs.camFarRight.parm4 > 0 and cs.camRight.parm4 > 0 and (cs.camRight.parm1 - calibration[3][r_angle_avg] - 20 > cs.camFarRight.parm1 - calibration[3][fr_angle_avg] or cs.camRight.parm7 - calibration[3][r_angle_avg + 1] - 20 > cs.camFarRight.parm7 - calibration[3][fr_angle_avg + 1])
 
       left_missing = 1 if cs.camLeft.parm4 == 0 or mask_left else 0
       far_left_missing = 1 if cs.camFarLeft.parm4 == 0 or mask_far_left or left_missing > 0 else 0
@@ -323,12 +324,14 @@ while 1:
       camera_array[0].append(np.clip(np.bitwise_and([left_missing,          cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm6,     cs.camLeft.parm8, 
                                                      far_left_missing,      cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm6,  cs.camFarLeft.parm8, 
                                                      right_missing,         cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm6,    cs.camRight.parm8, 
-                                                     far_right_missing,     cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm8], BIT_MASK), -1, 1))
+                                                     far_right_missing,     cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm6, cs.camFarRight.parm8], BIT_MASK), 0, 1))
 
       camera_array[1].append([cs.camFarLeft.parm10,  cs.camFarLeft.parm2,  cs.camFarLeft.parm1,  cs.camFarLeft.parm3,  cs.camFarLeft.parm4,  cs.camFarLeft.parm5,  cs.camFarLeft.parm7,  cs.camFarLeft.parm9, 
                               cs.camFarRight.parm10, cs.camFarRight.parm2, cs.camFarRight.parm1, cs.camFarRight.parm3, cs.camFarRight.parm4, cs.camFarRight.parm5, cs.camFarRight.parm7, cs.camFarRight.parm9,
                               cs.camLeft.parm10,     cs.camLeft.parm2,     cs.camLeft.parm1,     cs.camLeft.parm3,     cs.camLeft.parm4,     cs.camLeft.parm5,     cs.camLeft.parm7,     cs.camLeft.parm9,    
                               cs.camRight.parm10,    cs.camRight.parm2,    cs.camRight.parm1,    cs.camRight.parm3,    cs.camRight.parm4,    cs.camRight.parm5,    cs.camRight.parm7,    cs.camRight.parm9])
+
+      if camera_array[0][-1][4] != cs.camLeft.solid and camera_array[0][-1][5] != cs.camLeft.dashed: print(camera_array[0][-1][5:7], [cs.camLeft.solid, cs.camLeft.dashed])
 
       profiler.checkpoint('process_inputs2')
 

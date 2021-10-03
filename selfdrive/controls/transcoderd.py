@@ -303,21 +303,11 @@ while 1:
 
     if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
       stock_cam_frame_prev = cs.camLeft.frame
-      if cs.camLeft.parm4 > 0 and cs.camRight.parm4 > 0 and (cs.camLeft.parm1 - calibration[3][l_angle_avg] - 20 > cs.camRight.parm1 - calibration[3][r_angle_avg] or \
-                                                             cs.camLeft.parm7 - calibration[3][l_angle_avg + 1] - 20 > cs.camRight.parm7 - calibration[3][r_angle_avg + 1]):
-        mask_left = cs.camRight.dashed > 0 and cs.camLeft.dashed == 0
-        mask_right = cs.camLeft.dashed > 0 and cs.camRight.dashed == 0
-      else:
-        mask_left = False
-        mask_right = False
 
-      mask_far_left = cs.camFarLeft.parm4 > 0 and cs.camLeft.parm4 > 0 and (cs.camFarLeft.parm1 - calibration[3][fl_angle_avg] - 20 > cs.camLeft.parm1 - calibration[3][l_angle_avg] or cs.camFarLeft.parm7 - calibration[3][fl_angle_avg + 1] - 20 > cs.camLeft.parm7 - calibration[3][l_angle_avg + 1])
-      mask_far_right = cs.camFarRight.parm4 > 0 and cs.camRight.parm4 > 0 and (cs.camRight.parm1 - calibration[3][r_angle_avg] - 20 > cs.camFarRight.parm1 - calibration[3][fr_angle_avg] or cs.camRight.parm7 - calibration[3][r_angle_avg + 1] - 20 > cs.camFarRight.parm7 - calibration[3][fr_angle_avg + 1])
-
-      left_missing = 1 if cs.camLeft.parm4 == 0 or mask_left else 0
-      far_left_missing = 1 if cs.camFarLeft.parm4 == 0 or mask_far_left or left_missing > 0 else 0
-      right_missing = 1 if cs.camRight.parm4 == 0 or mask_right else 0
-      far_right_missing = 1 if cs.camFarRight.parm4 == 0 or mask_far_right or right_missing > 0 else 0
+      left_missing = 1 if cs.camLeft.parm4 == 0 else 0
+      far_left_missing = 1 if cs.camFarLeft.parm4 == 0 else 0
+      right_missing = 1 if cs.camRight.parm4 == 0 else 0
+      far_right_missing = 1 if cs.camFarRight.parm4 == 0 else 0
 
       vehicle_array[1].append([cs.vEgo, cs.longAccel,  width_factor * max(570, lane_width + width_trim), max(-30, min(30, steer_factor * cs.steeringAngle)), lateral_factor * cs.lateralAccel, yaw_factor * cs.yawRateCAN])
 
@@ -400,11 +390,6 @@ while 1:
       print(np.round(model_output[0][14][0], decimals=7))
       print(np.array(model_output[0][-1]))
 
-    if cs.camRight.parm4 > 0 and right_missing > 0: print("        Masking right!", right_missing, left_missing)
-    if cs.camLeft.parm4 > 0 and left_missing > 0: print("         Masking left!", left_missing, right_missing)
-    if cs.camFarRight.parm4 > 0 and far_right_missing > 0: print("        Masking far right!", far_right_missing, far_left_missing)
-    if cs.camFarLeft.parm4 > 0 and far_left_missing > 0: print("         Masking far left!", far_left_missing, far_right_missing)
-
     max_width_step = 0.005 * cs.vEgo * l_prob * r_prob
     if cs.camLeft.parm2 > 0 and cs.camRight.parm2 < 0:
       lane_width = max(570, lane_width - max_width_step * 2, min(1700, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
@@ -439,24 +424,14 @@ while 1:
 
     if ((cs.vEgo < 10 and not cs.cruiseState.enabled) or not calibrated) and distance_driven > next_params_distance:
       next_params_distance = distance_driven + 13300
-      if calibrated:
-        print(np.round(calibration[0],2))
-        put_nonblocking("CalibrationParams", json.dumps({'models': models_def['models'], 
-                                                         'calibration': list(np.concatenate(([float(x) for x in calibration[0]],[float(x) for x in calibration[1]],[float(x) for x in calibration[2]],[float(x) for x in calibration[3]]), axis=0)),
-                                                         'lane_width': float(lane_width),
-                                                         'angle_bias': float(angle_bias), 
-                                                         'straight_bias': list(np.reshape(np.array(straight_bias, dtype='float'), (2 * OUTPUT_ROWS,))), 
-                                                         'center_bias': list(np.reshape(np.array(center_bias, dtype='float'), (2 * 3 * CENTER_POLYS,))), 
-                                                         'model_bias': list(np.reshape(np.array(model_bias, dtype='float'), (2 * 3 * ANGLE_POLYS,)))}, indent=2))
-      else:
-        print(list(np.concatenate(([float(x) for x in calibration[0]],[float(x) for x in calibration[1]]), axis=0)))
-        params.put("CalibrationParams", json.dumps({'models': models_def['models'], 
-                                                         'calibration': list(np.concatenate(([float(x) for x in calibration[0]],[float(x) for x in calibration[1]],[float(x) for x in calibration[2]],[float(x) for x in calibration[3]]), axis=0)),
-                                                         'lane_width': float(lane_width),
-                                                         'angle_bias': float(angle_bias), 
-                                                         'straight_bias': list(np.reshape(np.array(straight_bias, dtype='float'), (2 * OUTPUT_ROWS,))), 
-                                                         'center_bias': list(np.reshape(np.array(center_bias, dtype='float'), (2*3*CENTER_POLYS,))), 
-                                                         'model_bias': list(np.reshape(np.array(model_bias, dtype='float'), (2*3*ANGLE_POLYS,)))}, indent=2))
+      print(np.round(calibration[0],2))
+      put_nonblocking("CalibrationParams", json.dumps({'models': models_def['models'], 
+                                                        'calibration': list(np.concatenate(([float(x) for x in calibration[0]],[float(x) for x in calibration[1]],[float(x) for x in calibration[2]],[float(x) for x in calibration[3]]), axis=0)),
+                                                        'lane_width': float(lane_width),
+                                                        'angle_bias': float(angle_bias), 
+                                                        'straight_bias': list(np.reshape(np.array(straight_bias, dtype='float'), (2 * OUTPUT_ROWS,))), 
+                                                        'center_bias': list(np.reshape(np.array(center_bias, dtype='float'), (2 * 3 * CENTER_POLYS,))), 
+                                                        'model_bias': list(np.reshape(np.array(model_bias, dtype='float'), (2 * 3 * ANGLE_POLYS,)))}, indent=2))
       calibrated = True
       profiler.checkpoint('save_cal')
 

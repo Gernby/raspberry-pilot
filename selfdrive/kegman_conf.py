@@ -59,7 +59,7 @@ class kegman_conf():
     self.element_updated = False
 
     if Reset or not os.path.isfile(os.path.expanduser('~/kegman.json')):
-      self.config = {"Kp":"-1","Ki":"-1","Kf":"-1","rateFFGain":"-1","reactMPC":"-1","dampMPC":"-1","useAutoFlash": "0","useInfluxDB":"0","requireBlinker":"1","requireNudge":"1","autoUpload":"0"}
+      self.config = {"Kp":"-1","Ki":"-1","Kf":"-1","rateFFGain":"-1","reactMPC":"-1","dampMPC":"-1","useAutoFlash": "0","useInfluxDB":"0","requireBlinker":"1","requireNudge":"1","autoUpload":"1"}
       self.element_updated = True
     else:
       with open(os.path.expanduser('~/kegman.json'), 'r') as f:

@@ -42,8 +42,17 @@ history_rows = []
 OUTPUT_ROWS = 15
 CENTER_POLYS = 4
 ANGLE_POLYS = 5 
-CENTER_CROSSINGS = [0.00000051,7,11,0.5,0.5]
-TARGET_ANGLE_INDEX = [3,4,5,6,7,8]
+CENTER_CROSSINGS = [0.0000005,7,11,0.5,0.5]
+HYSTERESIS =  np.array([[[0.5,0.5,0.5,0.5],    [0.5,0.5,0.5,0.5],
+                         [20.75,20.75,20.5,20.25], [20.5,20.5,20.25,20.1]],
+                        [[0.5,0.5,0.5,0.5],    [0.5,0.5,0.5,0.5],
+                         [20.75,20.75,20.5,20.25], [20.5,20.5,20.25,20.1]],
+                        [[0.5,0.5,0.5,0.5],    [0.5,0.5,0.5,0.5],
+                         [20.75,20.75,20.5,20.25], [20.5,20.5,20.25,20.1]],
+                        [[1.5,1.5,1.5,1.5],    [1.5,1.5,1.5,1.5],
+                         [20.75,20.75,20.5,20.25], [20.5,20.5,20.25,20.1]],
+                        [[10.0,   10.0,  10.0, 10.0],  [10.0,   10.0,  10.0, 10.0],
+                         [20.75,20.75,20.5,20.25], [20.5,20.5,20.25,20.1]]], dtype='float32') * 0.25
 
 fingerprint = np.zeros((1, 4), dtype='float32')
 calc_center = [np.zeros((OUTPUT_ROWS, 4)),np.zeros((OUTPUT_ROWS, 4))]
@@ -78,6 +87,7 @@ if os.path.exists('models/models.json'):
                                               'center_bias': np.array([[[0.0,0,0],[0.001,0,0],[0.002,0,0],[0.04,0,0]]], dtype='float32') * 0,
                                               'model_bias': [np.ones((ANGLE_POLYS,3),dtype='float32') * 0],
                                               'center_crossings': [CENTER_CROSSINGS],
+                                              'hysteresis': [HYSTERESIS]
                                             })]
       
       print(np.array(model_output[0][0][0,:,:12], dtype='int32'))
@@ -247,6 +257,8 @@ calibration_data = params.get("CalibrationParams")
 if not calibration_data is None:
   calibration_data =  json.loads(calibration_data)
   calibration = np.array(calibration_data['calibration'], dtype='float32')
+  if 'angle_bias' in calibration_data:
+    angle_bias = calibration_data['angle_bias']
   if not models_def["reset"] or ("models" in calibration_data and calibration_data['models'] == models_def['models']):
     if 'straight_bias' in calibration_data and len(calibration_data['straight_bias']) == 2 * OUTPUT_ROWS:
       straight_bias = np.array(np.reshape(calibration_data['straight_bias'], (2,OUTPUT_ROWS,1)), dtype='float32')
@@ -254,7 +266,6 @@ if not calibration_data is None:
       center_bias = np.array(np.reshape(calibration_data['center_bias'], (2,CENTER_POLYS,3)), dtype='float32')
     if 'model_bias' in calibration_data and len(calibration_data['model_bias']) == 2 * 3 * ANGLE_POLYS:
       model_bias = np.array(np.reshape(calibration_data['model_bias'], (2,ANGLE_POLYS,3)), dtype='float32')
-    angle_bias = calibration_data['angle_bias']
   else:
     os.system("cp /data/params/d/CalibrationParams /data/params/d/CalibrationParams%d" % int(time.time()))
     print("New models!  Resetting bias")
@@ -321,8 +332,6 @@ while 1:
                               cs.camLeft.parm10,     cs.camLeft.parm2,     cs.camLeft.parm1,     cs.camLeft.parm3,     cs.camLeft.parm4,     cs.camLeft.parm5,     cs.camLeft.parm7,     cs.camLeft.parm9,    
                               cs.camRight.parm10,    cs.camRight.parm2,    cs.camRight.parm1,    cs.camRight.parm3,    cs.camRight.parm4,    cs.camRight.parm5,    cs.camRight.parm7,    cs.camRight.parm9])
 
-      if camera_array[0][-1][4] != cs.camLeft.solid and camera_array[0][-1][5] != cs.camLeft.dashed: print(camera_array[0][-1][5:7], [cs.camLeft.solid, cs.camLeft.dashed])
-
       profiler.checkpoint('process_inputs2')
 
   l_prob =     min(1, max(0, cs.camLeft.parm4 / 127))
@@ -366,8 +375,11 @@ while 1:
                                                         'center_bias': [center_bias[model_index,:,:]],
                                                         'model_bias': [model_bias[model_index,:,:]],
                                                         'center_crossings': [CENTER_CROSSINGS],
+                                                        'hysteresis': [HYSTERESIS],
                                                     }))]
 
+    if camera_input[0][0,:, -history_rows[model_index]:,:8][-1,-1,5] != cs.camLeft.dashed or camera_input[0][0,:, -history_rows[model_index]:,:8][-1,-1,6] != cs.camLeft.solid:
+      print(cs.camLeft.dashed, cs.camLeft.solid)  #camera_input[0][0,:, -history_rows[model_index]:,:8]) 
     profiler.checkpoint('predict') 
     calc_angles[model_index] = np.transpose(model_output[0][0][0,:,:angle_speed_count])
     calc_angles[model_index][10,:] -= straight_bias[0,:,0] 

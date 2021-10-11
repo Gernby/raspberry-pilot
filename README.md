@@ -18,7 +18,7 @@
 
 ## MicroSD card preparation and first login
 
-1. Please download Ubuntu 20.04.2 for the Raspberry Pi here https://cdimage.ubuntu.com/releases/20.04/release/ubuntu-20.04.2-preinstalled-server-arm64+raspi.img.xz on the laptop that will prepare the microSD card
+1. Please download Ubuntu 20.04.3 for the Raspberry Pi here https://ubuntu.com/download/raspberry-pi/thank-you?version=20.04.3&architecture=server-arm64+raspi on the laptop that will prepare the microSD card
 2. Insert the microSD card into the microSD-to-SD card adapter and then into the computer you will use to burn the image
 3. If you have Balena Etcher, flash the SD card with the image you just downloaded
 4. If you are not using Balena Etcher, decompress the `xz`-compressed Ubuntu image file

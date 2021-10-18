@@ -373,7 +373,7 @@ while 1:
       print(cs.camLeft.dashed, cs.camLeft.solid)  #camera_input[0][0,:, -history_rows[model_index]:,:8]) 
     profiler.checkpoint('predict') 
     calc_angles[model_index] = np.transpose(model_output[0][0][0,:,:angle_speed_count])
-    calc_angles[model_index][10,:] -= straight_bias[0,:,0] 
+    calc_angles[model_index][poly_react,:] -= straight_bias[0,:,0] 
     calc_center[model_index] = model_output[0][0][0,:,angle_speed_count:-1]
 
     l_poly = model_output[0][angle_speed_count + 1][0]
@@ -419,7 +419,7 @@ while 1:
 
       model_bias[0][:,0] += (0.00001 * cs.vEgo * lr_prob * model_output[0][poly_react + 1][0])
       center_bias[0][:,0] += (0.00001 * cs.vEgo * lr_prob * model_output[0][13][0])
-      straight_bias[0][:,0] += (0.000001 * cs.vEgo * lr_prob * (calc_angles[model_index][10,:] - calc_angles[model_index][10,0]))
+      straight_bias[0][:,0] += (0.000001 * cs.vEgo * lr_prob * (calc_angles[model_index][poly_react,:] - calc_angles[model_index][poly_react,0]))
       model_bias[0][-1,:] = 0.0
 
       profiler.checkpoint('bias')

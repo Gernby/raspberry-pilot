@@ -42,17 +42,13 @@ history_rows = []
 OUTPUT_ROWS = 15
 CENTER_POLYS = 4
 ANGLE_POLYS = 5 
-CENTER_CROSSINGS = [0.0000005,7,11,0.5,0.5]
-HYSTERESIS =  np.array([[[0.5,0.5,0.5,0.5],    [0.5,0.5,0.5,0.5],
-                         [20.75,20.75,20.5,20.25], [20.5,20.5,20.25,20.1]],
-                        [[0.5,0.5,0.5,0.5],    [0.5,0.5,0.5,0.5],
-                         [20.75,20.75,20.5,20.25], [20.5,20.5,20.25,20.1]],
-                        [[0.5,0.5,0.5,0.5],    [0.5,0.5,0.5,0.5],
-                         [20.75,20.75,20.5,20.25], [20.5,20.5,20.25,20.1]],
-                        [[1.5,1.5,1.5,1.5],    [1.5,1.5,1.5,1.5],
-                         [20.75,20.75,20.5,20.25], [20.5,20.5,20.25,20.1]],
-                        [[10.0,   10.0,  10.0, 10.0],  [10.0,   10.0,  10.0, 10.0],
-                         [20.75,20.75,20.5,20.25], [20.5,20.5,20.25,20.1]]], dtype='float32') * 0.25
+CENTER_CROSSINGS = [0.0000005,3,11,0.5,0.5]
+
+HYSTERESIS = np.array([[[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100., 0.7, 0.5,0.72], [100., 0.7, 0.5,0.72]],
+                       [[100., 0.7,0.47,0.71], [100., 0.7,0.47,0.71]],
+                       [[100., 0.7,0.45,0.69], [100., 0.7,0.45,0.69]],
+                       [[100., 0.7,0.43,0.67], [100., 0.7,0.43,0.67]]], dtype='float32')
 
 fingerprint = np.zeros((1, 4), dtype='float32')
 calc_center = [np.zeros((OUTPUT_ROWS, 4)),np.zeros((OUTPUT_ROWS, 4))]
@@ -87,18 +83,14 @@ if os.path.exists('models/models.json'):
                                               'center_bias': np.array([[[0.0,0,0],[0.001,0,0],[0.002,0,0],[0.04,0,0]]], dtype='float32') * 0,
                                               'model_bias': [np.ones((ANGLE_POLYS,3),dtype='float32') * 0],
                                               'center_crossings': [CENTER_CROSSINGS],
-                                              'hysteresis': [HYSTERESIS]
+                                              'hysteresis': [HYSTERESIS * np.random.uniform(low=0.5, high=1.5)]
                                             })]
-      
+
       print(np.array(model_output[0][0][0,:,:12], dtype='int32'))
       print(np.round(model_output[0][0][0,:,12:], decimals=1))
-      if len(model_output[0]) > 1:
-        for j in range(len(model_output[0])):
-          print(j, np.round(model_output[0][j], decimals=7))
-      print(np.array(model_output[0][0][0,:,10]))
-      print(np.polyval(np.array([model_output[0][11][0][0], model_output[0][11][0][1], model_output[0][11][0][2], model_output[0][11][0][3]]) * 54.938633, np.arange(15)))
-      print(13, model_output[0][13])
+      print(13, np.round(model_output[0][13], decimals=7))
       print(14, np.round(model_output[0][14], decimals=7))
+      print(15, np.round(model_output[0][15], decimals=2))
       print(time.time()-start_time, md)
 
 def dump_sock(sock, wait_for_one=False):
@@ -148,7 +140,7 @@ def update_calibration(calibration, inputs, cal_col, cs):
 
 def send_path_to_controls(model_index, calc_angles, calc_center, angle_plan, path_send, gernPath, cs, angle_bias, lane_width, width_trim, l_prob, r_prob, lr_prob, calibrated, c_poly, l_poly, r_poly, d_poly, p_poly):
   angle_plan = np.clip(calc_angles[model_index] + calibration[0][0], angle_plan - [accel_limit], angle_plan + [accel_limit])
-  
+
   path_send = log.Event.new_message()
   path_send.init('pathPlan')
 
@@ -173,7 +165,6 @@ def send_path_to_controls(model_index, calc_angles, calc_center, angle_plan, pat
   gernPath.send(path_send.to_bytes())
 
   return angle_plan
-
 
 gernPath = pub_sock(service_list['pathPlan'].port)
 carState = sub_sock(service_list['carState'].port, conflate=False)
@@ -251,7 +242,7 @@ angle_speed_count = 12
 model_bias = np.zeros((2,ANGLE_POLYS,3), 'float32')
 center_bias = np.zeros((2,CENTER_POLYS,3), 'float32')
 straight_bias = np.zeros((2,15,1), 'float32')
-  
+
 calibrated = True
 calibration_data = params.get("CalibrationParams")
 if not calibration_data is None:
@@ -315,10 +306,10 @@ while 1:
     if cs.camLeft.frame != stock_cam_frame_prev and cs.camLeft.frame == cs.camFarRight.frame:
       stock_cam_frame_prev = cs.camLeft.frame
 
-      left_missing = 1 if cs.camLeft.parm4 == 0 else 0
-      far_left_missing = 1 if cs.camFarLeft.parm4 == 0 else 0
-      right_missing = 1 if cs.camRight.parm4 == 0 else 0
-      far_right_missing = 1 if cs.camFarRight.parm4 == 0 else 0
+      left_missing = 1 if cs.camLeft.parm4 == 0 else 1 if cs.camLeft.parm5 != 0 else 0 
+      far_left_missing = 1 if cs.camFarLeft.parm4 == 0 else 1 if cs.camFarLeft.parm5 != 0 else 0
+      right_missing = 1 if cs.camRight.parm4 == 0 else 1 if cs.camRight.parm5 != 0 else 0
+      far_right_missing = 1 if cs.camFarRight.parm4 == 0 else 1 if cs.camFarRight.parm5 != 0 else 0
 
       vehicle_array[1].append([cs.vEgo, cs.longAccel,  width_factor * max(570, lane_width + width_trim), max(-30, min(30, steer_factor * cs.steeringAngle)), lateral_factor * cs.lateralAccel, yaw_factor * cs.yawRateCAN])
 
@@ -375,7 +366,7 @@ while 1:
                                                         'center_bias': [center_bias[model_index,:,:]],
                                                         'model_bias': [model_bias[model_index,:,:]],
                                                         'center_crossings': [CENTER_CROSSINGS],
-                                                        'hysteresis': [HYSTERESIS],
+                                                        'hysteresis': [HYSTERESIS * np.random.uniform(low=0.5, high=1.5)],
                                                     }))]
 
     if camera_input[0][0,:, -history_rows[model_index]:,:8][-1,-1,5] != cs.camLeft.dashed or camera_input[0][0,:, -history_rows[model_index]:,:8][-1,-1,6] != cs.camLeft.solid:
@@ -395,6 +386,19 @@ while 1:
       angle_plan = send_path_to_controls(model_index, calc_angles, calc_center, angle_plan, path_send, gernPath, cs, angle_bias, lane_width, width_trim, l_prob, r_prob, lr_prob, calibrated, c_poly, l_poly, r_poly, d_poly, p_poly)
       profiler.checkpoint('send')
       time.sleep(0.001)
+    something_masked = False
+    if left_missing == model_output[0][-1][4]:
+      print("LEFT MASKED!  ", end='')
+      something_masked = True
+    if right_missing == model_output[0][-1][5]:
+      print("RIGHT MASKED!  ", end='')
+      something_masked = True
+    if cs.camLeft.solid != model_output[0][-1][0] or cs.camLeft.dashed != model_output[0][-1][1] or cs.camRight.solid != model_output[0][-1][2] or cs.camRight.dashed != model_output[0][-1][3]:
+      print("Left Solid: %d  %d  Left Dashed: %d  %d    Right Solid: %d  %d  Right Dashed: %d  %d" % (cs.camLeft.solid, model_output[0][-1][0], cs.camLeft.dashed, model_output[0][-1][1], cs.camRight.solid, model_output[0][-1][2], cs.camRight.dashed, model_output[0][-1][3]))
+      something_masked = True
+    if something_masked:
+      print()
+
     if frame % 151 == 0:
       print(np.round(model_output[0][0][0,:10,:12], decimals=1))
       print(np.round(model_output[0][0][0,:,12:14], decimals=1))

@@ -1,4 +1,4 @@
 {
-    "models": ["simModel-231-1-5-1.onnx"],
+    "models": ["simModel-234-1-5-1.onnx"],
     "reset": true
 }

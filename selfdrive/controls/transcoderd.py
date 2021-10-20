@@ -42,7 +42,7 @@ history_rows = []
 OUTPUT_ROWS = 15
 CENTER_POLYS = 4
 ANGLE_POLYS = 5 
-CENTER_CROSSINGS = [0.0000005,3,11,0.5,0.5]
+CENTER_CROSSINGS = [0.00000025,3,11,0.5,0.5]
 
 HYSTERESIS = np.array([[[100.,100.,100.,100.], [100.,100.,100.,100.]],
                        [[100., 0.7, 0.5,0.72], [100., 0.7, 0.5,0.72]],
@@ -57,6 +57,7 @@ prev_angles = [np.zeros((OUTPUT_ROWS,1), dtype='float32'), np.zeros((OUTPUT_ROWS
 calc_angles = [np.zeros((12, OUTPUT_ROWS)), np.zeros((12, OUTPUT_ROWS))]
 angle_plan = np.zeros((1, OUTPUT_ROWS))
 accel_limit = np.arange(OUTPUT_ROWS, dtype='float32') / 7.5
+projected_rate = np.arange(0., 0.10066667,0.0066666)[1:]
 
 if os.path.exists('models/models.json'):
   with open('models/models.json', 'r') as f:
@@ -85,6 +86,12 @@ if os.path.exists('models/models.json'):
                                               'center_crossings': [CENTER_CROSSINGS],
                                               'hysteresis': [HYSTERESIS * np.random.uniform(low=0.5, high=1.5)]
                                             })]
+
+        calc_angles[0] = np.transpose(model_output[0][0][0,:,:12])
+        angle_plan = np.clip(calc_angles[0], angle_plan - accel_limit, angle_plan + accel_limit)
+        projected_steering = angle_plan[0,0] + (angle_plan[0,1] - angle_plan[0,0]) * projected_rate
+        angle_plan = np.clip(angle_plan, projected_steering - accel_limit, projected_steering + accel_limit)
+        model_output[0][11] = np.polyfit(np.linspace(-3., 11., num=15), np.clip(model_output[0][0][0,:,10], model_output[0][0][0,:,8] - 1, model_output[0][0][0,:,8] + 1) / 54.938633, 4)
 
       print(np.array(model_output[0][0][0,:,:12], dtype='int32'))
       print(np.round(model_output[0][0][0,:,12:], decimals=1))
@@ -138,15 +145,18 @@ def update_calibration(calibration, inputs, cal_col, cs):
     calibration[i] += (cal_factor[i][(cal_col[i] == 1)] * (inputs[1][i-2][-1][-1][-1][(cal_col[i] == 1)] - calibration[i]))
   return cal_factor
 
-def send_path_to_controls(model_index, calc_angles, calc_center, angle_plan, path_send, gernPath, cs, angle_bias, lane_width, width_trim, l_prob, r_prob, lr_prob, calibrated, c_poly, l_poly, r_poly, d_poly, p_poly):
-  angle_plan = np.clip(calc_angles[model_index] + calibration[0][0], angle_plan - [accel_limit], angle_plan + [accel_limit])
+def send_path_to_controls(model_index, calc_angles, calc_center, angle_plan, projected_steering, path_send, gernPath, cs, angle_bias, lane_width, width_trim, l_prob, r_prob, lr_prob, calibrated, c_poly, l_poly, r_poly, d_poly, p_poly, steer_override_timer, something_masked):
+  accel_limit2 = accel_limit * 1.0 # if steer_override_timer <= 0 else 0.5
+  angle_plan = np.clip(calc_angles[model_index] + calibration[0][0] + angle_bias, angle_plan - accel_limit2, angle_plan + accel_limit2)
+  angle_plan = np.clip(angle_plan, projected_steering - accel_limit2, projected_steering + accel_limit2)
+  p_poly = np.polyfit(np.linspace(-3., 11., num=15), angle_plan[poly_react] / 54.938633, 4)
 
   path_send = log.Event.new_message()
   path_send.init('pathPlan')
 
   path_send.pathPlan.centerCompensation = 0
   path_send.pathPlan.angleSteers = float(angle_plan[0][5])
-  path_send.pathPlan.fastAngles = [[float(x) + angle_bias for x in y] for y in angle_plan]
+  path_send.pathPlan.fastAngles = [[float(x) for x in y] for y in angle_plan]
   path_send.pathPlan.laneWidth = float(lane_width + width_trim)
   path_send.pathPlan.angleOffset = float(calibration[0][0])
   path_send.pathPlan.angleBias = angle_bias
@@ -228,7 +238,7 @@ cal_col = [np.zeros((len(all_items[0])),dtype=np.int),np.zeros((len(all_items[1]
 cal_factor = [np.zeros((len(all_items[0])),dtype='float32'),np.zeros((len(all_items[1])),dtype='float32'),[],np.zeros((len(all_items[3])),dtype='float32')]
 for i in range(len(all_items)):
   for col in range(len(all_items[i])):
-    print(i,col)
+    #print(i,col)
     if len(cal_col[i]) > col:
       cal_col[i][col] = 1 if len(all_items[i]) > col and all_items[i][col] in calibration_items[i] else 0 
 
@@ -369,23 +379,17 @@ while 1:
                                                         'hysteresis': [HYSTERESIS * np.random.uniform(low=0.5, high=1.5)],
                                                     }))]
 
-    if camera_input[0][0,:, -history_rows[model_index]:,:8][-1,-1,5] != cs.camLeft.dashed or camera_input[0][0,:, -history_rows[model_index]:,:8][-1,-1,6] != cs.camLeft.solid:
-      print(cs.camLeft.dashed, cs.camLeft.solid)  #camera_input[0][0,:, -history_rows[model_index]:,:8]) 
     profiler.checkpoint('predict') 
     calc_angles[model_index] = np.transpose(model_output[0][0][0,:,:angle_speed_count])
     calc_angles[model_index][poly_react,:] -= straight_bias[0,:,0] 
     calc_center[model_index] = model_output[0][0][0,:,angle_speed_count:-1]
-
+    projected_steering = cs.steeringAngle + cs.steeringRate * projected_rate
     l_poly = model_output[0][angle_speed_count + 1][0]
     r_poly = model_output[0][angle_speed_count + 1][0]
     c_poly = model_output[0][angle_speed_count + 1][0]
     d_poly = model_output[0][angle_speed_count + 2][0]
     p_poly = model_output[0][poly_react + 1][0]
 
-    if lr_prob == 0 or len(models) == 1 or model_index == 1 or (int(abs(calc_angles[0][poly_react,8]) * model_factor) == 0 and int(abs(calc_angles[model_index][poly_react,1]) * model_factor) == 0):
-      angle_plan = send_path_to_controls(model_index, calc_angles, calc_center, angle_plan, path_send, gernPath, cs, angle_bias, lane_width, width_trim, l_prob, r_prob, lr_prob, calibrated, c_poly, l_poly, r_poly, d_poly, p_poly)
-      profiler.checkpoint('send')
-      time.sleep(0.001)
     something_masked = False
     if left_missing == model_output[0][-1][4]:
       print("LEFT MASKED!  ", end='')
@@ -399,6 +403,11 @@ while 1:
     if something_masked:
       print()
 
+    if lr_prob == 0 or len(models) == 1 or model_index == 1 or (int(abs(calc_angles[0][poly_react,8]) * model_factor) == 0 and int(abs(calc_angles[model_index][poly_react,1]) * model_factor) == 0):
+      angle_plan = send_path_to_controls(model_index, calc_angles, calc_center, angle_plan, projected_steering, path_send, gernPath, cs, angle_bias, lane_width, width_trim, l_prob, r_prob, lr_prob, calibrated, c_poly, l_poly, r_poly, d_poly, p_poly, steer_override_timer, something_masked)
+      profiler.checkpoint('send')
+      time.sleep(0.001)
+
     if frame % 151 == 0:
       print(np.round(model_output[0][0][0,:10,:12], decimals=1))
       print(np.round(model_output[0][0][0,:,12:14], decimals=1))
@@ -407,11 +416,11 @@ while 1:
       print(np.array(model_output[0][-1]))
 
     max_width_step = 0.005 * cs.vEgo * l_prob * r_prob
-    if cs.camLeft.parm2 > 0 and cs.camRight.parm2 < 0:
+    if cs.camLeft.parm2 > 0 and cs.camRight.parm2 < 0 and not something_masked:
       lane_width = max(570, lane_width - max_width_step * 2, min(1700, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
 
     steer_override_timer -= 1
-    if steer_override_timer < 0 and abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and cs.camLeft.parm2 > 0 and cs.camRight.parm2 < 0 and (abs(cs.steeringTorque) < 300 or ((cs.steeringTorque < 0) == (cs.camLeft.parm2 + cs.camRight.parm2 < 0))):
+    if steer_override_timer < 0 and abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and cs.camLeft.parm2 > 0 and cs.camRight.parm2 < 0 and not something_masked and (abs(cs.steeringTorque) < 300 or ((cs.steeringTorque < 0) == (cs.camLeft.parm2 + cs.camRight.parm2 < 0))):
       if cs.camLeft.parm2 + cs.camRight.parm2 > 0:
         angle_bias += (0.00001 * cs.vEgo)
       else:
@@ -431,7 +440,7 @@ while 1:
     frame += 1
     distance_driven += cs.vEgo
 
-    if cs.vEgo > 10 and abs(cs.steeringAngle - calibration[0][0]) <= 3 and abs(cs.steeringRate) < 3 and l_prob > 0 and r_prob > 0:
+    if cs.vEgo > 10 and abs(cs.steeringAngle - calibration[0][0]) <= 3 and abs(cs.steeringRate) < 3 and l_prob > 0 and r_prob > 0 and not something_masked:
       cal_factor = update_calibration(calibration, [vehicle_input, camera_input], cal_col, cs)
       profiler.checkpoint('calibrate')
 

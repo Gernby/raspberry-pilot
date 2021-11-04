@@ -134,8 +134,8 @@ while 1:
     profiler.checkpoint('poller', False)
 
     if socket is carState:
-      # Wait 4 control cycles to let Transcoderd do its good stuff
-      time.sleep(0.04)
+      # Wait 1/2 control cycle to let Transcoderd do its good stuff
+      time.sleep(0.005)
       for _cs in carState.recv_multipart():
         cs = log.Event.from_bytes(_cs).carState
         vEgo = cs.vEgo
@@ -277,8 +277,8 @@ while 1:
       (mode, ino, dev, nlink, uid, gid, size, atime, mtime, kegtime) = os.stat(os.path.expanduser('~/kegman.json'))
       if kegtime != kegtime_prev:
         kegtime_prev = kegtime
-        kegman = kegman_conf() 
-        kegmanInsertString = ["tuneData,user=" + user_id + " "]
+        kegman = kegman_conf()
+        kegmanInsertString = ["tuneData,user=" + user_id + ",fingerprint=" + kegman['fingerprint'].replace(" ","_") + " "]
         #kegmanInsertString.append('cpu_pct=')
         #kegmanInsertString.append(psutil.cpu_percent())
         #kegmanInsertString.append(',cpu_temp=')

@@ -376,7 +376,7 @@ while 1:
                                                         'center_bias': [center_bias[model_index,:,:]],
                                                         'model_bias': [model_bias[model_index,:,:]],
                                                         'center_crossings': [CENTER_CROSSINGS],
-                                                        'hysteresis': [HYSTERESIS * np.random.uniform(low=0.5, high=1.5)],
+                                                        'hysteresis': [HYSTERESIS * np.random.uniform(low=0.75, high=1.25)],
                                                     }))]
 
     profiler.checkpoint('predict') 

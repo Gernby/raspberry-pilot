@@ -26,8 +26,8 @@ except:
 import onnxruntime as ort
 
 options = ort.SessionOptions()
-#options.intra_op_num_threads = 1
-#options.inter_op_num_threads = 1
+options.intra_op_num_threads = 1
+options.inter_op_num_threads = 1
 #options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
 options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
 options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
@@ -36,18 +36,28 @@ provider = 'CPUExecutionProvider'
 BIT_MASK = [1, 128, 64, 32, 8, 4, 2, 8, 
             1, 128, 64, 32, 8, 4, 2, 8, 
             1, 128, 64, 32, 8, 4, 2, 8, 
-            1, 128, 64, 32, 8, 4, 2, 8] 
+            1, 128, 64, 32, 8, 4, 2, 8]
 
 history_rows = []
 OUTPUT_ROWS = 15
 CENTER_POLYS = 4
 ANGLE_POLYS = 5 
-CENTER_CROSSINGS = [0.00000025,3,11,0.5,0.5]
+CENTER_CROSSINGS = [0.000000025,3,11,0.5,0.5]
 
 HYSTERESIS = np.array([[[100.,100.,100.,100.], [100.,100.,100.,100.]],
-                       [[100., 0.7, 0.5,0.72], [100., 0.7, 0.5,0.72]],
-                       [[100., 0.7,0.47,0.71], [100., 0.7,0.47,0.71]],
-                       [[100., 0.7,0.45,0.69], [100., 0.7,0.45,0.69]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
                        [[100., 0.7,0.43,0.67], [100., 0.7,0.43,0.67]]], dtype='float32')
 
 fingerprint = np.zeros((1, 4), dtype='float32')
@@ -66,22 +76,22 @@ if os.path.exists('models/models.json'):
     for md in models_def['models']:
       models.append(ort.InferenceSession(os.path.expanduser('models/%s' % md), options))
       models[-1].set_providers([provider], None)
-      history_rows.append(2 if not '-5' in md else 5)
+      history_rows.append(15)
       for i in range(21):
         if i == 1:
           start_time = time.time()
-        model_output = [models[-1].run(None, {'vehicle_inputs': np.zeros((1, 50, 13), dtype='float32')[:,-round(min(26, history_rows[len(models)-1]*6.6666667)):,:7], 
-                                              'vehicle_inputs2': np.zeros((1, 5, 6), dtype='float32'),
-                                              'left_flag_inputs': np.zeros((1, 5, 8), dtype='float32') + 0,
-                                              'outer_left_flag_inputs': np.zeros((1, 5, 8), dtype='float32') + 1,
-                                              'right_flag_inputs': np.zeros((1, 5, 8), dtype='float32') + 0,
-                                              'outer_right_flag_inputs': np.zeros((1, 5, 8), dtype='float32') + 1,
-                                              'outer_left_inputs': np.zeros((1, 5, 8), dtype='float32') + 0.1,
-                                              'outer_right_inputs': np.zeros((1, 5, 8), dtype='float32') + 0.1,
-                                              'left_inputs': np.zeros((1, 5, 8), dtype='float32') + 0.1,
-                                              'right_inputs': np.zeros((1, 5, 8), dtype='float32') + 0.1,
+        model_output = [models[-1].run(None, {'vehicle_inputs': np.zeros((1, 100, 13), dtype='float32')[:,-round(min(93, 93)):,:7], 
+                                              'vehicle_inputs2': np.zeros((1, 15, 6), dtype='float32'),
+                                              'left_flag_inputs': np.zeros((1, 15, 8), dtype='float32') + 0,
+                                              'outer_left_flag_inputs': np.zeros((1, 15, 8), dtype='float32') + 1,
+                                              'right_flag_inputs': np.zeros((1, 15, 8), dtype='float32') + 0,
+                                              'outer_right_flag_inputs': np.zeros((1, 15, 8), dtype='float32') + 1,
+                                              'outer_left_inputs': np.zeros((1, 15, 8), dtype='float32') + 0.1,
+                                              'outer_right_inputs': np.zeros((1, 15, 8), dtype='float32') + 0.1,
+                                              'left_inputs': np.zeros((1, 15, 8), dtype='float32') + 0.1,
+                                              'right_inputs': np.zeros((1, 15, 8), dtype='float32') + 0.1,
                                               'fingerprints': [[1,0,0,0]],
-                                              'center_bias': np.array([[[0.0,0,0],[0.001,0,0],[0.002,0,0],[0.04,0,0]]], dtype='float32') * 0,
+                                              'center_bias': np.array([[[0.0,0,0],[0.001,0,0],[0.002,0,0],[0.04,0,0]]], dtype='float32') * 1,
                                               'model_bias': [np.ones((ANGLE_POLYS,3),dtype='float32') * 0],
                                               'center_crossings': [CENTER_CROSSINGS],
                                               'hysteresis': [HYSTERESIS * np.random.uniform(low=0.5, high=1.5)]
@@ -95,8 +105,8 @@ if os.path.exists('models/models.json'):
 
       print(np.array(model_output[0][0][0,:,:12], dtype='int32'))
       print(np.round(model_output[0][0][0,:,12:], decimals=1))
-      print(13, np.round(model_output[0][13], decimals=7))
-      print(14, np.round(model_output[0][14], decimals=7))
+      print(13, np.round(model_output[0][13], decimals=9))
+      print(14, np.round(model_output[0][14], decimals=9))
       print(15, np.round(model_output[0][15], decimals=2))
       print(time.time()-start_time, md)
 
@@ -342,11 +352,11 @@ while 1:
   if len(vehicle_array[0]) >= round(history_rows[-1]*6.6666667+7):
 
     vehicle_array[0] = vehicle_array[0][-round(history_rows[-1]*6.66666667+7):]
-    vehicle_array[1] = vehicle_array[1][-6:]
+    vehicle_array[1] = vehicle_array[1][-15:]
     vehicle_input = [np.array([[vehicle_array[0]]], dtype='float32'), np.array([[vehicle_array[1]]], dtype='float32')]
 
-    camera_array[0] = camera_array[0][-6:]
-    camera_array[1] = camera_array[1][-6:]
+    camera_array[0] = camera_array[0][-15:]
+    camera_array[1] = camera_array[1][-15:]
     camera_input = [np.array([[camera_array[0]]], dtype='float32'), np.array([[camera_array[1]]], dtype='float32')]
 
     profiler.checkpoint('process_inputs1')
@@ -362,7 +372,7 @@ while 1:
     else:
       rate_adjustment = 1.0
 
-    model_output = [models[model_index].run(None, dict({'vehicle_inputs': vehicle_input[0][0,:, -round(min(26,history_rows[model_index]*6.6666667)):] * np.array([[rate_adjustment, 1.0, rate_adjustment, rate_adjustment, rate_adjustment, rate_adjustment, 1.0]], dtype='float32'),
+    model_output = [models[model_index].run(None, dict({'vehicle_inputs': vehicle_input[0][0,:, -round(min(93,history_rows[model_index]*6.6666667)):] * np.array([[rate_adjustment, 1.0, rate_adjustment, rate_adjustment, rate_adjustment, rate_adjustment, 1.0]], dtype='float32'),
                                                         'vehicle_inputs2': vehicle_input[1][0,:, -history_rows[model_index]:] * np.array([[rate_adjustment, 1.0 , 1.0, 1.0, rate_adjustment, rate_adjustment]], dtype='float32'),
                                                         'left_flag_inputs': camera_input[0][0,:, -history_rows[model_index]:,:8],
                                                         'outer_left_flag_inputs': camera_input[0][0,:, -history_rows[model_index]:,8:16],
@@ -376,7 +386,7 @@ while 1:
                                                         'center_bias': [center_bias[model_index,:,:]],
                                                         'model_bias': [model_bias[model_index,:,:]],
                                                         'center_crossings': [CENTER_CROSSINGS],
-                                                        'hysteresis': [HYSTERESIS * np.random.uniform(low=0.75, high=1.25)],
+                                                        'hysteresis': [HYSTERESIS * np.random.uniform(low=1.0, high=1.0)],
                                                     }))]
 
     profiler.checkpoint('predict') 
@@ -391,7 +401,7 @@ while 1:
     p_poly = model_output[0][poly_react + 1][0]
 
     something_masked = False
-    if left_missing == model_output[0][-1][4]:
+    '''if left_missing == model_output[0][-1][4]:
       print("LEFT MASKED!  ", end='')
       something_masked = True
     if right_missing == model_output[0][-1][5]:
@@ -401,12 +411,12 @@ while 1:
       print("Left Solid: %d  %d  Left Dashed: %d  %d    Right Solid: %d  %d  Right Dashed: %d  %d" % (cs.camLeft.solid, model_output[0][-1][0], cs.camLeft.dashed, model_output[0][-1][1], cs.camRight.solid, model_output[0][-1][2], cs.camRight.dashed, model_output[0][-1][3]))
       something_masked = True
     if something_masked:
-      print()
+      print()'''
 
     if lr_prob == 0 or len(models) == 1 or model_index == 1 or (int(abs(calc_angles[0][poly_react,8]) * model_factor) == 0 and int(abs(calc_angles[model_index][poly_react,1]) * model_factor) == 0):
       angle_plan = send_path_to_controls(model_index, calc_angles, calc_center, angle_plan, projected_steering, path_send, gernPath, cs, angle_bias, lane_width, width_trim, l_prob, r_prob, lr_prob, calibrated, c_poly, l_poly, r_poly, d_poly, p_poly, steer_override_timer, something_masked)
       profiler.checkpoint('send')
-      time.sleep(0.001)
+      time.sleep(0.02)
 
     if frame % 151 == 0:
       print(np.round(model_output[0][0][0,:10,:12], decimals=1))

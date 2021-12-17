@@ -440,6 +440,7 @@ while 1:
       center_bias[0][:,0] += (0.00001 * cs.vEgo * lr_prob * model_output[0][13][0])
       straight_bias[0][:,0] += (0.000001 * cs.vEgo * lr_prob * (calc_angles[model_index][poly_react,:] - calc_angles[model_index][poly_react,0]))
       model_bias[0][-1,:] = 0.0
+      center_bias[0][-1,:] = 0.0
 
       profiler.checkpoint('bias')
 

@@ -40,9 +40,9 @@ BIT_MASK = [1, 128, 64, 32, 8, 4, 2, 8,
 
 history_rows = []
 OUTPUT_ROWS = 15
-CENTER_POLYS = 4
-ANGLE_POLYS = 5 
-CENTER_CROSSINGS = [0.000000025,3,11,0.5,0.5]
+CENTER_POLYS = 6
+ANGLE_POLYS = 5
+CENTER_CROSSINGS = [0.003,3,11,0.5,0.5,5.0,10.0,5.0,0.40,0.08]
 
 HYSTERESIS = np.array([[[100.,100.,100.,100.], [100.,100.,100.,100.]],
                        [[100.,100.,100.,100.], [100.,100.,100.,100.]],
@@ -91,7 +91,7 @@ if os.path.exists('models/models.json'):
                                               'left_inputs': np.zeros((1, 15, 8), dtype='float32') + 0.1,
                                               'right_inputs': np.zeros((1, 15, 8), dtype='float32') + 0.1,
                                               'fingerprints': [[1,0,0,0]],
-                                              'center_bias': np.array([[[0.0,0,0],[0.001,0,0],[0.002,0,0],[0.04,0,0]]], dtype='float32') * 1,
+                                              'center_bias': np.array([[[0.0,0,0],[0.0,0,0],[0.0,0,0],[0.001,0,0],[0.002,0,0],[0.04,0,0]]], dtype='float32') * 1,
                                               'model_bias': [np.ones((ANGLE_POLYS,3),dtype='float32') * 0],
                                               'center_crossings': [CENTER_CROSSINGS],
                                               'hysteresis': [HYSTERESIS * np.random.uniform(low=0.5, high=1.5)]
@@ -430,22 +430,24 @@ while 1:
       lane_width = max(570, lane_width - max_width_step * 2, min(1700, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
 
     steer_override_timer -= 1
-    if steer_override_timer < 0 and abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and cs.torqueRequest != 0 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and cs.camLeft.parm2 > 0 and cs.camRight.parm2 < 0 and not something_masked and (abs(cs.steeringTorque) < 300 or ((cs.steeringTorque < 0) == (cs.camLeft.parm2 + cs.camRight.parm2 < 0))):
-      if cs.camLeft.parm2 + cs.camRight.parm2 > 0:
-        angle_bias += (0.00001 * cs.vEgo)
-      else:
-        angle_bias -= (0.00001 * cs.vEgo)
+    if steer_override_timer < 0 and abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and cs.camLeft.parm2 > 0 and cs.camRight.parm2 < 0 and not something_masked and (abs(cs.steeringTorque) < 300 or ((cs.steeringTorque < 0) == (cs.camLeft.parm2 + cs.camRight.parm2 < 0))):
+      if abs(cs.torqueRequest) > 0:
+        if cs.camLeft.parm2 + cs.camRight.parm2 > 0:
+          angle_bias += (0.00001 * cs.vEgo)
+        else:
+          angle_bias -= (0.00001 * cs.vEgo)
 
       model_bias[0][:,0] += (0.00001 * cs.vEgo * lr_prob * model_output[0][poly_react + 1][0])
       center_bias[0][:,0] += (0.00001 * cs.vEgo * lr_prob * model_output[0][13][0])
       straight_bias[0][:,0] += (0.000001 * cs.vEgo * lr_prob * (calc_angles[model_index][poly_react,:] - calc_angles[model_index][poly_react,0]))
       model_bias[0][-1,:] = 0.0
+      center_bias[0][-1,:] = 0.0
 
       profiler.checkpoint('bias')
 
-    elif model_index == 0 and abs(cs.steeringTorque) > 300 and (cs.steeringTorque < 0) != calc_center[0][4,0] < 0:
+    elif model_index == 0 and abs(cs.steeringTorque) > 300 and (cs.steeringTorque < 0) != calc_center[0][4,0] < 0 and abs(cs.torqueRequest) > 0:
       # Prevent angle_bias adjustment for 3 seconds after driver opposes the model
-      steer_override_timer = 45
+      steer_override_timer = 5
 
     frame += 1
     distance_driven += cs.vEgo
@@ -486,6 +488,7 @@ while 1:
         lateral_factor = abs(float(kegman.conf['lateralFactor']))
         yaw_factor = abs(float(kegman.conf['yawFactor']))
         poly_react = float(kegman.conf['polyReact'])
+        CENTER_CROSSINGS[0] = float(kegman.conf['polyAdjust']) 
         if poly_react < 0: 
           poly_react = -1
         elif poly_react <= 1.2:

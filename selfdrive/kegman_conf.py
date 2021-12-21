@@ -167,6 +167,9 @@ class kegman_conf():
       self.config.update({"V1":"0"})
       self.config.update({"V2":"0"})
 
+    if "polyAdjust" not in self.config:
+      self.config.update({"polyAdjust":"0.03"})
+
     if self.element_updated:
       self.write_config(self.config)
 

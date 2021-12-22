@@ -445,9 +445,9 @@ while 1:
 
       profiler.checkpoint('bias')
 
-    elif model_index == 0 and abs(cs.steeringTorque) > 300 and (cs.steeringTorque < 0) != calc_center[0][4,0] < 0 and abs(cs.torqueRequest) > 0:
+    elif model_index == 0 and abs(cs.steeringTorque) > 300 and (cs.steeringTorque < 0) != (cs.camLeft.parm2 + cs.camRight.parm2 < 0) and abs(cs.torqueRequest) > 0:
       # Prevent angle_bias adjustment for 3 seconds after driver opposes the model
-      steer_override_timer = 5
+      steer_override_timer = 15
 
     frame += 1
     distance_driven += cs.vEgo

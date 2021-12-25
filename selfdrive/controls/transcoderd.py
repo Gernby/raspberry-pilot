@@ -42,7 +42,7 @@ history_rows = []
 OUTPUT_ROWS = 15
 CENTER_POLYS = 6
 ANGLE_POLYS = 5
-CENTER_CROSSINGS = [0.003,3,11,0.5,0.5,5.0,10.0,5.0,0.40,0.08]
+CENTER_CROSSINGS = [0.03,3,11,0.5,0.5,5.0,10.0,5.0,0.40,0.08]
 
 HYSTERESIS = np.array([[[100.,100.,100.,100.], [100.,100.,100.,100.]],
                        [[100.,100.,100.,100.], [100.,100.,100.,100.]],
@@ -91,8 +91,8 @@ if os.path.exists('models/models.json'):
                                               'left_inputs': np.zeros((1, 15, 8), dtype='float32') + 0.1,
                                               'right_inputs': np.zeros((1, 15, 8), dtype='float32') + 0.1,
                                               'fingerprints': [[1,0,0,0]],
-                                              'center_bias': np.array([[[0.0,0,0],[0.0,0,0],[0.0,0,0],[0.001,0,0],[0.002,0,0],[0.04,0,0]]], dtype='float32') * 1,
-                                              'model_bias': [np.ones((ANGLE_POLYS,3),dtype='float32') * 0],
+                                              'center_bias': np.array([[[0.0],[0.0],[0.0],[0.001],[0.002],[0.04]]], dtype='float32') * 0.3,
+                                              'model_bias': [np.ones((ANGLE_POLYS,1),dtype='float32') * 0],
                                               'center_crossings': [CENTER_CROSSINGS],
                                               'hysteresis': [HYSTERESIS * np.random.uniform(low=0.5, high=1.5)]
                                             })]
@@ -259,8 +259,8 @@ for col in range(len(adj_items)):
 
 kegtime_prev = 0
 angle_speed_count = 12
-model_bias = np.zeros((2,ANGLE_POLYS,3), 'float32')
-center_bias = np.zeros((2,CENTER_POLYS,3), 'float32')
+model_bias = np.zeros((2,ANGLE_POLYS,1), 'float32')
+center_bias = np.zeros((2,CENTER_POLYS,1), 'float32')
 straight_bias = np.zeros((2,15,1), 'float32')
 
 calibrated = True
@@ -273,10 +273,10 @@ if not calibration_data is None:
   if not models_def["reset"] or ("models" in calibration_data and calibration_data['models'] == models_def['models']):
     if 'straight_bias' in calibration_data and len(calibration_data['straight_bias']) == 2 * OUTPUT_ROWS:
       straight_bias = np.array(np.reshape(calibration_data['straight_bias'], (2,OUTPUT_ROWS,1)), dtype='float32')
-    if 'center_bias' in calibration_data and len(calibration_data['center_bias']) == 2 * 3 * CENTER_POLYS:
-      center_bias = np.array(np.reshape(calibration_data['center_bias'], (2,CENTER_POLYS,3)), dtype='float32')
-    if 'model_bias' in calibration_data and len(calibration_data['model_bias']) == 2 * 3 * ANGLE_POLYS:
-      model_bias = np.array(np.reshape(calibration_data['model_bias'], (2,ANGLE_POLYS,3)), dtype='float32')
+    if 'center_bias' in calibration_data and len(calibration_data['center_bias']) == 2 * 1 * CENTER_POLYS:
+      center_bias = np.array(np.reshape(calibration_data['center_bias'], (2,CENTER_POLYS,1)), dtype='float32')
+    if 'model_bias' in calibration_data and len(calibration_data['model_bias']) == 2 * 1 * ANGLE_POLYS:
+      model_bias = np.array(np.reshape(calibration_data['model_bias'], (2,ANGLE_POLYS,1)), dtype='float32')
   else:
     os.system("cp /data/params/d/CalibrationParams /data/params/d/CalibrationParams%d" % int(time.time()))
     print("New models!  Resetting bias")
@@ -442,6 +442,9 @@ while 1:
       straight_bias[0][:,0] += (0.000001 * cs.vEgo * lr_prob * (calc_angles[model_index][poly_react,:] - calc_angles[model_index][poly_react,0]))
       model_bias[0][-1,:] = 0.0
 
+      #>>>  NOTE TO SELF:  Self, do not enable the next line!  You know you want to, but DON'T!    <<<#
+      #center_bias[0][-1,:] = 0.0
+
       profiler.checkpoint('bias')
 
     elif model_index == 0 and abs(cs.steeringTorque) > 300 and (cs.steeringTorque < 0) != (cs.camLeft.parm2 + cs.camRight.parm2 < 0) and abs(cs.torqueRequest) > 0:
@@ -466,8 +469,8 @@ while 1:
                                                         'lane_width': float(lane_width),
                                                         'angle_bias': float(angle_bias), 
                                                         'straight_bias': list(np.reshape(np.array(straight_bias, dtype='float'), (2 * OUTPUT_ROWS,))), 
-                                                        'center_bias': list(np.reshape(np.array(center_bias, dtype='float'), (2 * 3 * CENTER_POLYS,))), 
-                                                        'model_bias': list(np.reshape(np.array(model_bias, dtype='float'), (2 * 3 * ANGLE_POLYS,)))}, indent=2))
+                                                        'center_bias': list(np.reshape(np.array(center_bias, dtype='float'), (2 * 1 * CENTER_POLYS,))), 
+                                                        'model_bias': list(np.reshape(np.array(model_bias, dtype='float'), (2 * 1 * ANGLE_POLYS,)))}, indent=2))
       calibrated = True
       profiler.checkpoint('save_cal')
 

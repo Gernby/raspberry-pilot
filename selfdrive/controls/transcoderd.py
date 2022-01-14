@@ -194,8 +194,6 @@ distance_driven = 0.0
 steer_override_timer = 0
 poly_react = 10
 start_time = 0
-angle_bias_factor = 1
-model_bias_factor = 1
 os.system("taskset -a -cp --cpu-list 2,3 %d" % os.getpid())
 
 path_send = log.Event.new_message()
@@ -431,9 +429,6 @@ while 1:
     steer_override_timer -= 1
     if steer_override_timer < 0 and abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and cs.camLeft.parm2 > 0 and cs.camRight.parm2 < 0 and (abs(cs.steeringTorque) < 300 or ((cs.steeringTorque < 0) == (cs.camLeft.parm2 + cs.camRight.parm2 < 0))): # and not something_masked:
       if abs(cs.torqueRequest) > 0:
-        if partial_reset:
-          model_bias_factor = 2
-          #angle_bias_factor = 5
         if cs.camLeft.parm2 + cs.camRight.parm2 > 0:
           angle_bias += (0.00001 * cs.vEgo)
         else:

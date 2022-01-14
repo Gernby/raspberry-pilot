@@ -38,6 +38,22 @@ BIT_MASK = [1, 128, 64, 32, 8, 4, 2, 8,
             1, 128, 64, 32, 8, 4, 2, 8, 
             1, 128, 64, 32, 8, 4, 2, 8]
 
+HYSTERESIS = np.array([[[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100.,100.,100.,100.], [100.,100.,100.,100.]],
+                       [[100., 0.7,0.43,0.67], [100., 0.7,0.43,0.67]]], dtype='float32')
+
 history_rows = []
 OUTPUT_ROWS = 15
 CENTER_POLYS = 6
@@ -60,9 +76,18 @@ accel_profile = np.array([(np.ones((OUTPUT_ROWS), dtype='float32') * 100),
 prev_angle_plans = np.zeros((6, OUTPUT_ROWS), dtype='float32')
 
 for i in range(2, 7):
-  accel_profile[-i,:-i+1] = accel_profile[-i+1,1:17-i] + accel_profile[-1,i-1:] * 0.75**(i-1)
-accel_profile[-1:] *= 2
+  accel_profile[-i,:-i+1] = accel_profile[-i+1,1:17-i] + accel_profile[-1,i-1:] * 0.95**(i-1)
+accel_profile[-1:3]
 accel_limit = accel_profile
+
+
+'''prev_angle_plans[:,:] = accel_limit[-1] - 1
+calc_angles[0][-1,:] = -(1.2 * accel_limit[-1]) + 1.2
+
+for i in range(12):
+  angle_plan = np.clip(calc_angles[0], np.amax(prev_angle_plans - accel_limit, axis=-2), np.amin(prev_angle_plans + accel_limit, axis=-2))
+  prev_angle_plans[:-1,:] = prev_angle_plans[1:,:]
+  prev_angle_plans[-1,:] = angle_plan[-1]'''
 
 if os.path.exists('models/models.json'):
   with open('models/models.json', 'r') as f:
@@ -89,6 +114,7 @@ if os.path.exists('models/models.json'):
                                               'center_bias': np.array([[[0.0],[0.0],[0.0],[0.001],[0.002],[0.04]]], dtype='float32') * 0.3,
                                               'model_bias': [np.ones((ANGLE_POLYS,1),dtype='float32') * 0],
                                               'center_crossings': [CENTER_CROSSINGS],
+                                              'hysteresis': [HYSTERESIS * np.random.uniform(low=0.5, high=1.5)]
                                             })]
 
         print(len(model_output), len(model_output[0]), len(model_output[0][0]), len(model_output[0][0][0]))
@@ -105,6 +131,21 @@ if os.path.exists('models/models.json'):
       print(15, np.round(model_output[0][15], decimals=2))
       print(time.time()-start_time, md)
       
+      print(len(model_output),len(model_output[0]),len(model_output[0][0]), len(model_output[0][0][0]))
+      print(len(model_output),len(model_output[0]),len(model_output[0][1]), len(model_output[0][1][0]))
+      for j in range(len(model_output[0])):
+        try:
+          print(j, len(model_output[0][j]), len(model_output[0][j][0]))
+        except:
+          print(j, len(model_output[0][j]))
+
+      print(np.array(model_output[0][0][0,:,:12], dtype='int32'))
+      print(np.round(model_output[0][0][0,:,12:], decimals=1))
+      print(13, np.round(model_output[0][13], decimals=9))
+      print(14, np.round(model_output[0][14], decimals=9))
+      print(15, np.round(model_output[0][15], decimals=2))
+      print(time.time()-start_time, md)
+
 def dump_sock(sock, wait_for_one=False):
   if wait_for_one:
     sock.recv()
@@ -151,11 +192,15 @@ def update_calibration(calibration, inputs, cal_col, cs):
   return cal_factor
 
 def send_path_to_controls(model_index, calc_angles, calc_center, angle_plan, projected_steering, path_send, gernPath, cs, angle_bias, lane_width, width_trim, l_prob, r_prob, lr_prob, calibrated, c_poly, l_poly, r_poly, d_poly, p_poly, steer_override_timer, something_masked):
+  #accel_limit2 = accel_limit * 1.0 # if steer_override_timer <= 0 else 0.5
+  #angle_plan = np.clip(calc_angles[model_index] + calibration[0][0] + angle_bias, angle_plan - accel_limit2, angle_plan + accel_limit2)
+  #angle_plan = np.clip(angle_plan, projected_steering - accel_limit, projected_steering + accel_limit2)
   prev_angle_plans[-1,:] = projected_steering
   angle_plan = np.clip(calc_angles[model_index] + calibration[0][0] + angle_bias, np.amax(prev_angle_plans - accel_limit, axis=-2), np.amin(prev_angle_plans + accel_limit, axis=-2))  
   prev_angle_plans[:-1,:-1] = prev_angle_plans[1:,1:]
   prev_angle_plans[-2,:] = angle_plan[poly_react]
   p_poly = np.polyfit(np.linspace(0., 6., num=7), angle_plan[poly_react][3:10] / 54.938633, 4)
+  #p_poly = np.polyfit(np.linspace(-3., 11., num=15), angle_plan[poly_react] / 54.938633, 4)
 
   path_send = log.Event.new_message()
   path_send.init('pathPlan')
@@ -194,8 +239,7 @@ distance_driven = 0.0
 steer_override_timer = 0
 poly_react = 10
 start_time = 0
-angle_bias_factor = 1
-model_bias_factor = 1
+
 os.system("taskset -a -cp --cpu-list 2,3 %d" % os.getpid())
 
 path_send = log.Event.new_message()
@@ -262,7 +306,6 @@ straight_bias = np.zeros((2,15,1), 'float32')
 
 calibrated = True
 calibration_data = params.get("CalibrationParams")
-partial_reset = False
 if not calibration_data is None:
   calibration_data =  json.loads(calibration_data)
   calibration = np.array(calibration_data['calibration'], dtype='float32')
@@ -276,7 +319,6 @@ if not calibration_data is None:
     if 'model_bias' in calibration_data and len(calibration_data['model_bias']) == 2 * 1 * ANGLE_POLYS:
       model_bias = np.array(np.reshape(calibration_data['model_bias'], (2,ANGLE_POLYS,1)), dtype='float32')
   else:
-    partial_reset = True
     os.system("cp /data/params/d/CalibrationParams /data/params/d/CalibrationParams%d" % int(time.time()))
     print("New models!  Resetting bias")
 
@@ -348,7 +390,7 @@ while 1:
   r_prob =     min(1, max(0, cs.camRight.parm4 / 127))
   lr_prob =    (l_prob + r_prob) - l_prob * r_prob
 
-  if len(vehicle_array[0]) >= round(history_rows[-1]*6.6666667+7): 
+  if len(vehicle_array[0]) >= round(history_rows[-1]*6.6666667+7):
 
     vehicle_array[0] = vehicle_array[0][-round(history_rows[-1]*6.66666667+7):]
     vehicle_array[1] = vehicle_array[1][-15:]
@@ -385,6 +427,7 @@ while 1:
                                                         'center_bias': [center_bias[model_index,:,:]],
                                                         'model_bias': [model_bias[model_index,:,:]],
                                                         'center_crossings': [CENTER_CROSSINGS],
+                                                        'hysteresis': [HYSTERESIS * np.random.uniform(low=1.0, high=1.0)],
                                                     }))]
 
     profiler.checkpoint('predict') 
@@ -429,25 +472,17 @@ while 1:
       lane_width = max(570, lane_width - max_width_step * 2, min(1700, lane_width + max_width_step, cs.camLeft.parm2 - cs.camRight.parm2))
 
     steer_override_timer -= 1
-    if steer_override_timer < 0 and abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and cs.camLeft.parm2 > 0 and cs.camRight.parm2 < 0 and (abs(cs.steeringTorque) < 300 or ((cs.steeringTorque < 0) == (cs.camLeft.parm2 + cs.camRight.parm2 < 0))): # and not something_masked:
+    if steer_override_timer < 0 and abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and cs.camLeft.parm2 > 0 and cs.camRight.parm2 < 0 and not something_masked and (abs(cs.steeringTorque) < 300 or ((cs.steeringTorque < 0) == (cs.camLeft.parm2 + cs.camRight.parm2 < 0))):
       if abs(cs.torqueRequest) > 0:
-        if partial_reset:
-          model_bias_factor = 2
-          #angle_bias_factor = 5
         if cs.camLeft.parm2 + cs.camRight.parm2 > 0:
           angle_bias += (0.00001 * cs.vEgo)
         else:
           angle_bias -= (0.00001 * cs.vEgo)
 
       model_bias[0][:,0] += (0.00001 * cs.vEgo * lr_prob * model_output[0][poly_react + 1][0])
+      center_bias[0][:,0] += (0.00001 * cs.vEgo * lr_prob * model_output[0][13][0])
+      straight_bias[0][:,0] += (0.000001 * cs.vEgo * lr_prob * (calc_angles[model_index][poly_react,:] - calc_angles[model_index][poly_react,0]))
       model_bias[0][-1,:] = 0.0
-
-      center_bias[0][0,0] += (0.000001 * cs.vEgo * lr_prob * model_output[0][13][0,0])
-      center_bias[0][1,0] += (0.000001 * cs.vEgo * lr_prob * model_output[0][13][0,1])
-      center_bias[0][2,0] += (0.000001 * cs.vEgo * lr_prob * model_output[0][13][0,2])
-      center_bias[0][3,0] += (0.000001 * cs.vEgo * lr_prob * model_output[0][13][0,3])
-      center_bias[0][4,0] += (0.000001 * cs.vEgo * lr_prob * model_output[0][13][0,4])
-      center_bias[0][5,0] += (0.000001 * cs.vEgo * lr_prob * (model_output[0][13][0,5] - ((cs.camLeft.parm2 + cs.camRight.parm2) / 993)))
 
       #>>>  NOTE TO SELF:  Self, do not enable the next line!  You know you want to, but DON'T!    <<<#
       #center_bias[0][-1,:] = 0.0

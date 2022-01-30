@@ -14,5 +14,5 @@ python3 ~/raspilot/selfdrive/pandad.py &
 python3 ~/raspilot/selfdrive/controls/controlsd.py & 
 ~/raspilot/selfdrive/locationd/ubloxd &
 #taskset -a --cpu-list 2,3 python ~/raspilot/dashboard.py &
-sleep 15
+#sleep 15
 python3 ~/raspilot/dashboard.py &

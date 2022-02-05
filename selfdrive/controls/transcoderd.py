@@ -401,7 +401,6 @@ while 1:
     d_poly = model_output[0][angle_speed_count + 2][0]
     p_poly = model_output[0][poly_react + 1][0]
 
-
     something_masked = False
     '''if left_missing == model_output[0][-1][4]:
       print("LEFT MASKED!  ", end='')
@@ -435,19 +434,19 @@ while 1:
     if steer_override_timer < 0 and abs(cs.steeringRate) < 3 and abs(cs.steeringAngle - calibration[0][0]) < 3 and l_prob > 0 and r_prob > 0 and cs.vEgo > 10 and cs.camLeft.parm2 > 0 and cs.camRight.parm2 < 0 and (abs(cs.steeringTorque) < 300 or ((cs.steeringTorque < 0) == (cs.camLeft.parm2 + cs.camRight.parm2 < 0))): # and not something_masked:
       if abs(cs.torqueRequest) > 0:
         if cs.camLeft.parm2 + cs.camRight.parm2 > 0:
-          angle_bias += (0.00001 * cs.vEgo)
+          angle_bias += (0.00001 * cs.vEgo * lr_prob)
         else:
-          angle_bias -= (0.00001 * cs.vEgo)
+          angle_bias -= (0.00001 * cs.vEgo * lr_prob)
 
       model_bias[0][:,0] += (0.00001 * cs.vEgo * lr_prob * model_output[0][poly_react + 1][0])
       model_bias[0][-1,:] = 0.0
 
-      center_bias[0][0,0] += (0.00001 * cs.vEgo * lr_prob * model_output[0][13][0,0])
-      center_bias[0][1,0] += (0.00001 * cs.vEgo * lr_prob * model_output[0][13][0,1])
-      center_bias[0][2,0] += (0.00001 * cs.vEgo * lr_prob * model_output[0][13][0,2])
-      center_bias[0][3,0] += (0.00001 * cs.vEgo * lr_prob * model_output[0][13][0,3])
-      center_bias[0][4,0] += (0.00001 * cs.vEgo * lr_prob * model_output[0][13][0,4])
-      center_bias[0][5,0] += (0.00001 * cs.vEgo * lr_prob * (model_output[0][13][0,5] - ((cs.camLeft.parm2 + cs.camRight.parm2) / 993)))
+      center_bias[0][0,0] += (0.00002 * cs.vEgo * lr_prob * model_output[0][13][0,0])
+      center_bias[0][1,0] += (0.00002 * cs.vEgo * lr_prob * model_output[0][13][0,1])
+      center_bias[0][2,0] += (0.00002 * cs.vEgo * lr_prob * model_output[0][13][0,2])
+      center_bias[0][3,0] += (0.00002 * cs.vEgo * lr_prob * model_output[0][13][0,3])
+      center_bias[0][4,0] += (0.00002 * cs.vEgo * lr_prob * model_output[0][13][0,4])
+      center_bias[0][5,0] += (0.00002 * cs.vEgo * lr_prob * (model_output[0][13][0,5] - ((cs.camLeft.parm2 + cs.camRight.parm2) / 993)))
 
       #>>>  NOTE TO SELF:  Self, do not enable the next line!  You know you want to, but DON'T!    <<<#
       #center_bias[0][-1,:] = 0.0

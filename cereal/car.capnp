@@ -150,6 +150,10 @@ struct CarState {
   blinkers @51 :Bool;
   gpsLocation @53 :GpsLocationData;
   laneChanging @54 :Bool;
+  camSetMeX00 @55 :Int16;
+  camSetMeX04 @56 :Int16;
+  camSetMeX10 @57 :Int16;
+  camSetMeX80 @58 :Int16;
 
   # lock info
   doorOpen @24 :Bool;

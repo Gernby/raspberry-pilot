@@ -174,7 +174,7 @@ class CarController():
     apply_steer = int(clip(-actuators.steer * STEER_MAX, -self.BP2, self.BP2))
     apply_steer = int(interp(apply_steer, [-self.BP2, -self.BP1, self.BP1, self.BP2], [-STEER_MAX, -self.BP1, self.BP1, STEER_MAX]))
     
-    lkas_active = not CS.steer_not_allowed and CS.lkMode
+    lkas_active = not CS.steer_not_allowed and CS.lkMode and actuators.steer != 0
 
     # Send CAN commands.
     can_sends = []
@@ -184,7 +184,7 @@ class CarController():
     can_sends.append(hondacan.create_steering_control(self.packer, apply_steer,
       lkas_active, CS.CP.carFingerprint, idx, CS.CP.isPandaBlack))
 
-    can_sends.append(hondacan.create_steering_control_x2(self.packer, CS.CP.carFingerprint, idx, CS.CP.isPandaBlack))
+    can_sends.append(hondacan.create_bosch_supplemental_1(self.packer, CS.CP.carFingerprint, idx, CS.CP.isPandaBlack))
 
     # Send dashboard UI commands.
     if (frame % 10) == 0:

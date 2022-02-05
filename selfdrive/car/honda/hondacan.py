@@ -49,12 +49,15 @@ def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_
   bus = get_pt_bus(car_fingerprint, is_panda_black)
   return packer.make_can_msg("BRAKE_COMMAND", bus, values, idx)
 
-def create_steering_control_x2(packer, car_fingerprint, idx, has_relay):
+def create_bosch_supplemental_1(packer, car_fingerprint, idx, is_panda_black):
+  # non-active params
   values = {
-    "16X_0": 0,
+    "SET_ME_X04": 0x04,
+    "SET_ME_X80": 0x80,
+    "SET_ME_X10": 0x10,
   }
-  bus = get_lkas_cmd_bus(car_fingerprint, has_relay)
-  return packer.make_can_msg("STEERING_CONTROL_X2", bus, values, idx)
+  bus = get_lkas_cmd_bus(car_fingerprint, is_panda_black)
+  return packer.make_can_msg("BOSCH_SUPPLEMENTAL_1", bus, values, idx)
 
 def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, idx, is_panda_black):
   values = {

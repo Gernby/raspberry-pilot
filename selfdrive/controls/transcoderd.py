@@ -42,7 +42,7 @@ history_rows = []
 OUTPUT_ROWS = 15
 CENTER_POLYS = 6
 ANGLE_POLYS = 5
-CENTER_CROSSINGS = [0.03,3,11,0.5,0.5,5.0,10.0,5.0,0.40,0.08]
+CENTER_CROSSINGS = [0.02,3,11,0.5,0.5,5.0,10.0,5.0,0.40,0.08]
 
 fingerprint = np.zeros((1, 4), dtype='float32')
 calc_center = [np.zeros((OUTPUT_ROWS, 4)),np.zeros((OUTPUT_ROWS, 4))]

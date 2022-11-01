@@ -7,6 +7,7 @@ pkill -f pandad
 pkill -f boardd
 pkill -f ubloxd
 pkill -f dashboard
+sleep 15
 taskset -a --cpu-list 2,3 python3 ~/raspilot/selfdrive/controls/transcoderd.py &
 taskset -a --cpu-list 0,1 python3 ~/raspilot/selfdrive/pandad.py &
 #taskset -a --cpu-list 0,1 ~/raspilot/selfdrive/boardd/boardd &

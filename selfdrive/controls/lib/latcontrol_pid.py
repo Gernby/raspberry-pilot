@@ -215,8 +215,8 @@ class LatControlPID(object):
         elif np.sign(self.projected_lane_error) == np.sign(self.prev_projected_lane_error) and \
            (abs(self.projected_lane_error) < abs(self.prev_projected_lane_error) or \
             np.sign(self.cPoints[3]) == -np.sign(self.cPoints[-1])) and \
-           (np.sign(self.output_steer) == -np.sign(self.fast_angles[7,-1] - path_plan.angleOffset - self.angle_ff_offset) or \
-            np.sign(self.output_steer) == -np.sign(self.fast_angles[7,-1] - self.fast_angles[0,-1])):
+           (np.sign(self.output_steer) == -np.sign(self.p_poly(7) - path_plan.angleOffset - self.angle_ff_offset) or \
+            np.sign(self.output_steer) == -np.sign(self.p_poly(7) - self.p_poly(0))):
           self.zero_poly_crossed = max(cur_time - 4, self.zero_poly_crossed)
           self.zero_steer_crossed = max(cur_time - 4, self.zero_steer_crossed)
           self.use_deadzone = False
@@ -248,7 +248,6 @@ class LatControlPID(object):
       if self.frame > self.next_params_put and v_ego == 0 and not cruise_enabled:
         self.next_params_put = self.frame + 36000
         put_nonblocking("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain, 'angle_ff_offset': self.angle_ff_offset}))
-        #self.params.put("LateralGain", json.dumps({'angle_ff_gain': self.angle_ff_gain}))
         self.profiler.checkpoint('params_put')
       self.output_steer = 0.0
       self.stage = "0"
@@ -273,12 +272,8 @@ class LatControlPID(object):
         else:
           react_steer = self.react_steer + self.react_center[min(len(self.react_center)-1, int(abs(angle_steers - path_plan.angleOffset - self.angle_ff_offset)))]
           self.damp_angle_steers += (angle_steers + angle_steers_rate * (self.damp_steer + float(react_steer)) - self.damp_angle_steers) / max(1.0, self.damp_steer * 100.)
-          if self.use_poly_angle:
-            self.angle_steers_des = (self.p_poly(self.angle_index * 0.15 - 3)) * 54.938633 + self.projected_lane_error
-          else:
-            self.angle_steers_des = interp(self.angle_index, self.path_index, self.fast_angles[min(len(self.fast_angles)-1, int(self.polyReact))]) + self.projected_lane_error
+          self.angle_steers_des = (self.p_poly(self.angle_index * 0.15)) * 54.938633 + path_plan.angleBias + path_plan.angleOffset + self.projected_lane_error
           self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des) / max(1.0, self.damp_mpc * 100.)
-          #self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des + self.projected_lane_error) / max(1.0, self.damp_mpc * 100.)
           if (self.damp_angle_steers - self.damp_angle_steers_des) * (angle_steers - self.damp_angle_steers_des) < 0:
             self.damp_angle_steers = self.damp_angle_steers_des
 

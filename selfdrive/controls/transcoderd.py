@@ -175,6 +175,8 @@ def send_path_to_controls(model_index, calc_angles, calc_center, angle_plan, pro
   path_send.pathPlan.modelIndex = model_index
   path_send.pathPlan.paramsValid = calibrated
   path_send.pathPlan.cPoly = [float(x) for x in c_poly]
+  path_send.pathPlan.lPoly = [float(x) for x in c_poly]
+  path_send.pathPlan.rPoly = [float(x) for x in c_poly]
   path_send.pathPlan.pPoly = [float(x) for x in p_poly]
   path_send.pathPlan.dPoly = [float(x) for x in d_poly]
   path_send.pathPlan.lProb = float(l_prob)

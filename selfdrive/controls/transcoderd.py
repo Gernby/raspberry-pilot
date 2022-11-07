@@ -52,6 +52,7 @@ calc_angles = [np.zeros((ANGLE_SPEED_COUNT, OUTPUT_ROWS)), np.zeros((ANGLE_SPEED
 angle_plan = np.zeros((1, OUTPUT_ROWS))
 projected_rate = np.arange(0., 0.10066667,0.0066666)[1:]
 previous_rate = 0.
+center_error = -0.2
 accel_profile = np.array([(np.ones((OUTPUT_ROWS), dtype='float32') * 100),
                           (np.ones((OUTPUT_ROWS), dtype='float32') * 100),
                           (np.ones((OUTPUT_ROWS), dtype='float32') * 100),
@@ -87,6 +88,7 @@ if os.path.exists('models/models.json'):
                                               'left_inputs': np.zeros((1, 15, 8), dtype='float32') + 0.01,
                                               'right_inputs': np.zeros((1, 15, 8), dtype='float32') + 0.01,
                                               'fingerprints': [[[0,0,0,1]]],
+                                              'center_error_input': [[center_error]],
                                               'center_bias': np.array([[[0.21],[-0.01],[0.0],[0.003],[1100.2]]], dtype='float32') * np.array([[[0.00001], [0.00001], [0.00001], [0.00001], [0.00001]]], dtype='float32'),
                                               'model_bias': [np.ones((ANGLE_POLYS,1),dtype='float32') * 0],
                                             })]
@@ -385,6 +387,7 @@ while 1:
                                                         'left_inputs': camera_input[1][0,:, -history_rows[model_index]:,16:24],
                                                         'right_inputs': camera_input[1][0,:, -history_rows[model_index]:,24:],
                                                         'fingerprints': [fingerprint], 
+                                                        'center_error_input': [[center_error]],
                                                         'center_bias': [center_bias[model_index,:,:]],
                                                         'model_bias': [model_bias[model_index,:,:]],
                                                     }))]
@@ -480,6 +483,7 @@ while 1:
         lateral_factor = abs(float(kegman.conf['lateralFactor']))
         yaw_factor = abs(float(kegman.conf['yawFactor']))
         poly_react = max(0, min(ANGLE_SPEED_COUNT, float(kegman.conf['polyReact'])))
+        center_error = min(1., max(-1, float(kegman.conf['centerError'])))
 
       profiler.checkpoint('kegman')
 

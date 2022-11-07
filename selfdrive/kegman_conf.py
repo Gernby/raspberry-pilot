@@ -167,8 +167,8 @@ class kegman_conf():
       self.config.update({"V1":"0"})
       self.config.update({"V2":"0"})
 
-    if "polyAdjust" not in self.config:
-      self.config.update({"polyAdjust":"0.03"})
+    if "centerError" not in self.config:
+      self.config.update({"centerError":"0.0"})
 
     if "polyAccelLimit" not in self.config:
       self.config.update({"polyAccelLimit":"0.6"})

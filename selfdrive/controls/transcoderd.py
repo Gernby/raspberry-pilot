@@ -43,7 +43,7 @@ OUTPUT_ROWS = 15
 CENTER_POLYS = 5
 ANGLE_POLYS = 5
 
-ANGLE_SPEED_COUNT = 4
+ANGLE_SPEED_COUNT = 20
 
 fingerprint = np.zeros((1, 4), dtype='float32')
 calc_center = [np.zeros((OUTPUT_ROWS, 4)),np.zeros((OUTPUT_ROWS, 4))]
@@ -52,7 +52,28 @@ calc_angles = [np.zeros((ANGLE_SPEED_COUNT, OUTPUT_ROWS)), np.zeros((ANGLE_SPEED
 angle_plan = np.zeros((1, OUTPUT_ROWS))
 projected_rate = np.arange(0., 0.10066667,0.0066666)[1:]
 previous_rate = 0.
-center_error = -0.2
+center_error_count = np.zeros(ANGLE_SPEED_COUNT)
+center_error = [np.array([ 0, 0, -1, -1, -1])*0,
+                np.array([ 0, 0, -1, -1, -1])*0.25,
+                np.array([ 0, 0, -1, -1, -1])*0.5,
+                np.array([ 0, 0, -1, -1, -1])*0.75,
+                np.array([ 0, 0, -1, -1, -1])*1.,
+                np.array([ 0, 0, -0.5, -0.75, -1])*1.25,
+                np.array([ 0, 0, -0.5, -0.75, -1])*1.,
+                np.array([ 0, 0, -0.5, -0.75, -1])*0.75,
+                np.array([ 0, 0, -0.5, -0.75, -1])*0.5,
+                np.array([ 0, 0, -0.5, -0.75, -1])*0.25,
+                np.array([ 0., 0., 0., -0.5, -1.])*1.0,
+                np.array([ 0., 0., 0., -0.5, -1.])*0.9, 
+                np.array([ 0., 0., 0., -0.5, -1.])*0.8,
+                np.array([ 0., 0., 0., -0.5, -1.])*0.7,
+                np.array([ 0., 0., 0., -0.5, -1.])*0.6,
+                np.array([ 0., 0., 0., -0.5, -1.])*0.5,
+                np.array([ 0., 0., 0., -0.5, -1.])*0.4,
+                np.array([ 0., 0., 0., -0.5, -1.])*0.3,
+                np.array([ 0., 0., 0., -0.5, -1.])*0.2,
+                np.array([ 0., 0., 0., -0.5, -1.])*0.1]
+
 accel_profile = np.array([(np.ones((OUTPUT_ROWS), dtype='float32') * 100),
                           (np.ones((OUTPUT_ROWS), dtype='float32') * 100),
                           (np.ones((OUTPUT_ROWS), dtype='float32') * 100),
@@ -88,8 +109,8 @@ if os.path.exists('models/models.json'):
                                               'left_inputs': np.zeros((1, 15, 8), dtype='float32') + 0.01,
                                               'right_inputs': np.zeros((1, 15, 8), dtype='float32') + 0.01,
                                               'fingerprints': [[[0,0,0,1]]],
-                                              'center_error_input': [[center_error]],
-                                              'center_bias': np.array([[[0.21],[-0.01],[0.0],[0.003],[1100.2]]], dtype='float32') * np.array([[[0.00001], [0.00001], [0.00001], [0.00001], [0.00001]]], dtype='float32'),
+                                              'center_error_input': [center_error],
+                                              'center_bias': np.array([[[0.21],[-0.01],[0.0],[0.003],[5100.2]]], dtype='float32') * np.array([[[0.00001], [0.00001], [0.00001], [0.00001], [0.00001]]], dtype='float32'),
                                               'model_bias': [np.ones((ANGLE_POLYS,1),dtype='float32') * 0],
                                             })]
 
@@ -102,9 +123,9 @@ if os.path.exists('models/models.json'):
       print(len(model_output), len(model_output[0]), len(model_output[0][0]))
       print(np.array(100 * model_output[0][0][0,:,:ANGLE_SPEED_COUNT], dtype='int32'))
       print()
-      print(np.round(model_output[0][0][0,:,ANGLE_SPEED_COUNT:], decimals=1))
-      print(14, np.round(model_output[0][ANGLE_SPEED_COUNT+1], decimals=11))
-      print(14, np.round(model_output[0][ANGLE_SPEED_COUNT+2], decimals=11))
+      print(np.array(model_output[0][0][0,:,ANGLE_SPEED_COUNT:], dtype='int32'))
+      print(np.sum(np.absolute(model_output[0][0][0,:,ANGLE_SPEED_COUNT:]), axis=-2))
+      print(np.argmin(np.sum(np.absolute(model_output[0][0][0,:,ANGLE_SPEED_COUNT:]), axis=-2)))
       print(time.time()-start_time, md)
       print(len(model_output), len(model_output[0]), len(model_output[0][0]), len(model_output[0][-1]))
       
@@ -157,9 +178,9 @@ def update_calibration(calibration, inputs, cal_col, cs):
 def send_path_to_controls(model_index, calc_angles, calc_center, angle_plan, projected_steering, path_send, gernPath, cs, angle_bias, lane_width, width_trim, l_prob, r_prob, lr_prob, calibrated, c_poly, d_poly, steer_override_timer, something_masked):
   prev_angle_plans[-1,:] = projected_steering
   if steer_override_timer <= 0:
-    angle_plan = np.clip(calc_angles[model_index], np.amax(prev_angle_plans - accel_limit, axis=-2), np.amin(prev_angle_plans + accel_limit, axis=-2))  
+    angle_plan = np.clip(calc_angles[0], np.amax(prev_angle_plans - accel_limit, axis=-2), np.amin(prev_angle_plans + accel_limit, axis=-2))  
   else:
-    angle_plan = np.clip(calc_angles[model_index], np.amax(prev_angle_plans - (0.25 * accel_limit), axis=-2), np.amin(prev_angle_plans + (0.25 * accel_limit), axis=-2))  
+    angle_plan = np.clip(calc_angles[0], np.amax(prev_angle_plans - (0.25 * accel_limit), axis=-2), np.amin(prev_angle_plans + (0.25 * accel_limit), axis=-2))  
 
   prev_angle_plans[:-1,:-1] = prev_angle_plans[1:,1:]
   prev_angle_plans[-2,:] = angle_plan[0]
@@ -174,7 +195,7 @@ def send_path_to_controls(model_index, calc_angles, calc_center, angle_plan, pro
   path_send.pathPlan.laneWidth = float(lane_width + width_trim)
   path_send.pathPlan.angleOffset = float(calibration[0][0])
   path_send.pathPlan.angleBias = angle_bias
-  path_send.pathPlan.modelIndex = model_index
+  path_send.pathPlan.modelIndex = float(model_index)
   path_send.pathPlan.paramsValid = calibrated
   path_send.pathPlan.cPoly = [float(x) for x in c_poly]
   path_send.pathPlan.lPoly = [float(x) for x in c_poly]
@@ -371,31 +392,34 @@ while 1:
 
     profiler.checkpoint('calibrate')
 
-    if model_index == 0 and lr_prob > 0:
+    if lr_prob > 0:
       rate_adjustment = np.interp(cs.vEgo, [0., 40.], [speed_factor, 1.00])
     else:
       rate_adjustment = 1.0
 
-    model_output = [models[model_index].run(None, dict({'vehicle_inputs': vehicle_input[0][0,:, -50:] * np.array([[rate_adjustment, 1.0, rate_adjustment, rate_adjustment, rate_adjustment, rate_adjustment, 1.0, 1.0]], dtype='float32'),
-                                                        'vehicle_inputs2': vehicle_input[1][0,:, -history_rows[model_index]:] * np.array([[rate_adjustment, 1.0 , 1.0, 1.0, rate_adjustment, rate_adjustment]], dtype='float32'),
-                                                        'left_flag_inputs': camera_input[0][0,:, -history_rows[model_index]:,:8],
-                                                        'outer_left_flag_inputs': camera_input[0][0,:, -history_rows[model_index]:,8:16],
-                                                        'right_flag_inputs': camera_input[0][0,:, -history_rows[model_index]:,16:24],
-                                                        'outer_right_flag_inputs': camera_input[0][0,:, -history_rows[model_index]:,24:],
-                                                        'outer_left_inputs': camera_input[1][0,:, -history_rows[model_index]:,:8],
-                                                        'outer_right_inputs': camera_input[1][0,:, -history_rows[model_index]:,8:16],
-                                                        'left_inputs': camera_input[1][0,:, -history_rows[model_index]:,16:24],
-                                                        'right_inputs': camera_input[1][0,:, -history_rows[model_index]:,24:],
+    model_output = [models[0].run(None, dict({'vehicle_inputs': vehicle_input[0][0,:, -50:] * np.array([[rate_adjustment, 1.0, rate_adjustment, rate_adjustment, rate_adjustment, rate_adjustment, 1.0, 1.0]], dtype='float32'),
+                                                        'vehicle_inputs2': vehicle_input[1][0,:, -history_rows[0]:] * np.array([[rate_adjustment, 1.0 , 1.0, 1.0, rate_adjustment, rate_adjustment]], dtype='float32'),
+                                                        'left_flag_inputs': camera_input[0][0,:, -history_rows[0]:,:8],
+                                                        'outer_left_flag_inputs': camera_input[0][0,:, -history_rows[0]:,8:16],
+                                                        'right_flag_inputs': camera_input[0][0,:, -history_rows[0]:,16:24],
+                                                        'outer_right_flag_inputs': camera_input[0][0,:, -history_rows[0]:,24:],
+                                                        'outer_left_inputs': camera_input[1][0,:, -history_rows[0]:,:8],
+                                                        'outer_right_inputs': camera_input[1][0,:, -history_rows[0]:,8:16],
+                                                        'left_inputs': camera_input[1][0,:, -history_rows[0]:,16:24],
+                                                        'right_inputs': camera_input[1][0,:, -history_rows[0]:,24:],
                                                         'fingerprints': [fingerprint], 
-                                                        'center_error_input': [[center_error]],
-                                                        'center_bias': [center_bias[model_index,:,:]],
-                                                        'model_bias': [model_bias[model_index,:,:]],
+                                                        'center_error_input': [center_error],
+                                                        'center_bias': [center_bias[0,:,:]],
+                                                        'model_bias': [model_bias[0,:,:]],
                                                     }))]
 
     profiler.checkpoint('predict') 
-    calc_angles[model_index] = np.transpose(model_output[0][0][0,:,:ANGLE_SPEED_COUNT])
-    calc_angles[model_index][:,:] = (1 - (poly_react % 1)) * calc_angles[model_index][int(poly_react // 1)] + (poly_react % 1) * calc_angles[model_index][int(poly_react // 1 + 1)] - straight_bias[0,:,0] 
-    calc_center[model_index] = model_output[0][0][0,:,ANGLE_SPEED_COUNT:ANGLE_SPEED_COUNT+1]
+    calc_angles[0] = np.transpose(model_output[0][0][0,:,:ANGLE_SPEED_COUNT])
+    model_index = np.argmin(np.sum(np.absolute(model_output[0][0][0,:10,ANGLE_SPEED_COUNT:]), axis=-2))
+    if lr_prob > 0 and steer_override_timer <= 0 and cs.vEgo >= 10:  
+      center_error_count[model_index] += 1
+    calc_angles[0][:,:] = calc_angles[0][model_index:model_index+1] - straight_bias[0,:,0] 
+    calc_center[0] = model_output[0][0][0,:,ANGLE_SPEED_COUNT:ANGLE_SPEED_COUNT+1]
     projected_steering = cs.steeringAngle + (cs.steeringRate * projected_rate) + ((cs.steeringRate - previous_rate) * projected_rate / 6.66667)
     previous_rate = cs.steeringRate
     c_poly = model_output[0][ANGLE_SPEED_COUNT + 1][0]
@@ -403,14 +427,15 @@ while 1:
 
     something_masked = False
 
-    if lr_prob == 0 or len(models) == 1 or model_index == 1 or (int(abs(calc_angles[0][0,8]) * model_factor) == 0 and int(abs(calc_angles[model_index][0,1]) * model_factor) == 0):
-      angle_plan = send_path_to_controls(model_index, calc_angles, calc_center, angle_plan, projected_steering, path_send, gernPath, cs, angle_bias, lane_width, width_trim, l_prob, r_prob, lr_prob, calibrated, c_poly, d_poly, steer_override_timer, something_masked)
-      profiler.checkpoint('send')
-      time.sleep(0.02)
+    angle_plan = send_path_to_controls(model_index, calc_angles, calc_center, angle_plan, projected_steering, path_send, gernPath, cs, angle_bias, lane_width, width_trim, l_prob, r_prob, lr_prob, calibrated, c_poly, d_poly, steer_override_timer, something_masked)
+    profiler.checkpoint('send')
+    time.sleep(0.02)
 
     if frame % 151 == 0:
-      print((100 * np.transpose(angle_plan))//10)
-      print(np.round(model_output[0][0][0,:,ANGLE_SPEED_COUNT:14], decimals=1))
+      print("best_angles: ", model_index)
+      print(center_error_count // 1)
+      print((100 * np.transpose(angle_plan[0,:]))//10)
+      print(np.array(model_output[0][0][0,:,ANGLE_SPEED_COUNT + model_index], dtype='int32'))
 
     max_width_step = 0.005 * cs.vEgo * l_prob * r_prob
     if cs.camLeft.parm2 > 0 and cs.camRight.parm2 < 0 and not something_masked:
@@ -438,7 +463,7 @@ while 1:
 
       profiler.checkpoint('bias')
 
-    elif model_index == 0 and abs(cs.steeringTorque) > 600 and (cs.steeringTorque < 0) != (cs.camLeft.parm2 + cs.camRight.parm2 < 0) and abs(cs.torqueRequest) > 0:
+    elif abs(cs.steeringTorque) > 600 and (cs.steeringTorque < 0) != (cs.camLeft.parm2 + cs.camRight.parm2 < 0) and abs(cs.torqueRequest) > 0:
       # Prevent angle_bias adjustment for 2 seconds after driver opposes the model
       steer_override_timer = 30
     #except:
@@ -458,6 +483,7 @@ while 1:
       next_params_distance = distance_driven + 13300
       print(np.round(calibration[0],2))
       put_nonblocking("CalibrationParams", json.dumps({'models': models_def['models'], 
+                                                        'center_error_count': list(center_error_count),
                                                         'calibration': list(np.concatenate(([float(x) for x in calibration[0]],[float(x) for x in calibration[1]],[float(x) for x in calibration[2]],[float(x) for x in calibration[3]]), axis=0)),
                                                         'lane_width': float(lane_width),
                                                         'angle_bias': float(angle_bias), 
@@ -483,7 +509,7 @@ while 1:
         lateral_factor = abs(float(kegman.conf['lateralFactor']))
         yaw_factor = abs(float(kegman.conf['yawFactor']))
         poly_react = max(0, min(ANGLE_SPEED_COUNT, float(kegman.conf['polyReact'])))
-        center_error = min(1., max(-1, float(kegman.conf['centerError'])))
+        #center_error = min(1., max(-1, float(kegman.conf['centerError'])))
 
       profiler.checkpoint('kegman')
 

@@ -182,7 +182,7 @@ class LatControlPID(object):
     pid_log = car.CarState.LateralPIDState.new_message()
     cur_time = time.time()
     path_age = (cur_time - path_plan.sysTime * 1e-3)
-    if (angle_steers - path_plan.angleOffset - self.angle_ff_offset >= 0) == (self.prev_angle_steers - path_plan.angleOffset - self.angle_ff_offset < 0):
+    if (angle_steers - path_plan.angleOffset >= 0) == (self.prev_angle_steers - path_plan.angleOffset < 0):
       self.zero_steer_crossed = cur_time
     driver_opposing = steer_override and (angle_steers - self.prev_angle_steers) * self.output_steer < 0
     self.prev_angle_steers = angle_steers
@@ -202,7 +202,7 @@ class LatControlPID(object):
       self.p_poly = np.poly1d(path_plan.pPoly)
       self.cPoints = (np.polyval(path_plan.cPoly, np.arange(15))) * 1000
 
-      self.projected_lane_error = float(min(0.75, max(-0.75, self.c_prob * self.poly_factor * sum(np.array(self.cPoints[:2])))))
+      self.projected_lane_error = float(min(0.75, max(-0.75, self.c_prob * self.poly_factor * sum(np.array(self.cPoints[4:7])))))
       if np.sign(self.projected_lane_error) != np.sign(self.prev_projected_lane_error):
         self.zero_poly_crossed = cur_time
 
@@ -215,18 +215,20 @@ class LatControlPID(object):
         elif np.sign(self.projected_lane_error) == np.sign(self.prev_projected_lane_error) and \
            (abs(self.projected_lane_error) < abs(self.prev_projected_lane_error) or \
             np.sign(self.cPoints[3]) == -np.sign(self.cPoints[-1])) and \
-           (np.sign(self.output_steer) == -np.sign(self.p_poly(7) - path_plan.angleOffset - self.angle_ff_offset) or \
+           (np.sign(self.output_steer) == -np.sign(self.p_poly(7)) or \
             np.sign(self.output_steer) == -np.sign(self.p_poly(7) - self.p_poly(0))):
           self.zero_poly_crossed = max(cur_time - 4, self.zero_poly_crossed)
           self.zero_steer_crossed = max(cur_time - 4, self.zero_steer_crossed)
           self.use_deadzone = False
         else:
           self.use_deadzone = True
+      #if self.projected_lane_error * self.prev_projected_lane_error >= 0 and abs(self.projected_lane_error) > abs(self.prev_projected_lane_error):
+      #  self.projected_lane_error = 0.2 * self.projected_lane_error + 0.8 * self.prev_projected_lane_error
       self.prev_projected_lane_error = self.projected_lane_error
 
       self.center_angles.append(float(self.projected_lane_error))
       if len(self.center_angles) > 15: self.center_angles.pop(0)
-      if cur_time - max(self.zero_poly_crossed, self.zero_steer_crossed) <= 4 and abs(self.damp_angle_steers - path_plan.angleOffset - self.angle_ff_offset) < 2:
+      if cur_time - max(self.zero_poly_crossed, self.zero_steer_crossed) <= 4 and abs(self.damp_angle_steers - path_plan.angleOffset) < 2:
         self.projected_lane_error -= (float(self.c_prob * self.poly_damp * self.center_angles[0]))
       self.profiler.checkpoint('path_plan')
 
@@ -270,17 +272,17 @@ class LatControlPID(object):
           self.limited_damp_angle_steers_des = angle_steers
           self.angle_rate_des = 0
         else:
-          react_steer = self.react_steer + self.react_center[min(len(self.react_center)-1, int(abs(angle_steers - path_plan.angleOffset - self.angle_ff_offset)))]
+          react_steer = self.react_steer + self.react_center[min(len(self.react_center)-1, int(abs(angle_steers - path_plan.angleOffset)))]
           self.damp_angle_steers += (angle_steers + angle_steers_rate * (self.damp_steer + float(react_steer)) - self.damp_angle_steers) / max(1.0, self.damp_steer * 100.)
           self.angle_steers_des = (self.p_poly(self.angle_index * 0.15)) * 54.938633 + path_plan.angleBias + path_plan.angleOffset + self.projected_lane_error
           self.damp_angle_steers_des += (self.angle_steers_des - self.damp_angle_steers_des) / max(1.0, self.damp_mpc * 100.)
           if (self.damp_angle_steers - self.damp_angle_steers_des) * (angle_steers - self.damp_angle_steers_des) < 0:
             self.damp_angle_steers = self.damp_angle_steers_des
 
-        accel_factor = gernterp(abs(angle_steers - path_plan.angleOffset - self.angle_ff_offset), [0, 5], [1, 0.5]) * v_ego
+        accel_factor = gernterp(abs(angle_steers - path_plan.angleOffset), [0, 5], [1, 0.5]) * v_ego
         self.angle_rate_des = float(min(self.angle_rate_des + self.accel_limit * accel_factor, max(self.angle_rate_des - self.accel_limit * accel_factor, self.damp_angle_steers_des - self.limited_damp_angle_steers_des)))
         self.limited_damp_angle_steers_des += self.angle_rate_des
-        wiggle_angle = self.c_prob * gernterp(abs(angle_steers - path_plan.angleOffset - self.angle_ff_offset), [0, 1], [self.wiggle_angle, self.wiggle_angle * 0.25])
+        wiggle_angle = self.c_prob * gernterp(abs(angle_steers - path_plan.angleOffset), [0, 1], [self.wiggle_angle, self.wiggle_angle * 0.25])
         requested_angle = min(self.limited_damp_angle_steers_des + wiggle_angle, max(self.limited_damp_angle_steers_des - wiggle_angle, self.angle_steers_des))
 
         angle_feedforward = float(requested_angle - path_plan.angleOffset - self.angle_ff_offset)

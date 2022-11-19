@@ -43,36 +43,23 @@ OUTPUT_ROWS = 15
 CENTER_POLYS = 5
 ANGLE_POLYS = 5
 
-ANGLE_SPEED_COUNT = 20
+PATH_COUNT = 5
 
 fingerprint = np.zeros((1, 4), dtype='float32')
 calc_center = [np.zeros((OUTPUT_ROWS, 4)),np.zeros((OUTPUT_ROWS, 4))]
 side_angles = [np.zeros((OUTPUT_ROWS, 2)),np.zeros((OUTPUT_ROWS, 2))]
-calc_angles = [np.zeros((ANGLE_SPEED_COUNT, OUTPUT_ROWS)), np.zeros((ANGLE_SPEED_COUNT, OUTPUT_ROWS))]
+calc_angles = [np.zeros((PATH_COUNT, OUTPUT_ROWS)), np.zeros((PATH_COUNT, OUTPUT_ROWS))]
 angle_plan = np.zeros((1, OUTPUT_ROWS))
 projected_rate = np.arange(0., 0.10066667,0.0066666)[1:]
 previous_rate = 0.
-center_error_count = np.zeros(ANGLE_SPEED_COUNT)
-center_error = [np.array([ 0, 0, -1, -1, -1])*0,
-                np.array([ 0, 0, -1, -1, -1])*0.25,
-                np.array([ 0, 0, -1, -1, -1])*0.5,
-                np.array([ 0, 0, -1, -1, -1])*0.75,
-                np.array([ 0, 0, -1, -1, -1])*1.,
-                np.array([ 0, 0, -0.5, -0.75, -1])*1.25,
-                np.array([ 0, 0, -0.5, -0.75, -1])*1.,
-                np.array([ 0, 0, -0.5, -0.75, -1])*0.75,
-                np.array([ 0, 0, -0.5, -0.75, -1])*0.5,
-                np.array([ 0, 0, -0.5, -0.75, -1])*0.25,
-                np.array([ 0., 0., 0., -0.5, -1.])*1.0,
-                np.array([ 0., 0., 0., -0.5, -1.])*0.9, 
-                np.array([ 0., 0., 0., -0.5, -1.])*0.8,
-                np.array([ 0., 0., 0., -0.5, -1.])*0.7,
-                np.array([ 0., 0., 0., -0.5, -1.])*0.6,
-                np.array([ 0., 0., 0., -0.5, -1.])*0.5,
-                np.array([ 0., 0., 0., -0.5, -1.])*0.4,
-                np.array([ 0., 0., 0., -0.5, -1.])*0.3,
-                np.array([ 0., 0., 0., -0.5, -1.])*0.2,
-                np.array([ 0., 0., 0., -0.5, -1.])*0.1]
+center_error_count = np.zeros(PATH_COUNT)
+CENTER_PROFILES = [[  0.000,  0.000,  0.000,  0.000,  0.000],
+                   [ -1.000, -1.000,  0.200,  0.100,  0.000],
+                   [ -1.000, -1.000, -0.200,  0.100,  0.000],
+                   [ -1.000, -1.000,  0.100, -0.050,  0.000],
+                   [ -1.000, -1.000, -0.100, -0.050,  0.000]]
+
+center_profiles = np.array(CENTER_PROFILES) * np.array([1., 1., 1., 1., 1.])
 
 accel_profile = np.array([(np.ones((OUTPUT_ROWS), dtype='float32') * 100),
                           (np.ones((OUTPUT_ROWS), dtype='float32') * 100),
@@ -109,23 +96,23 @@ if os.path.exists('models/models.json'):
                                               'left_inputs': np.zeros((1, 15, 8), dtype='float32') + 0.01,
                                               'right_inputs': np.zeros((1, 15, 8), dtype='float32') + 0.01,
                                               'fingerprints': [[[0,0,0,1]]],
-                                              'center_error_input': [center_error],
-                                              'center_bias': np.array([[[0.21],[-0.01],[0.0],[0.003],[5100.2]]], dtype='float32') * np.array([[[0.00001], [0.00001], [0.00001], [0.00001], [0.00001]]], dtype='float32'),
+                                              'center_profiles': [center_profiles],
+                                              'center_bias': np.array([[[0.21],[0.001],[0.003],[0.003],[-2100.2]]], dtype='float32') * np.array([[[0.00001], [0.00001], [0.00001], [0.00001], [0.00001]]], dtype='float32'),
                                               'model_bias': [np.ones((ANGLE_POLYS,1),dtype='float32') * 0],
                                             })]
 
-        calc_angles[0] = np.transpose(model_output[0][0][0,:,:ANGLE_SPEED_COUNT])
+        calc_angles[0] = np.transpose(model_output[0][0][0,:,:PATH_COUNT])
 
         angle_plan = np.clip(calc_angles[0], angle_plan - accel_limit[-1], angle_plan + accel_limit[-1])
         projected_steering = angle_plan[0,0] + (angle_plan[0,1] - angle_plan[0,0]) * projected_rate
         angle_plan = np.clip(angle_plan, projected_steering - accel_limit[-1], projected_steering + accel_limit[-1])
       
       print(len(model_output), len(model_output[0]), len(model_output[0][0]))
-      print(np.array(100 * model_output[0][0][0,:,:ANGLE_SPEED_COUNT], dtype='int32'))
+      print(np.array(100 * model_output[0][0][0,:,:PATH_COUNT], dtype='int32'))
       print()
-      print(np.array(model_output[0][0][0,:,ANGLE_SPEED_COUNT:], dtype='int32'))
-      print(np.sum(np.absolute(model_output[0][0][0,:,ANGLE_SPEED_COUNT:]), axis=-2))
-      print(np.argmin(np.sum(np.absolute(model_output[0][0][0,:,ANGLE_SPEED_COUNT:]), axis=-2)))
+      print(np.array(model_output[0][0][0,:,PATH_COUNT:], dtype='int32'))
+      print(np.sum(np.absolute(model_output[0][0][0,10:,PATH_COUNT:]), axis=-2))
+      print(np.argmin(np.sum(np.absolute(model_output[0][0][0,10:,PATH_COUNT:]), axis=-2)))
       print(time.time()-start_time, md)
       print(len(model_output), len(model_output[0]), len(model_output[0][0]), len(model_output[0][-1]))
       
@@ -408,22 +395,22 @@ while 1:
                                                         'left_inputs': camera_input[1][0,:, -history_rows[0]:,16:24],
                                                         'right_inputs': camera_input[1][0,:, -history_rows[0]:,24:],
                                                         'fingerprints': [fingerprint], 
-                                                        'center_error_input': [center_error],
+                                                        'center_profiles': [center_profiles],
                                                         'center_bias': [center_bias[0,:,:]],
                                                         'model_bias': [model_bias[0,:,:]],
                                                     }))]
 
     profiler.checkpoint('predict') 
-    calc_angles[0] = np.transpose(model_output[0][0][0,:,:ANGLE_SPEED_COUNT])
-    model_index = np.argmin(np.sum(np.absolute(model_output[0][0][0,:10,ANGLE_SPEED_COUNT:]), axis=-2))
-    if lr_prob > 0 and steer_override_timer <= 0 and cs.vEgo >= 10:  
+    calc_angles[0] = np.transpose(model_output[0][0][0,:,:PATH_COUNT])
+    model_index = np.argmin(np.sum(np.absolute(model_output[0][0][0,-5:,PATH_COUNT:]), axis=-2))
+    if lr_prob > 0 and steer_override_timer <= 25 and cs.vEgo >= 10:  
       center_error_count[model_index] += 1
     calc_angles[0][:,:] = calc_angles[0][model_index:model_index+1] - straight_bias[0,:,0] 
-    calc_center[0] = model_output[0][0][0,:,ANGLE_SPEED_COUNT:ANGLE_SPEED_COUNT+1]
+    calc_center[0] = model_output[0][0][0,:,PATH_COUNT:PATH_COUNT+1]
     projected_steering = cs.steeringAngle + (cs.steeringRate * projected_rate) + ((cs.steeringRate - previous_rate) * projected_rate / 6.66667)
     previous_rate = cs.steeringRate
-    c_poly = model_output[0][ANGLE_SPEED_COUNT + 1][0]
-    d_poly = model_output[0][ANGLE_SPEED_COUNT + 2][0]
+    c_poly = model_output[0][PATH_COUNT+1][0]
+    d_poly = model_output[0][PATH_COUNT+1+model_index][0]
 
     something_masked = False
 
@@ -435,7 +422,7 @@ while 1:
       print("best_angles: ", model_index)
       print(center_error_count // 1)
       print((100 * np.transpose(angle_plan[0,:]))//10)
-      print(np.array(model_output[0][0][0,:,ANGLE_SPEED_COUNT + model_index], dtype='int32'))
+      print(np.array(model_output[0][0][0,:,PATH_COUNT+model_index], dtype='int32'))
 
     max_width_step = 0.005 * cs.vEgo * l_prob * r_prob
     if cs.camLeft.parm2 > 0 and cs.camRight.parm2 < 0 and not something_masked:
@@ -449,14 +436,14 @@ while 1:
         else:
           angle_bias -= (0.00001 * cs.vEgo * lr_prob)
 
-      model_bias[0][:,0] += (0.00001 * cs.vEgo * lr_prob * ((1 - (poly_react % 1)) * model_output[0][int(poly_react // 1) + 1][0] + poly_react * model_output[0][int(poly_react // 1) + 2][0]))
+      model_bias[0][:,0] += (0.00001 * cs.vEgo * lr_prob * model_output[0][1][0])
       model_bias[0][-1,:] = 0.0
 
-      center_bias[0][0,0] += (0.00002 * cs.vEgo * lr_prob * model_output[0][ANGLE_SPEED_COUNT+1][0,0])
-      center_bias[0][1,0] += (0.00002 * cs.vEgo * lr_prob * model_output[0][ANGLE_SPEED_COUNT+1][0,1])
-      center_bias[0][2,0] += (0.00002 * cs.vEgo * lr_prob * model_output[0][ANGLE_SPEED_COUNT+1][0,2])
-      center_bias[0][3,0] += (0.00002 * cs.vEgo * lr_prob * model_output[0][ANGLE_SPEED_COUNT+1][0,3])
-      center_bias[0][4,0] += (0.00002 * cs.vEgo * lr_prob * (model_output[0][ANGLE_SPEED_COUNT+1][0,4] - ((cs.camLeft.parm2 + cs.camRight.parm2) / 993)))
+      center_bias[0][0,0] += (0.00002 * cs.vEgo * lr_prob * model_output[0][PATH_COUNT+1][0,0])
+      center_bias[0][1,0] += (0.00002 * cs.vEgo * lr_prob * model_output[0][PATH_COUNT+1][0,1])
+      center_bias[0][2,0] += (0.00002 * cs.vEgo * lr_prob * model_output[0][PATH_COUNT+1][0,2])
+      center_bias[0][3,0] += (0.00002 * cs.vEgo * lr_prob * model_output[0][PATH_COUNT+1][0,3])
+      center_bias[0][4,0] += (0.00002 * cs.vEgo * lr_prob * (model_output[0][PATH_COUNT+1][0,4] - ((cs.camLeft.parm2 + cs.camRight.parm2) / 993)))
 
       #>>>  NOTE TO SELF:  Self, do not enable the next line!  You know you want to, but DON'T!    <<<#
       #center_bias[0][-1,:] = 0.0
@@ -508,8 +495,8 @@ while 1:
         accel_limit = accel_profile * max(0, abs(float(kegman.conf['polyAccelLimit']))) * 10
         lateral_factor = abs(float(kegman.conf['lateralFactor']))
         yaw_factor = abs(float(kegman.conf['yawFactor']))
-        poly_react = max(0, min(ANGLE_SPEED_COUNT, float(kegman.conf['polyReact'])))
-        #center_error = min(1., max(-1, float(kegman.conf['centerError'])))
+        poly_react = max(0, min(PATH_COUNT, float(kegman.conf['polyReact'])))
+        center_profiles = np.array(CENTER_PROFILES) * np.array([1., 1., min(2., max(0, float(kegman.conf['polyAdjust']))), min(2., max(0, float(kegman.conf['polyAdjust']))), 1.])
 
       profiler.checkpoint('kegman')
 

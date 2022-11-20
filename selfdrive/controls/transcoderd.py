@@ -465,7 +465,7 @@ while 1:
     if distance_driven > 10000 and cs.vEgo > 10 and lr_prob > 0 and steer_override_timer <= 0:
       path_profile_target = path_profile_counter[0] * path_profile_ratio
       for i in range(1,5):
-        path_profile_scale[i-1] += (cs.vEgo * lr_prob * (0.0001 if path_profile_counter[i] < path_profile_target else -0.0001))
+        path_profile_scale[i-1] = max(0.1, path_profile_scale[i-1] + cs.vEgo * lr_prob * (0.0001 if path_profile_counter[i] < path_profile_target else -0.0001))
         center_profiles[i,2:] = CENTER_PROFILES[i,2:] * path_profile_scale[i-1]
     
     if cs.vEgo > 10 and abs(cs.steeringAngle - calibration[0][0]) <= 3 and abs(cs.steeringRate) < 3 and l_prob > 0 and r_prob > 0 and not something_masked:

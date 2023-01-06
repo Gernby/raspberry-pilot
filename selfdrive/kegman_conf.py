@@ -147,6 +147,7 @@ class kegman_conf():
     if "widthFactor" not in self.config:
       self.config.update({"speedFactor": "1.0"})
       self.config.update({"lateralFactor": "1.0"})
+      self.config.update({"widthFactor": "1.0"})
       self.config.update({"yawFactor": "1.0"})
       self.config.update({"steerFactor": "1.0"})
       self.element_updated = True
@@ -167,8 +168,8 @@ class kegman_conf():
       self.config.update({"V1":"0"})
       self.config.update({"V2":"0"})
 
-    if "centerError" not in self.config:
-      self.config.update({"polyAdjust":"1.0"})
+    if "centerOffset" not in self.config:
+      self.config.update({"centerOffset":"0.0"})
 
     if "polyAccelLimit" not in self.config:
       self.config.update({"polyAccelLimit":"0.6"})

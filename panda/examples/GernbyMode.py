@@ -16,6 +16,9 @@
 #   * Whether AutoSteer is "ready" for engagement.  Previously documented CAN frames are no longer valid
 #   * Whether the current road has extra speed restictions (i.e. surface street vs highway)
 #   * What is the current cruise control max speed
+
+canBus = 0  # Define can bus used by panda
+
 while True:
     try:
         time.sleep(time.time() + (0.0033 if speed > 0 else 0.0067) - loopStart)  # Process CAN data more than 100 times per second when stopped, and more than 200 times when moving
@@ -36,7 +39,7 @@ while True:
                 elif cData[3] < 64 and cData[3] > 44 and not enabled:  moreBalls = False  # down swipe will end throttle override mode
             elif pid == 553 and enabled and cData[1] <= 15 and loopStart > nextClick and (lastAPStatus == 33 or abs(steerAngle) < 50):
                 cData[0], cData[1] = p553[cData[1]], (cData[1] + 1) % 16 + 48
-                _, nextClick, prevTurnSignal, leftStalkStatus = p.can_send(553, cData, 0), loopStart + 0.5, 0, 0  # turn signal just ended, so reengage autosteer by sending another stalk click sooner
+                _, nextClick, prevTurnSignal, leftStalkStatus = p.can_send(553, cData, canBus), loopStart + 0.5, 0, 0  # turn signal just ended, so reengage autosteer by sending another stalk click sooner
             elif pid == 1001:  # get AutoPilot state and check for driver override
                 if lastAPStatus == 33 and cData[3] & 33 == 32 and not (turnSignal or prevTurnSignal):  driverOverride = True  # prevent auto reengage of autosteer
                 elif cData[3] & 33 != 32:  driverOverride, prevTurnSignal = False, turnSignal  # if speed control is disabled or autosteer is enabled, reset the override and signal history
@@ -48,10 +51,10 @@ while True:
                     if cData[3] == 0 or cData[2] & 1 == 0 or driverOverride:  nextClick = loopStart + 0.5  # if the car isn't moving or AP isn't engaged, then delay the click
         if (moreBalls or tempBalls) and p820[0] & 32 == 0 and p659[5] & 16 == 0:  # initialize throttle override mode to Standard / Sport
                 p820[0], p820[6], p820[7], p659[5], p659[6], p659[7] = (p820[0] + 32) % 256, (p820[6] + 16) % 256, (p820[7] + 48) % 256, (p659[5] + 16) % 256, (p659[6] + 16) % 256, (p659[7] + 32) % 256
-                _, _, p820[0], p659[0] = p.can_send(820, p820, 0), p.can_send(659, p659, 0), 32, 16  # send packets and prevent another throttle override before next update from controller
+                _, _, p820[0], p659[0] = p.can_send(820, p820, canBus), p.can_send(659, p659, canBus), 32, 16  # send packets and prevent another throttle override before next update from controller
     except Exception as e:  # initialize everything when an exception happens
         import time, panda, setproctitle, struct
         _, p, _ = time.sleep(1), panda.Panda(), setproctitle.setproctitle('GernbyMode')
-        _, _ = p.set_can_speed_kbps(0,500), p.set_safety_mode(panda.Panda.SAFETY_ALLOUTPUT)
+        _, _ = p.set_can_speed_kbps(canBus, 500), p.set_safety_mode(panda.Panda.SAFETY_ALLOUTPUT)
         enabled, driverOverride, nextClick, speed, turnSignal, prevTurnSignal, leftStalkStatus, moreBalls, tempBalls, loopCount, steerAngle, lastAPStatus, signalSteerAngle = 0,0,0,0,0,0,0,0,0,0,0,0,0
         loopStart, p553 = time.time(), [75,93,98,76,78,210,246,67,170,249,131,70,32,62,52,73]

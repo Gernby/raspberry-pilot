@@ -23,8 +23,8 @@ while True:
         loopStart, pidCount, loopCount, canData = time.time(), 0, loopCount + 1, []
         for pid, _, cData, bus in p.can_recv():
             pidCount += 1
-            canData.append([bus, pid, int.from_bytes(cData, byteorder='little', signed=False)])
             if pid in [599, 280, 659, 820, 585, 1013, 297, 962, 553, 1001, 1021]:
+                canData.append([bus, pid, int.from_bytes(cData, byteorder='little', signed=False)])
                 if pid == 599:  speed = cData[3]  # get vehicle speed
                 elif pid == 280:  tempBalls = cData[4] > 200  # override to standard / sport if throttle is above 78%
                 elif pid == 659:  p659, autoSteer = cData, cData[4] & 64  # capture this throttle data in case throttle or up-swipe meets conditions for override soon
@@ -51,6 +51,7 @@ while True:
                         enabled = 0  # AP is not active
                         if cData[3] & 33 == 0 or cData[2] & 1 == 0 or driverOverride:  nextClick = max(nextClick, loopStart + 0.5)  # if the car isn't moving or AP isn't engaged, then delay the click
                 elif pid == 1021 and cData[0] == 0 and cData[6] & 1 == 0:  print("Double-Pull AP engagement is required for Auto-Reengage to work")
+            elif not pid in ignorePIDs: canData.append([bus, pid, int.from_bytes(cData, byteorder='little', signed=False)])
         if (moreBalls or tempBalls) and p820[0] & 32 == 0 and p659[5] & 16 == 0:  # initialize throttle override mode to Standard / Sport
                 p820[0], p820[6], p820[7], p659[5], p659[6], p659[7] = (p820[0] + 32) % 256, (p820[6] + 16) % 256, (p820[7] + 48) % 256, (p659[5] + 16) % 256, (p659[6] + 16) % 256, (p659[7] + 32) % 256
                 _, _, p820[0], p659[0] = p.can_send(820, p820, bus), p.can_send(659, p659, bus), 32, 16  # send packets and prevent another throttle override before next update from controller
@@ -66,3 +67,5 @@ while True:
         _, _, _, _, ic = p.set_can_speed_kbps(0,500), p.set_can_speed_kbps(1,500), p.set_can_speed_kbps(2,500), p.set_safety_mode(panda.Panda.SAFETY_ALLOUTPUT), Influx_Client(p.get_serial()[0])
         lanesVisible, enabled, driverOverride, autoSteer, nextClick, speed, turnSignal, prevTurnSignal, leftStalkStatus, moreBalls, tempBalls, loopCount, steerAngle = 1,0,0,0,0,0,0,0,0,0,0,0,0
         canData , loopCount, lastAPStatus, lastCANSend, signalSteerAngle, loopStart, p820, p659, p553 = {},0,0,0,0,time.time(),[],[],[75,93,98,76,78,210,246,67,170,249,131,70,32,62,52,73]
+        ignorePIDs = [1000,1005,1060,1107,1132,1284,1316,1321,1359,1364,1448,1508,1524,1541,1542,1547,1550,1588,1651,1697,1698,1723,2036,313,504,532,555,637,643,669,701,772,777,829,854,855,858,859,866,871,872,896,900,921,928,935,965,979,997]
+

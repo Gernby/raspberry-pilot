@@ -18,35 +18,42 @@
 #   * What is the current cruise control max speed
 while True:
     try:
-        time.sleep(time.time() + (0.0033 if speed > 0 else 0.0067) - loopStart)  # Process CAN data more than 100 times per second when stopped, and more than 200 times when moving
-        loopStart, loopCount = time.time(), 0
+        sleepTime = time.time() + (0.003 if speed > 0 else 0.006) - loopStart
+        if sleepTime > 0:  time.sleep(sleepTime)  # Process CAN data more than 100 times per second when stopped, and more than 200 times when moving
+        loopStart, pidCount, loopCount = time.time(), 0, loopCount + 1
         for pid, _, cData, bus in p.can_recv():
-            if pid == 599:  speed = cData[3]  # get vehicle speed
-            elif pid == 280:  tempBalls = cData[4] > 200  # override to standard / sport if throttle is above 78%
-            elif pid == 659:  p659, autoSteer = cData, cData[4] & 64  # capture this throttle data in case throttle or up-swipe meets conditions for override soon
-            elif pid == 820:  p820 = cData  # capture this throttle data in case throttle or up-swipe meets conditions for override soon
-            elif pid == 585 and cData[2] > leftStalkStatus:  leftStalkStatus = cData[2]  # Get left stalk status, and bump the status up for full click vs half click
-            elif pid == 1013 and cData[5] > 0:  turnSignal, prevTurnSignal, nextClick = True, enabled, loopStart + (0.5 if leftStalkStatus in (4,8) else 4) # Delay spoof if turn signal is on
-            elif pid == 297:  # get steering angle
-                cData[3] &= 63  # mask upper bits
-                steerAngle = struct.unpack("<1h",cData[2:4])[0] - 8192  # decode angle using multiple / partial bytes
-            elif pid == 962 and cData[3] not in [0,85]: # Get right steering wheel up / down swipe
-                nextClick = loopStart + 4  # ensure enough time for the speed change to be applied
-                if cData[3] < 20 and cData[3] > 1 and not enabled:  moreBalls = True  # up swipe will lock standard / sport throttle override mode
-                elif cData[3] < 64 and cData[3] > 44 and not enabled:  moreBalls = False  # down swipe will end throttle override mode
-            elif pid == 553 and enabled and cData[1] <= 15 and loopStart > nextClick and (lastAPStatus == 33 or abs(steerAngle) < 50):
-                cData[0], cData[1] = p553[cData[1]], (cData[1] + 1) % 16 + 48
-                _, nextClick, prevTurnSignal, leftStalkStatus = p.can_send(553, cData, bus), loopStart + 0.5, 0, 0  # It's time to spoof or reengage autosteer
-            elif pid == 1001:  # get AutoPilot state and check for driver override
-                if lastAPStatus == 33 and cData[3] & 33 == 32 and not (turnSignal or prevTurnSignal):  driverOverride = True  # prevent auto reengage of autosteer
-                elif cData[3] & 33 != 32:  driverOverride, prevTurnSignal = False, turnSignal  # if speed control is disabled or autosteer is enabled, reset the override and signal history
-                lastAPStatus = cData[3] & 33
-                if cData[3] & 33 > 0 and speed > 0 and autoSteer and not enabled and not driverOverride:
-                    enabled = cData[2] & 1  # AP is active
-                elif (cData[3] & 33 == 0 or cData[2] & 1 == 0 or speed == 0 or driverOverride) and enabled == 1:
-                    enabled = 0  # AP is not active
-                    if cData[3] & 33 == 0 or cData[2] & 1 == 0 or driverOverride:  nextClick = loopStart + 0.5  # if the car isn't moving or AP isn't engaged, then delay the click
-            elif pid == 1021 and cData[0] == 0 and cData[6] & 1 == 0:  print("Double-Pull AP engagement is required for Auto-Reengage to work")
+            pidCount += 1
+            if pid in [599, 280, 659, 820, 585, 1013, 297, 962, 553, 1001, 1021]:
+                if pid == 599:  speed = cData[3]  # get vehicle speed
+                elif pid == 280:  accelPedal, tempBalls = cData[4], cData[4] > 200  # override to standard / sport if throttle is above 78%
+                elif pid == 659:  p659, autoSteer = cData, cData[4] & 64  # capture this throttle data in case throttle or up-swipe meets conditions for override soon
+                elif pid == 820:  p820 = cData  # capture this throttle data in case throttle or up-swipe meets conditions for override soon
+                elif pid == 585 and cData[2] & 15 > leftStalkStatus:  leftStalkStatus = cData[2] & 15  # Get left stalk status, and bump the status up for full click vs half click
+                elif pid == 1013 and cData[5] > 0:  turnSignal, prevTurnSignal, nextClick = True, enabled, max(nextClick, loopStart + (0.5 if leftStalkStatus in (4,8) else 4)) # Delay spoof if turn signal is on
+                elif pid == 297:  # get steering angle
+                    cData[3] &= 63  # mask upper bits
+                    steerAngle = struct.unpack("<1h",cData[2:4])[0] - 8192  # decode angle using multiple / partial bytes
+                elif pid == 962 and cData[3] not in [0,85]: # Get right steering wheel up / down swipe
+                    if cData[3] <= 64 and cData[3] >= 44 and enabled:  nextClick = max(nextClick, loopStart + 4)  # ensure enough time for the cruise speed decrease to be applied
+                    elif cData[3] < 20 and cData[3] > 1 and not enabled:  moreBalls = True  # up swipe will lock standard / sport throttle override mode
+                    elif cData[3] < 64 and cData[3] > 44 and not enabled:  moreBalls = False  # down swipe will end throttle override mode
+                elif pid == 553:
+                    counter553 += 1  # used to ensure that right-stalk click doesn't occur too often in some situations (intersections, etc.)
+                    if enabled and accelPedal < 100 and cData[1] <= 15 and loopStart > nextClick and (lastAPStatus == 33 or abs(steerAngle) < 50) and sum(hist553) <= 1:
+                        cData[0], cData[1], hist553[counter553 % 10] = p553[cData[1]], (cData[1] + 1) % 16 + 48, 1
+                        _, nextClick, prevTurnSignal, leftStalkStatus = p.can_send(553, cData, bus), max(nextClick, loopStart + 0.5), 0, 0  # It's time to spoof or reengage autosteer
+                    else:  # keep track of the number of new stalk clicks (rising edge) to prevent rainbow road and multiple autosteer unavailable alerts
+                        hist553[counter553 % 10], last553 = 1 if cData[1] >> 4 == 3 and not last553 >> 4 == 3 else 0, cData[1]
+                elif pid == 1001:  # get AutoPilot state and check for driver override
+                    if lastAPStatus == 33 and cData[3] & 33 == 32 and not (turnSignal or prevTurnSignal):  driverOverride = True  # prevent auto reengage of autosteer
+                    elif cData[3] & 33 != 32:  driverOverride, prevTurnSignal = False, turnSignal  # if speed control is disabled or autosteer is enabled, reset the override and signal history
+                    lastAPStatus = cData[3] & 33
+                    if cData[3] & 33 > 0 and speed > 0 and autoSteer and not enabled and not driverOverride:
+                        enabled = cData[2] & 1  # AP is active
+                    elif (cData[3] & 33 == 0 or cData[2] & 1 == 0 or speed == 0 or driverOverride) and enabled == 1:
+                        enabled = 0  # AP is not active
+                        if cData[3] & 33 == 0 or cData[2] & 1 == 0 or driverOverride:  nextClick = max(nextClick, loopStart + 0.5)  # if the car isn't moving or AP isn't engaged, then delay the click
+                elif pid == 1021 and cData[0] == 0 and cData[6] & 1 == 0:  print("Double-Pull AP engagement is required for Auto-Reengage to work")
         if (moreBalls or tempBalls) and p820[0] & 32 == 0 and p659[5] & 16 == 0:  # initialize throttle override mode to Standard / Sport
                 p820[0], p820[6], p820[7], p659[5], p659[6], p659[7] = (p820[0] + 32) % 256, (p820[6] + 16) % 256, (p820[7] + 48) % 256, (p659[5] + 16) % 256, (p659[6] + 16) % 256, (p659[7] + 32) % 256
                 _, _, p820[0], p659[0] = p.can_send(820, p820, bus), p.can_send(659, p659, bus), 32, 16  # send packets and prevent another throttle override before next update from controller
@@ -54,5 +61,6 @@ while True:
         import time, panda, setproctitle, struct
         _, p, _ = time.sleep(1), panda.Panda(), setproctitle.setproctitle('GernbyMode')
         _, _, _, _ = p.set_can_speed_kbps(0,500), p.set_can_speed_kbps(1,500), p.set_can_speed_kbps(2,500), p.set_safety_mode(panda.Panda.SAFETY_ALLOUTPUT)
-        enabled, driverOverride, autoSteer, nextClick, speed, turnSignal, prevTurnSignal, leftStalkStatus, moreBalls, tempBalls, loopCount, steerAngle, lastAPStatus, signalSteerAngle = 0,0,0,0,0,0,0,0,0,0,0,0,0,0
-        loopStart, p820, p659, p553 = time.time(),[],[],[75,93,98,76,78,210,246,67,170,249,131,70,32,62,52,73]
+        enabled, driverOverride, autoSteer, nextClick, speed, turnSignal, prevTurnSignal, leftStalkStatus, moreBalls, tempBalls, steerAngle = 0,0,0,0,0,0,0,0,0,0,0
+        loopCount, lastAPStatus, loopStart, p820, p659, p553 = 0,0,time.time(),[],[],[75,93,98,76,78,210,246,67,170,249,131,70,32,62,52,73]
+        accelPedal, counter553, last553, hist553 = 0, 0, 0, [0,0,0,0,0,0,0,0,0,0]

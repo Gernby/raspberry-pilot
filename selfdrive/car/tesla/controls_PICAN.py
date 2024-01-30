@@ -21,37 +21,64 @@ import can
 from Influx_Client import Influx_Client
 from selfdrive.car.tesla.carstate import CarState
 
-os.system("sudo /sbin/ip link set can0 down")
-time.sleep(0.1)
-os.system("sudo /sbin/ip link set can0 up type can bitrate 500000")
-time.sleep(0.1)
-bus = can.interface.Bus(channel='can0', bustype='socketcan')
-
 setproctitle.setproctitle('GernbyMode')
 CS = CarState()
 
-logging = True
+os.system("sudo /sbin/ip link set can0 down")
+time.sleep(0.1) 
+os.system("sudo /sbin/ip link set can0 up type can bitrate 500000") # triple-sampling on restart-ms 10")
+time.sleep(0.1)
+bus = can.interface.Bus(channel='can0', bustype='socketcan', receive_own_messages=False, rx_fifo_size=64, tx_fifo_size=16)
+time.sleep(0.1)
+can_filter = CS.can_filters[:-3]
+bus.set_filters(can_filter)
+
+loopStart = 0
+logging = False
 logData = []
-ignorePIDs = [1000,1005,1060,1107,1132,1284,1316,1321,1359,1364,1448,1508,1524,1541,1542,1547,1550,1588,1651,1697,1698,1723,2036,313,504,532,555,637,643,669,701,772,777,829,854,855,858,859,866,871,872,896,900,921,928,935,965,979,997]
 
 if logging:
-    ic = Influx_Client(p.get_serial()[0])
+    ic = Influx_Client('PICAN')
 
 while True:
-    msg = bus.recv()
-    if msg.arbitration_id in [599, 280, 659, 820, 585, 1013, 297, 962, 553, 1001, 1021]:
-        sendData = CS.update([(msg.timestamp, msg.arbitration_id, 0, msg.data)])
+    if CS.parked:  # reduce poll rate while parked
+        period = 0.1
+    else:
+        period = 0.009
+    
+    sleepTime = loopStart + period - time.time()
 
+    if sleepTime > 0:  
+        time.sleep(sleepTime)  # limit polling frequency
+        loopStart = loopStart + period
+    else:
+        loopStart = time.time()
+
+    processData = []
+
+    while True:
+        msg = bus.recv(0)
+        if msg is not None:
+
+            if msg.arbitration_id in CS.pids:
+                processData.append((msg.timestamp, msg.arbitration_id, 0, bytearray(msg.data)))
+
+            if logging and msg.arbitration_id not in CS.ignorePIDs:
+                logData.append([msg.timestamp, 0, msg.arbitration_id, int.from_bytes(msg.data, byteorder='little', signed=False)])
+        else:
+            break
+
+    if len(processData) > 0:
+        sendData = CS.update(processData)
+        processData = []
+        
         for pid, _, cData in sendData:
             bus.send(can.Message(arbitration_id=pid, data=[d for d in cData], is_extended_id=False, dlc=len(cData)))
 
-    if logging and pid not in ignorePIDs: 
-        logData.append([msg.timestamp, 0, msg.arbitration_id, int.from_bytes(msg.data, byteorder='little', signed=False)])
-
-        if len(logData) > 250:
-            print(len(logData))
-            logData.append([msg.timestamp, 0, "steer", CS.steerAngle//10])
-            logData.append([msg.timestamp, 0, "APStatus", CS.lastAPStatus])
-            logData.append([msg.timestamp, 0, "speed", CS.speed])
-            ic.InsertData(logData)
-            logData = []
+    if logging and len(logData) > 250:
+        print(len(logData))
+        logData.append([processData[-1][0], 0, "steer", CS.steerAngle//10])
+        logData.append([processData[-1][0], 0, "APStatus", CS.lastAPStatus])
+        logData.append([processData[-1][0], 0, "speed", CS.speed])
+        ic.InsertData(logData)
+        logData = []

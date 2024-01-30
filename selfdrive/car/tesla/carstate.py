@@ -15,22 +15,32 @@ class CarState():
         self.steerAngle = 0
         self.lastAPStatus = 0
         self.accelPedal = 0
-        self.p820 = []
-        self.p659 = []
+        self.parked = True
+        self.p820 = [32]
+        self.p659 = [0,0,0,0,0,16]
         self.p553 = [75,93,98,76,78,210,246,67,170,249,131,70,32,62,52,73]
-        self.counter553 = 0
+        self.ignorePIDs = [1000,1005,1060,1107,1132,1284,1316,1321,1359,1364,1448,1508,1524,1541,1542,1547,1550,1588,1651,1697,1698,1723,
+                           2036,313,504,532,555,637,643,669,701,772,777,829,854,855,858,859,866,871,872,896,900,921,928,935,965,979,997]
+        self.pids = [280, 297, 553, 585, 599, 659, 820, 962, 1001, 1013, 1021]
+        self.can_filters = []
+        for pid in self.pids:
+            self.can_filters.append({"can_id": pid, "can_mask": pid}) #, "extended": False})
         self.last553 = 0
-        self.hist553 = [0,0,0,0,0,0,0,0,0,0]
+        self.hist553 = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    
+    def tooOften(self):
+        return sum(self.hist553[-9:]) > 1 or sum(self.hist553[-14:-9]) > 1 or sum(self.hist553[-19:-14]) > 1 or sum(self.hist553[-24:-19]) > 1
 
     def update(self, data):
         canSend = []
-        
+
         for tstmp, pid, bus, cData in data:
 
-            if pid == 599:  
+            if pid == 599:
                 self.speed = cData[3]  # get vehicle speed
 
-            elif pid == 280:  
+            elif pid == 280:
+                self.parked = cData[2] & 2 > 0  # check gear state
                 self.accelPedal = cData[4]  # get accelerator pedal position
                 self.tempBalls =cData[4] > 200  # override to standard / sport if throttle is above 78%
 
@@ -54,7 +64,6 @@ class CarState():
                 self.steerAngle = struct.unpack("<1h", cData[2:4])[0] - 8192  # decode angle using multiple / partial bytes
 
             elif pid == 962 and cData[3] not in [0,85]: # Get right steering wheel up / down swipe
-
                 if cData[3] <= 64 and cData[3] >= 44 and self.enabled:  
                   self.nextClick = max(self.nextClick, tstmp + 4)  # ensure enough time for the cruise speed decrease to be applied
 
@@ -65,20 +74,19 @@ class CarState():
                   self.moreBalls = False  # down swipe will end throttle override mode
 
             elif pid == 553:
-                self.counter553 += 1  # used to ensure that right-stalk click doesn't occur too often in some situations (intersections, etc.)
-
-                if all((self.enabled, self.accelPedal < 100, cData[1] <= 15, tstmp > self.nextClick, (self.lastAPStatus == 33 or abs(self.steerAngle) < 50), sum(self.hist553) <= 1)):
+                if all((self.enabled, self.accelPedal < 100, cData[1] <= 15, tstmp > self.nextClick, (self.lastAPStatus == 33 or abs(self.steerAngle) < 50), not self.tooOften())):
                     cData[0] = self.p553[cData[1]]
                     cData[1] = (cData[1] + 1) % 16 + 48
                     canSend.append((553, bus, bytearray(cData)))  # It's time to spoof or reengage autosteer
-                    self.hist553[self.counter553 % 10] = 1
+                    self.hist553.append(1)
                     self.nextClick = max(self.nextClick, tstmp + 0.5)
                     self.prevTurnSignal = 0
                     self.leftStalkStatus = 0
 
                 else:  # keep track of the number of new stalk clicks (rising edge) to prevent rainbow road and multiple autosteer unavailable alerts
-                    self.hist553[self.counter553 % 10] = 1 if cData[1] >> 4 == 3 and not self.last553 >> 4 == 3 else 0
+                    self.hist553.append(1 if cData[1] >> 4 == 3 and not self.last553 >> 4 == 3 else 0)
                     self.last553 = cData[1]
+                self.hist553.pop(0)
 
             elif pid == 1001:  # get AutoPilot state and check for driver override
 

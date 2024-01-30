@@ -32,22 +32,18 @@ p.set_can_speed_kbps(2,500)
 p.set_safety_mode(panda.Panda.SAFETY_ALLOUTPUT)
 
 loopStart = 0
-pidCount = 0
 logging = False
 logData = []
-ignorePIDs = [1000,1005,1060,1107,1132,1284,1316,1321,1359,1364,1448,1508,1524,1541,1542,1547,1550,1588,1651,1697,1698,1723,2036,313,504,532,555,637,643,669,701,772,777,829,854,855,858,859,866,871,872,896,900,921,928,935,965,979,997]
 
 if logging:
     ic = Influx_Client(p.get_serial()[0])
 
 while True:
-    if pidCount > 0:
-        period = 0.005  # poll CAN at 200 Hz
+    if CS.parked:  # reduce poll rate while parked
+        period = 0.1
     else:
-        if CS.counter553 > 0:  # clear CarState each time the vehicle sleeps
-            CS = CarState()
-        period = 1  # poll CAN at 1 Hz
-
+        period = 0.009
+    
     sleepTime = loopStart + period - time.time()
 
     if sleepTime > 0:  
@@ -56,16 +52,14 @@ while True:
     else:
         loopStart = time.time()
 
-    pidCount = 0
     processData = []
 
     for pid, _, cData, bus in p.can_recv():
-        pidCount += 1
 
-        if pid in [599, 280, 659, 820, 585, 1013, 297, 962, 553, 1001, 1021]:
+        if pid in CS.pids:
             processData.append((loopStart, pid, bus, cData))
 
-        if logging and pid not in ignorePIDs: 
+        if logging and pid not in CS.ignorePIDs: 
             logData.append([loopStart, bus, pid, int.from_bytes(cData, byteorder='little', signed=False)])
 
     if len(processData) > 0:

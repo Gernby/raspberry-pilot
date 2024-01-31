@@ -5,11 +5,8 @@ class CarState():
         self.moreBalls = 0
         self.tempBalls = 0
         self.enabled = 0
-        self.driverOverride = 0
         self.autoSteer = 0
         self.nextClick = 0
-        self.turnSignal = 0
-        self.prevTurnSignal = 0
         self.speed = 0
         self.leftStalkStatus = 0
         self.steerAngle = 0
@@ -28,7 +25,7 @@ class CarState():
         self.last553 = 0
         self.hist553 = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     
-    def tooOften(self):
+    def enoughAlready(self):
         return sum(self.hist553[-9:]) > 1 or sum(self.hist553[-14:-9]) > 1 or sum(self.hist553[-19:-14]) > 1 or sum(self.hist553[-24:-19]) > 1
 
     def update(self, data):
@@ -44,7 +41,7 @@ class CarState():
                 self.accelPedal = cData[4]  # get accelerator pedal position
                 self.tempBalls =cData[4] > 200  # override to standard / sport if throttle is above 78%
 
-            elif pid == 659:  
+            elif pid == 659:
                 self.p659 = cData  # get throttle mode
                 self.autoSteer = cData[4] & 64  # capture this throttle data in case throttle or up-swipe meets conditions for override soon
 
@@ -55,8 +52,6 @@ class CarState():
                 self.leftStalkStatus = cData[2] & 15  # Get left stalk status, and bump the status up for full click vs half click
 
             elif pid == 1013 and cData[5] > 0:  # get turn signal status
-                self.turnSignal = True
-                self.prevTurnSignal = self.enabled
                 self.nextClick = max(self.nextClick, tstmp + (0.5 if self.leftStalkStatus in (4,8) else 4)) # Delay spoof if turn signal is on
 
             elif pid == 297:  # get steering angle
@@ -64,23 +59,22 @@ class CarState():
                 self.steerAngle = struct.unpack("<1h", cData[2:4])[0] - 8192  # decode angle using multiple / partial bytes
 
             elif pid == 962 and cData[3] not in [0,85]: # Get right steering wheel up / down swipe
-                if cData[3] <= 64 and cData[3] >= 44 and self.enabled:  
+                if cData[3] <= 64 and cData[3] >= 44 and self.enabled:
                   self.nextClick = max(self.nextClick, tstmp + 4)  # ensure enough time for the cruise speed decrease to be applied
 
-                elif cData[3] < 20 and cData[3] > 1 and not self.enabled:  
+                elif cData[3] < 20 and cData[3] > 1 and not self.enabled:
                   self.moreBalls = True  # up swipe will lock standard / sport throttle override mode
 
-                elif cData[3] < 64 and cData[3] > 44 and not self.enabled:  
+                elif cData[3] < 64 and cData[3] > 44 and not self.enabled:
                   self.moreBalls = False  # down swipe will end throttle override mode
 
             elif pid == 553:
-                if all((self.enabled, self.accelPedal < 100, cData[1] <= 15, tstmp > self.nextClick, (self.lastAPStatus == 33 or abs(self.steerAngle) < 50), not self.tooOften())):
+                if all((self.enabled, self.accelPedal < 100, cData[1] <= 15, tstmp > self.nextClick, (self.lastAPStatus == 33 or abs(self.steerAngle) < 50), not self.enoughAlready())):
                     cData[0] = self.p553[cData[1]]
                     cData[1] = (cData[1] + 1) % 16 + 48
                     canSend.append((553, bus, bytearray(cData)))  # It's time to spoof or reengage autosteer
                     self.hist553.append(1)
                     self.nextClick = max(self.nextClick, tstmp + 0.5)
-                    self.prevTurnSignal = 0
                     self.leftStalkStatus = 0
 
                 else:  # keep track of the number of new stalk clicks (rising edge) to prevent rainbow road and multiple autosteer unavailable alerts
@@ -88,24 +82,16 @@ class CarState():
                     self.last553 = cData[1]
                 self.hist553.pop(0)
 
-            elif pid == 1001:  # get AutoPilot state and check for driver override
-
-                if self.lastAPStatus == 33 and cData[3] & 33 == 32 and not (self.turnSignal or self.prevTurnSignal):  
-                    self.driverOverride = True  # prevent auto reengage of autosteer
-
-                elif cData[3] & 33 != 32:  # if speed control is disabled or autosteer is enabled, reset the override and signal history
-                    self.driverOverride = False
-                    self.prevTurnSignal = self.turnSignal
-
+            elif pid == 1001:  # get AutoPilot state
                 self.lastAPStatus = cData[3] & 33
 
-                if cData[3] & 33 > 0 and self.speed > 0 and self.autoSteer and not self.enabled and not self.driverOverride:
+                if cData[3] & 33 > 0 and self.speed > 0 and self.autoSteer and not self.enabled:
                     self.enabled = cData[2] & 1  # AP is active
 
-                elif (cData[3] & 33 == 0 or cData[2] & 1 == 0 or self.speed == 0 or self.driverOverride) and self.enabled == 1:
+                elif (cData[3] & 33 == 0 or cData[2] & 1 == 0 or self.speed == 0) and self.enabled == 1:
                     self.enabled = 0  # AP is not active
 
-                    if cData[3] & 33 == 0 or cData[2] & 1 == 0 or self.driverOverride:  
+                    if cData[3] & 33 == 0 or cData[2] & 1 == 0:
                         self.nextClick = max(self.nextClick, tstmp + 0.5)  # if the car isn't moving or AP isn't engaged, then delay the click
 
             elif pid == 1021 and cData[0] == 0 and cData[6] & 1 == 0:

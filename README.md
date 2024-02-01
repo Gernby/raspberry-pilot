@@ -1,7 +1,7 @@
 # raspberry-pilot
-Headless OpenPilot for Bosch Hondas (Forked from [commaai/openpilot](http://github.com/commaai/openpilot))
+Tweaks for Teslas powered by Raspberry Pi (inspired by [spleck/panda]([http://github.com/commaai/openpilot](https://github.com/spleck/panda/tree/master/examples/marsmode)))
 
-Documentation [here](https://gernby.github.io/raspberry-pilot/)
+Documentation [here](https://gernby.github.io/raspberry-pilot/) (not updated yet)
 
 Until then, you can find more on my Discord server.
 https://discord.gg/MMGCVh9

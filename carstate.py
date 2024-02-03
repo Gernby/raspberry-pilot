@@ -26,7 +26,7 @@ class CarState():
         self.hist553 = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     
     def enoughAlready(self):
-        return sum(self.hist553[-9:]) > 1 or sum(self.hist553[-14:-9]) > 1 or sum(self.hist553[-19:-14]) > 1 or sum(self.hist553[-24:-19]) > 1
+        return sum(self.hist553[-10:]) > 1 or sum(self.hist553[-15:-10]) > 1 or sum(self.hist553[-20:-15]) > 1 or sum(self.hist553[-25:-20]) > 1
 
     def update(self, data):
         canSend = []
@@ -39,16 +39,16 @@ class CarState():
             elif pid == 280:
                 self.parked = cData[2] & 2 > 0  # check gear state
                 self.accelPedal = cData[4]  # get accelerator pedal position
-                self.tempBalls =cData[4] > 200  # override to standard / sport if throttle is above 78%
+                self.tempBalls = cData[4] > 200  # override to standard / sport if throttle is above 78%
 
             elif pid == 659:
                 self.p659 = cData  # get throttle mode
                 self.autoSteer = cData[4] & 64  # capture this throttle data in case throttle or up-swipe meets conditions for override soon
 
-            elif pid == 820:  
+            elif pid == 820:
                 self.p820 = cData  # capture this throttle data in case throttle or up-swipe meets conditions for override soon
 
-            elif pid == 585 and cData[2] & 15 > self.leftStalkStatus:  
+            elif pid == 585 and cData[2] & 15 > self.leftStalkStatus:
                 self.leftStalkStatus = cData[2] & 15  # Get left stalk status, and bump the status up for full click vs half click
 
             elif pid == 1013 and cData[5] > 0:  # get turn signal status

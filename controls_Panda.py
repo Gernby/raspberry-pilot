@@ -42,7 +42,7 @@ while True:
     if CS.parked:  # reduce poll rate while parked
         period = 0.1
     else:
-        period = 0.009
+        period = 0.009 if not logging else 0.001
     
     sleepTime = loopStart + period - time.time()
 
@@ -69,7 +69,7 @@ while True:
             p.can_send(pid, cData, bus)
 
     if logging and len(logData) > 250:
-        logData.append([loopStart, 0, "steer", abs(CS.steerAngle//100)])
+        logData.append([loopStart, 0, "steer", abs(CS.steerAngle//10)])
         logData.append([loopStart, 0, "APStatus", CS.lastAPStatus])
         logData.append([loopStart, 0, "speed", CS.speed])
         ic.InsertData(logData)

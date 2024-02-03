@@ -5,7 +5,11 @@
 .sconsign.dblite
 model2.png
 a.out
-
+bin/
+data/
+lib/
+lib64
+pyvenv.cfg
 *.DSYM
 *.d
 *.pyc

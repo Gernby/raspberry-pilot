@@ -1,4 +1,5 @@
 import threading
+import requests
 from influxdb import InfluxDBClient
 
 influx = InfluxDBClient('localhost', 8086, '', '', 'carDB')
@@ -20,4 +21,4 @@ class Influx_Client():
             if len(self.t) > 0: print(self.t.pop(0))
             self.t.append(threading.Thread(target=SendRequest,).run())
         except:
-            pass
+            r = requests.post('http://localhost:8086/query?q=CREATE DATABASE carDB')

@@ -24,7 +24,7 @@ python3 -m venv /home/raspilot/raspilot
 rm -r /home/raspilot/raspilot/panda
 chown -R raspilot.raspilot /home/raspilot/raspilot
 crontab -r
-su --login raspilot -c '(crontab -l; echo "@reboot bash raspilot/launch_openpilot.sh";) | crontab -'
+su --login raspilot -c '(crontab -l; echo "@reboot bash raspilot/launch_tesla.sh";) | crontab -'
 sudo reboot
 EOF
 

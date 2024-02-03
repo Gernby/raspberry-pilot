@@ -20,7 +20,7 @@ import time
 import panda
 import setproctitle
 from Influx_Client import Influx_Client
-from selfdrive.car.tesla.carstate import CarState
+from carstate import CarState
 
 setproctitle.setproctitle('GernbyMode')
 CS = CarState()

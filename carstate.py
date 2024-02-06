@@ -86,12 +86,12 @@ class CarState():
                 self.lastAPStatus = cData[3] & 33
 
                 if cData[3] & 33 > 0 and self.speed > 0 and self.autoSteer and not self.enabled:
-                    self.enabled = cData[2] & 1  # AP is active
+                    self.enabled = 1  # AP is active
 
-                elif (cData[3] & 33 == 0 or cData[2] & 1 == 0 or self.speed == 0) and self.enabled == 1:
+                elif (cData[3] & 33 == 0 or self.speed == 0) and self.enabled:
                     self.enabled = 0  # AP is not active
 
-                    if cData[3] & 33 == 0 or cData[2] & 1 == 0:
+                    if cData[3] & 33 == 0:
                         self.nextClick = max(self.nextClick, tstmp + 0.5)  # if the car isn't moving or AP isn't engaged, then delay the click
 
             elif pid == 1021 and cData[0] == 0 and cData[6] & 1 == 0:

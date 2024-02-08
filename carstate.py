@@ -21,7 +21,7 @@ class CarState():
         self.pids = [280, 297, 553, 585, 599, 659, 820, 962, 1001, 1013, 1021]
         self.can_filters = []
         for pid in self.pids:
-            self.can_filters.append({"can_id": pid, "can_mask": pid}) #, "extended": False})
+            self.can_filters.append({"can_id": pid, "can_mask": pid, "extended": False})
         self.last553 = 0
         self.hist553 = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     

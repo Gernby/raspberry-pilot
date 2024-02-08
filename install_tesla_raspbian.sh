@@ -5,7 +5,8 @@ SUBSYSTEM=="usb", ATTRS{idVendor}=="bbaa", ATTRS{idProduct}=="ddee", MODE="0666"
 SUBSYSTEMS=="usb", ATTR{idVendor}=="bbaa", ATTR{idProduct}=="ddcc", MODE:="0666"
 SUBSYSTEMS=="usb", ATTR{idVendor}=="bbaa", ATTR{idProduct}=="ddee", MODE:="0666"
 EOF
-udevadm control --reload-rules && sudo udevadm trigger
+udevadm control --reload-rules
+udevadm trigger
 
 # Add system boot parameters for Pi 4 and for PICAN
 echo "dtoverlay=dwc2,dr_mode=host" | tee -a /boot/firmware/config.txt

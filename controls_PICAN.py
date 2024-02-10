@@ -43,7 +43,7 @@ if logging:
 
 while True:
     msg = bus.recv()
-    #if msg is not None:
+
     if msg.arbitration_id in CS.update:
         canSend = CS.update[msg.arbitration_id](msg.timestamp, 0, bytearray(msg.data))
 
@@ -55,9 +55,9 @@ while True:
     if logging and msg.arbitration_id not in CS.ignorePIDs:
         logData.append([msg.timestamp, 0, msg.arbitration_id, int.from_bytes(msg.data, byteorder='little', signed=False)])
 
-    if logging and len(logData) > 250:
-        logData.append([msg.timestamp, 0, "steer", CS.steerAngle//10])
-        logData.append([msg.timestamp, 0, "APStatus", CS.lastAPStatus])
-        logData.append([msg.timestamp, 0, "speed", CS.speed])
-        ic.InsertData(logData)
-        logData = []
+        if len(logData) > 250:
+            logData.append([msg.timestamp, 0, "steer", CS.steerAngle//10])
+            logData.append([msg.timestamp, 0, "APStatus", CS.lastAPStatus])
+            logData.append([msg.timestamp, 0, "speed", CS.speed])
+            ic.InsertData(logData)
+            logData = []

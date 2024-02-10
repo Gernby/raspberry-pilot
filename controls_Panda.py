@@ -41,7 +41,7 @@ if logging:
 
 while True:
     if CS.parked:  # reduce poll rate while parked
-        period = 0.009
+        period = 0.9
     else:
         period = 0.009 if not logging else 0.001
 
@@ -66,9 +66,9 @@ while True:
         if logging and pid not in CS.ignorePIDs:
             logData.append([loopStart, bus, pid, int.from_bytes(cData, byteorder='little', signed=False)])
 
-    if logging and len(logData) > 250:
-        logData.append([loopStart, 0, "steer", abs(CS.steerAngle//10)])
-        logData.append([loopStart, 0, "APStatus", CS.lastAPStatus])
-        logData.append([loopStart, 0, "speed", CS.speed])
-        ic.InsertData(logData)
-        logData = []
+            if len(logData) > 250:
+                logData.append([loopStart, 0, "steer", abs(CS.steerAngle//10)])
+                logData.append([loopStart, 0, "APStatus", CS.lastAPStatus])
+                logData.append([loopStart, 0, "speed", CS.speed])
+                ic.InsertData(logData)
+                logData = []

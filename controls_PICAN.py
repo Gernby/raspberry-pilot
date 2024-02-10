@@ -36,49 +36,28 @@ bus.set_filters(can_filter)
 loopStart = 0
 logging = False
 logData = []
+canSend = None
 
 if logging:
     ic = Influx_Client('PICAN')
 
 while True:
-    if CS.parked:  # reduce poll rate while parked
-        period = 0.1
-    else:
-        period = 0.009
-    
-    sleepTime = loopStart + period - time.time()
+    msg = bus.recv()
+    #if msg is not None:
+    if msg.arbitration_id in CS.update:
+        canSend = CS.update[msg.arbitration_id](msg.timestamp, 0, bytearray(msg.data))
 
-    if sleepTime > 0:  
-        time.sleep(sleepTime)  # limit polling frequency
-        loopStart = loopStart + period
-    else:
-        loopStart = time.time()
-
-    processData = []
-
-    while True:
-        msg = bus.recv(0)
-        if msg is not None:
-
-            if msg.arbitration_id in CS.pids:
-                processData.append((msg.timestamp, msg.arbitration_id, 0, bytearray(msg.data)))
-
-            if logging and msg.arbitration_id not in CS.ignorePIDs:
-                logData.append([msg.timestamp, 0, msg.arbitration_id, int.from_bytes(msg.data, byteorder='little', signed=False)])
-        else:
-            break
-
-    if len(processData) > 0:
-        sendData = CS.update(processData)
-        processData = []
-        
-        for pid, _, cData in sendData:
+    if not canSend is None and len(canSend) > 0:
+        for pid, _, cData in canSend:
             bus.send(can.Message(arbitration_id=pid, data=[d for d in cData], is_extended_id=False, dlc=len(cData)))
+        canSend = None
+
+    if logging and msg.arbitration_id not in CS.ignorePIDs:
+        logData.append([msg.timestamp, 0, msg.arbitration_id, int.from_bytes(msg.data, byteorder='little', signed=False)])
 
     if logging and len(logData) > 250:
-        print(len(logData))
-        logData.append([processData[-1][0], 0, "steer", CS.steerAngle//10])
-        logData.append([processData[-1][0], 0, "APStatus", CS.lastAPStatus])
-        logData.append([processData[-1][0], 0, "speed", CS.speed])
+        logData.append([msg.timestamp, 0, "steer", CS.steerAngle//10])
+        logData.append([msg.timestamp, 0, "APStatus", CS.lastAPStatus])
+        logData.append([msg.timestamp, 0, "speed", CS.speed])
         ic.InsertData(logData)
         logData = []

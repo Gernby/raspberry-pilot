@@ -34,39 +34,37 @@ p.set_safety_mode(panda.Panda.SAFETY_ALLOUTPUT)
 loopStart = 0
 logging = False
 logData = []
+canSend = None
 
 if logging:
     ic = Influx_Client(p.get_serial()[0])
 
 while True:
     if CS.parked:  # reduce poll rate while parked
-        period = 0.1
+        period = 0.009
     else:
         period = 0.009 if not logging else 0.001
-    
+
     sleepTime = loopStart + period - time.time()
 
-    if sleepTime > 0:  
+    if sleepTime > 0:
         time.sleep(sleepTime)  # limit polling frequency
         loopStart = loopStart + period
     else:
         loopStart = time.time()
 
-    processData = []
-
     for pid, _, cData, bus in p.can_recv():
 
-        if pid in CS.pids:
-            processData.append((loopStart, pid, bus, cData))
+        if pid in CS.update:
+            canSend = CS.update[pid](loopStart, bus, cData)
 
-        if logging and pid not in CS.ignorePIDs: 
+        if not canSend is None and len(canSend) > 0:
+            for pid, bus, cData in canSend:
+                p.can_send(pid, cData, bus)
+            canSend = None
+
+        if logging and pid not in CS.ignorePIDs:
             logData.append([loopStart, bus, pid, int.from_bytes(cData, byteorder='little', signed=False)])
-
-    if len(processData) > 0:
-        sendData = CS.update(processData)
-
-        for pid, bus, cData in sendData:
-            p.can_send(pid, cData, bus)
 
     if logging and len(logData) > 250:
         logData.append([loopStart, 0, "steer", abs(CS.steerAngle//10)])

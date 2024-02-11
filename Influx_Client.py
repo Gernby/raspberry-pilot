@@ -11,8 +11,11 @@ class Influx_Client():
         self.user_id = panda_serial
         self.t = []
 
-    def InsertData(self, canData):
+    def InsertData(self, CS, canData):
         try:
+            canData.append([canData[-1][0], 0, "steer", CS.steerAngle//10])
+            canData.append([canData[-1][0], 0, "APStatus", CS.lastAPStatus])
+            canData.append([canData[-1][0], 0, "speed", CS.speed])
             def SendRequest(data=canData, influxLineString = ""):
                 for d in data:
                     influxLineString += (canFormatString % (self.user_id,d[1],d[2],d[3]>>32,d[3] & 0xFFFFFFFF, d[0] * 1000000000))

@@ -37,11 +37,11 @@ sendCAN = None
 
 if logging:
     from Influx_Client import Influx_Client
-    ic = Influx_Client(p.get_serial()[0])
+    IC = Influx_Client(p.get_serial()[0])
 
 while True:
     if CS.parked:  # reduce poll rate while parked
-        period = 0.009
+        period = 0.09
     else:
         period = 0.009 if not logging else 0.001
 
@@ -54,18 +54,17 @@ while True:
         loopStart = time.time()
 
     for pid, _, cData, bus in p.can_recv():
+        if bus < 3 and pid in CS.Update[bus]:
+            sendCAN = CS.Update[bus][pid](loopStart, pid, bus, cData)
 
-        if pid in CS.Update:
-            sendCAN = CS.Update[pid](loopStart, pid, bus, cData)
-
-        if not sendCAN is None and len(sendCAN) > 0:
-            for pid, bus, cData in sendCAN:
-                p.can_send(pid, cData, bus)
-            sendCAN = None
+            if not sendCAN is None and len(sendCAN) > 0:
+                for pid, bus, cData in sendCAN:
+                    p.can_send(pid, cData, bus)
+                sendCAN = None
 
         if logging and pid not in CS.ignorePIDs:
             logData.append([loopStart, bus, pid, int.from_bytes(cData, byteorder='little', signed=False)])
 
             if len(logData) > 250:
-                ic.InsertData(CS, logData)
+                IC.InsertData(CS, logData)
                 logData = []

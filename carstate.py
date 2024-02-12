@@ -16,16 +16,13 @@ class CarState():
         self.motorPID = 0
         self.throttlePID = 0
         self.lastStalk = 0
+        self.autopilotReady = 1
         self.motor = [32]
         self.throttleMode = [0,0,0,0,0,16]
         self.histClick = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
         self.rightStalkCRC = [75,93,98,76,78,210,246,67,170,249,131,70,32,62,52,73]
         self.ignorePIDs = [1000,1005,1060,1107,1132,1284,1316,1321,1359,1364,1448,1508,1524,1541,1542,1547,1550,1588,1651,1697,1698,1723,
                            2036,313,504,532,555,637,643,669,701,772,777,829,854,855,858,859,866,871,872,896,900,921,928,935,965,979,997]
-
-        def VehicleSpeed(tstmp, pid, bus, cData):
-            self.speed = cData[3]
-            return None
 
         def BiggerBalls(bus):
             if (self.moreBalls or self.tempBalls) and self.motor[0] & 32 == 0 and self.throttleMode[5] & 16 == 0:  # override throttle mode to Standard / Sport
@@ -75,6 +72,10 @@ class CarState():
             else:
                 return None
 
+        def VehicleSpeed(tstmp, pid, bus, cData):
+            self.speed = cData[3]
+            return None
+
         def LeftStalk(tstmp, pid, bus, cData):
             if cData[2] & 15 > self.leftStalkStatus:
                 self.leftStalkStatus = cData[2] & 15  # Get left stalk status, and bump the status up for full click vs half click turn signal
@@ -94,7 +95,7 @@ class CarState():
             return sum(self.histClick[-10:]) > 1 or sum(self.histClick[-15:-10]) > 1 or sum(self.histClick[-20:-15]) > 1 or sum(self.histClick[-25:-20]) > 1
 
         def RightStalk(tstmp, pid, bus, cData):
-            if all((self.enabled, self.accelPedal < 100, cData[1] <= 15, tstmp > self.nextClickTime, (self.lastAPStatus == 33 or abs(self.steerAngle) < 50), not EnoughClicksAlready())):
+            if all((self.enabled, self.autopilotReady, self.accelPedal < 100, cData[1] <= 15, tstmp > self.nextClickTime, (self.lastAPStatus == 33 or abs(self.steerAngle) < 50), not EnoughClicksAlready())):
                 sendCAN = []
                 cData[0] = self.rightStalkCRC[cData[1]]
                 cData[1] = (cData[1] + 1) % 16 + 48
@@ -119,14 +120,18 @@ class CarState():
                     self.nextClickTime = max(self.nextClickTime, tstmp + 0.5)  # if the car isn't moving or AP isn't engaged, then delay the click
             return None
 
-        self.Update = {}
-        self.Update[280]  = DriveState
-        self.Update[297]  = SteerAngle
-        self.Update[553]  = RightStalk
-        self.Update[585]  = LeftStalk
-        self.Update[599]  = VehicleSpeed
-        self.Update[659]  = Throttle
-        self.Update[820]  = Motor
-        self.Update[962]  = RightScroll
-        self.Update[1001] = AutoPilotState
-        self.Update[1013] = TurnSignal
+        def AutoPilotReady(tstmp, pid, bus, cData):
+            self.autopilotReady = cData[0] & 2
+
+        self.Update = [{},{},{}]
+        self.Update[0][280]  = DriveState
+        self.Update[0][297]  = SteerAngle
+        self.Update[0][553]  = RightStalk
+        self.Update[0][585]  = LeftStalk
+        self.Update[0][599]  = VehicleSpeed
+        self.Update[0][659]  = Throttle
+        self.Update[0][820]  = Motor
+        self.Update[1][921]  = AutoPilotReady
+        self.Update[0][962]  = RightScroll
+        self.Update[0][1001] = AutoPilotState
+        self.Update[0][1013] = TurnSignal

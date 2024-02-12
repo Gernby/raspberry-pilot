@@ -24,15 +24,16 @@ setproctitle.setproctitle('GernbyMode')
 CS = CarState()
 
 os.system("sudo /sbin/ip link set can0 down")
-time.sleep(0.1) 
+time.sleep(0.1)
 os.system("sudo /sbin/ip link set can0 up type can bitrate 500000")
 time.sleep(0.1)
 bus = can.interface.Bus(channel='can0', bustype='socketcan', receive_own_messages=False)
 time.sleep(0.1)
 
 filterCAN = []
-for pid in CS.Update:
-    filterCAN.append({"can_id": pid, "can_mask": pid, "extended": False})
+for channel in CS.Update:
+    for pid in channel:
+        filterCAN.append({"can_id": pid, "can_mask": pid, "extended": False})
 bus.set_filters(filterCAN)
 
 loopStart = 0
@@ -42,22 +43,22 @@ sendCAN = None
 
 if logging:
     from Influx_Client import Influx_Client
-    ic = Influx_Client('PICAN')
+    IC = Influx_Client('PICAN')
 
 while True:
     msg = bus.recv()
 
-    if msg.arbitration_id in CS.Update:
-        sendCAN = CS.Update[msg.arbitration_id](msg.timestamp, msg.arbitration_id, msg.channel, bytearray(msg.data))
+    if msg.arbitration_id in CS.Update[int(msg.channel[-1:])]:
+        sendCAN = CS.Update[int(msg.channel[-1:])][msg.arbitration_id](msg.timestamp, msg.arbitration_id, int(msg.channel[-1]), bytearray(msg.data))
 
-    if not sendCAN is None and len(sendCAN) > 0:
-        for pid, _, cData in sendCAN:
-            bus.send(can.Message(arbitration_id=pid, data=[d for d in cData], is_extended_id=False, dlc=len(cData)))
-        sendCAN = None
+        if not sendCAN is None and len(sendCAN) > 0:
+            for pid, _, cData in sendCAN:
+                bus.send(can.Message(arbitration_id=pid, data=[d for d in cData], is_extended_id=False, dlc=len(cData)))
+            sendCAN = None
 
     if logging and msg.arbitration_id not in CS.ignorePIDs:
         logData.append([msg.timestamp, 0, msg.arbitration_id, int.from_bytes(msg.data, byteorder='little', signed=False)])
 
         if len(logData) > 250:
-            ic.InsertData(CS, logData)
+            IC.InsertData(CS, logData)
             logData = []

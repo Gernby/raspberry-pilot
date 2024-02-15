@@ -11,18 +11,25 @@ class CarState():
         self.leftStalkStatus = 0
         self.steerAngle = 0
         self.lastAPStatus = 0
+        self.lastAutoSteerTime = 0
         self.accelPedal = 0
         self.parked = True
         self.motorPID = 0
         self.throttlePID = 0
         self.lastStalk = 0
         self.autopilotReady = 1
+        self.handsOnState = 0
+        self.brakePressed = 0
+        self.avgLaneCenter = 100.
+        self.blinkersOn = False
+        self.closeToCenter = False
+        self.chassisBusDetected = False
         self.motor = [32]
         self.throttleMode = [0,0,0,0,0,16]
         self.histClick = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
         self.rightStalkCRC = [75,93,98,76,78,210,246,67,170,249,131,70,32,62,52,73]
         self.ignorePIDs = [1000,1005,1060,1107,1132,1284,1316,1321,1359,1364,1448,1508,1524,1541,1542,1547,1550,1588,1651,1697,1698,1723,
-                           2036,313,504,532,555,637,643,669,701,772,777,829,854,855,858,859,866,871,872,896,900,921,928,935,965,979,997]
+                           2036,313,504,532,555,637,643,669,701,772,777,829,854,855,858,859,866,871,872,896,900,928,935,965,979,997]
 
         def BiggerBalls(bus):
             if (self.moreBalls or self.tempBalls) and self.motor[0] & 32 == 0 and self.throttleMode[5] & 16 == 0:  # override throttle mode to Standard / Sport
@@ -78,12 +85,17 @@ class CarState():
 
         def LeftStalk(tstmp, pid, bus, cData):
             if cData[2] & 15 > self.leftStalkStatus:
+                self.blinkersOn = True
+                self.closeToCenter = False
                 self.leftStalkStatus = cData[2] & 15  # Get left stalk status, and bump the status up for full click vs half click turn signal
+                self.nextClickTime = max(self.nextClickTime, tstmp + 1.) # Delay spoof if turn signal is on
             return None
 
         def TurnSignal(tstmp, pid, bus, cData):
             if cData[5] > 0:
-                self.nextClickTime = max(self.nextClickTime, tstmp + (0.5 if self.leftStalkStatus in (4,8) else 4)) # Delay spoof if turn signal is on
+                self.closeToCenter = False
+                self.nextClickTime = max(self.nextClickTime, tstmp + (0.5 if self.leftStalkStatus in (4,8) else 4.)) # Delay spoof if turn signal is on
+            self.blinkersOn = cData[5] > 0
             return None
 
         def SteerAngle(tstmp, pid, bus, cData):
@@ -91,27 +103,21 @@ class CarState():
             self.steerAngle = struct.unpack("<1h", cData[2:4])[0] - 8192  # decode angle using multiple / partial bytes
             return None
 
-        def EnoughClicksAlready():
-            return sum(self.histClick[-10:]) > 1 or sum(self.histClick[-15:-10]) > 1 or sum(self.histClick[-20:-15]) > 1 or sum(self.histClick[-25:-20]) > 1
+        def BrakePedal(tstmp, pid, bus, cData):
+            self.brakePressed = cData[2] & 2
 
-        def RightStalk(tstmp, pid, bus, cData):
-            if all((self.enabled, self.autopilotReady, self.accelPedal < 100, cData[1] <= 15, tstmp > self.nextClickTime, (self.lastAPStatus == 33 or abs(self.steerAngle) < 50), not EnoughClicksAlready())):
-                sendCAN = []
-                cData[0] = self.rightStalkCRC[cData[1]]
-                cData[1] = (cData[1] + 1) % 16 + 48
-                sendCAN.append((pid, bus, bytearray(cData)))  # It's time to spoof or reengage autosteer
-                self.histClick.append(1)
-                self.nextClickTime = max(self.nextClickTime, tstmp + 0.5)
-                self.leftStalkStatus = 0
-            else:  # keep track of the number of new stalk clicks (rising edge) to prevent rainbow road and multiple autosteer unavailable alerts
-                self.histClick.append(1 if cData[1] >> 4 == 3 and not self.lastStalk >> 4 == 3 else 0)
-                self.lastStalk = cData[1]
-                sendCAN = None
-            self.histClick.pop(0)
-            return sendCAN
+        def VirtualLane(tstmp, pid, bus, cData):
+            self.chassisBusDetected = True
+            if self.lastAPStatus == 33:
+                self.avgLaneCenter += 0.01 * (cData[2] - self.avgLaneCenter)
+            laneOffset = cData[2] - self.avgLaneCenter
+            self.closeToCenter = abs(laneOffset) < 10 and not self.blinkersOn and self.lastAPStatus == 32 and (tstmp - self.lastAutoSteerTime) > 2.
+            print(" %3.0f %3.0f %3.0f" % (cData[2], self.avgLaneCenter, laneOffset), self.closeToCenter, ["NOT_REQD","REQD_DETECTED","REQD_NOT_DETECTED","REQD_VISUAL","REQD_CHIME_1","REQD_CHIME_2","REQD_SLOWING","REQD_STRUCK_OUT","SUSPENDED","REQD_ESCALATED_CHIME_1","REQD_ESCALATED_CHIME_2",None,None,None,None,"SNA"][self.handsOnState])
 
-        def AutoPilotState(tstmp, pid, bus, cData):
+        def DriverAssistState(tstmp, pid, bus, cData):
             self.lastAPStatus = cData[3] & 33
+            if self.lastAPStatus == 33:
+                self.lastAutoSteerTime = tstmp
             if cData[3] & 33 > 0 and self.speed > 0 and self.autoSteer and not self.enabled:
                 self.enabled = 1  # AP is active
             elif (cData[3] & 33 == 0 or self.speed == 0) and self.enabled:
@@ -120,18 +126,57 @@ class CarState():
                     self.nextClickTime = max(self.nextClickTime, tstmp + 0.5)  # if the car isn't moving or AP isn't engaged, then delay the click
             return None
 
-        def AutoPilotReady(tstmp, pid, bus, cData):
-            self.autopilotReady = cData[0] & 2
+        def EnoughClicksAlready():
+            return sum(self.histClick[-10:]) > 1 or sum(self.histClick[-15:-10]) > 1 or sum(self.histClick[-20:-15]) > 1 or sum(self.histClick[-25:-20]) > 1
 
-        self.Update = [{},{},{}]
-        self.Update[0][280]  = DriveState
-        self.Update[0][297]  = SteerAngle
-        self.Update[0][553]  = RightStalk
-        self.Update[0][585]  = LeftStalk
-        self.Update[0][599]  = VehicleSpeed
-        self.Update[0][659]  = Throttle
-        self.Update[0][820]  = Motor
-        self.Update[1][921]  = AutoPilotReady
-        self.Update[0][962]  = RightScroll
-        self.Update[0][1001] = AutoPilotState
-        self.Update[0][1013] = TurnSignal
+        def RightStalk(tstmp, pid, bus, cData):
+            if all((self.enabled, self.autopilotReady, not self.brakePressed, not self.blinkersOn, self.accelPedal < 100, cData[1] <= 15, 
+                    (tstmp > self.nextClickTime or self.closeToCenter), (self.lastAPStatus == 33 or abs(self.steerAngle) < 50), not EnoughClicksAlready())):
+                sendCAN = []
+                cData[0] = self.rightStalkCRC[cData[1]]
+                cData[1] = (cData[1] + 1) % 16 + 48
+                sendCAN.append((pid, bus, bytearray(cData)))  # It's time to spoof or reengage autosteer
+                self.histClick.append(1)
+                self.nextClickTime = max(self.nextClickTime, tstmp + 0.5 )
+                self.leftStalkStatus = 0
+            else:  # keep track of the number of new stalk clicks (rising edge) to prevent rainbow road and multiple autosteer unavailable alerts
+                self.histClick.append(1 if cData[1] >> 4 == 3 and not self.lastStalk >> 4 == 3 else 0)
+                sendCAN = None
+            self.lastStalk = cData[1]
+            self.histClick.pop(0)
+            return sendCAN
+
+        def AutoPilotState(tstmp, pid, bus, cData):
+            # Hands On State: 0 "NOT_REQD" 1 "REQD_DETECTED" 2 "REQD_NOT_DETECTED" 3 "REQD_VISUAL" 4 "REQD_CHIME_1" 5 "REQD_CHIME_2" 6 "REQD_SLOWING" 7 "REQD_STRUCK_OUT" 8 "SUSPENDED" ;9 "REQD_ESCALATED_CHIME_1" 10 "REQD_ESCALATED_CHIME_2" 15 "SNA" 
+            self.handsOnState = (cData[5] >> 2) & 15
+            self.chassisBusDetected = True
+            self.autopilotReady = cData[0] & 15 in [2, 3, 5]
+            if self.lastAPStatus == 33 and self.handsOnState in [0, 1, 7, 8, 15]:
+                self.nextClickTime = max(self.nextClickTime, tstmp + 0.5)
+            return None
+
+        def PrintBits(tstmp, pid, bus, cData):
+            print(pid, bus, "{0:64b}".format(int.from_bytes(cData, byteorder='little', signed=False)))
+
+        def PrintBytes(tstmp, pid, bus, cData):
+            print(pid, bus, ["%3.0f" % d for d in cData])
+
+        self.Update = [{  # Bus 0
+                            280:  DriveState,
+                            297:  SteerAngle,
+                            553:  RightStalk,
+                            585:  LeftStalk,
+                            599:  VehicleSpeed,
+                            659:  Throttle,
+                            820:  Motor,
+                            925:  BrakePedal,
+                            962:  RightScroll,
+                            1001: DriverAssistState,
+                            1013: TurnSignal
+                       },
+                       {  # Bus 1
+                            569:  VirtualLane,
+                            #697:  PrintBits,
+                            #697:  PrintBytes,
+                            921:  AutoPilotState
+                       }]

@@ -34,10 +34,20 @@ loopStart = 0
 logging = False
 logData = []
 sendCAN = None
+debugInit = False
+frameCount = [0, 0]
 
 if logging:
     from Influx_Client import Influx_Client
     IC = Influx_Client(p.get_serial()[0])
+
+while sum(frameCount) < 2000:
+    for _, _, _, bus in p.can_recv():
+        if bus < 2: frameCount[bus] += 1
+
+if frameCount[0] < frameCount[1]:
+    CS.Update = [CS.Update[0], CS.Update[1]]
+print(frameCount)
 
 while True:
     if CS.parked:  # reduce poll rate while parked
@@ -54,10 +64,11 @@ while True:
         loopStart = time.time()
 
     for pid, _, cData, bus in p.can_recv():
+
         if bus < 3 and pid in CS.Update[bus]:
             sendCAN = CS.Update[bus][pid](loopStart, pid, bus, cData)
 
-            if not sendCAN is None and len(sendCAN) > 0:
+            if sendCAN:
                 for pid, bus, cData in sendCAN:
                     p.can_send(pid, cData, bus)
                 sendCAN = None

@@ -1,5 +1,3 @@
-import struct
-
 class CarState():
     def __init__(self):
         self.moreBalls = 0
@@ -103,7 +101,7 @@ class CarState():
 
         def SteerAngle(tstmp, pid, bus, cData):
             cData[3] &= 63  # mask upper bits
-            self.steerAngle = struct.unpack("<1h", cData[2:4])[0] - 8192  # decode angle using multiple / partial bytes
+            self.steerAngle = ((int.from_bytes(cData, byteorder='little', signed=False) >> 16) & 16383) - 8192
             return SendCAN(tstmp)
 
         def BrakePedal(tstmp, pid, bus, cData):
@@ -129,7 +127,7 @@ class CarState():
                     self.nextClickTime = max(self.nextClickTime, tstmp + 0.5)  # if the car isn't moving or AP isn't engaged, then delay the click
             return SendCAN(tstmp)
 
-        def EnoughClicksAlready():
+        def EnoughClicksAlready():  # Prevent unintended triggering of the "Rainbow Road" Easter Egg
             return sum(self.histClick[-10:]) > 1 or sum(self.histClick[-15:-10]) > 1 or sum(self.histClick[-20:-15]) > 1 or sum(self.histClick[-25:-20]) > 1
 
         def RightStalk(tstmp, pid, bus, cData):
@@ -148,12 +146,16 @@ class CarState():
             return SendCAN(tstmp)
 
         def AutoPilotState(tstmp, pid, bus, cData):
-            # Hands On State: 0 "NOT_REQD" 1 "REQD_DETECTED" 2 "REQD_NOT_DETECTED" 3 "REQD_VISUAL" 4 "REQD_CHIME_1" 5 "REQD_CHIME_2" 6 "REQD_SLOWING" 7 "REQD_STRUCK_OUT" 8 "SUSPENDED" ;9 "REQD_ESCALATED_CHIME_1" 10 "REQD_ESCALATED_CHIME_2" 15 "SNA" 
+            # Hands On State: 0 "NOT_REQD" 1 "REQD_DETECTED" 2 "REQD_NOT_DETECTED" 3 "REQD_VISUAL" 4 "REQD_CHIME_1" 5 "REQD_CHIME_2" 6 "REQD_SLOWING" 
+            #                 7 "REQD_STRUCK_OUT" 8 "SUSPENDED" ;9 "REQD_ESCALATED_CHIME_1" 10 "REQD_ESCALATED_CHIME_2" 15 "SNA" 
             self.handsOnState = (cData[5] >> 2) & 15
             self.autopilotReady = cData[0] & 15 in [2, 3, 5]
             if self.lastAPStatus == 33 and self.handsOnState in [0, 1, 7, 8, 15]:
                 self.nextClickTime = max(self.nextClickTime, tstmp + 0.5)
             return SendCAN(tstmp)
+
+        def DASSpeed(tstmp, pid, bus, cData):
+            self.cruiseSpeed = 0.0621 * (int.from_bytes(cData, byteorder='little', signed=False) & 4095)
 
         def PrintBits(tstmp, pid, bus, cData):
             print(pid, bus, "{0:64b}".format(int.from_bytes(cData, byteorder='little', signed=False)))
@@ -183,7 +185,6 @@ class CarState():
                        },
                        {  # Chassis Bus
                             569:  VirtualLane,
-                            #697:  PrintBytes,
-                            #697:  PrintBits,
-                            921:  AutoPilotState
+                            #697:  DASSpeed,
+                            921:  AutoPilotState,
                        }]

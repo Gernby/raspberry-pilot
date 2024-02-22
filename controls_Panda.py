@@ -46,7 +46,7 @@ while sum(frameCount) < 2000:
         if bus < 2: frameCount[bus] += 1
 
 if frameCount[0] < frameCount[1]:
-    CS.Update = [CS.Update[0], CS.Update[1]]
+    CS.Update = [CS.Update[1], CS.Update[0]]
 print(frameCount)
 
 while True:

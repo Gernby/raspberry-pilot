@@ -66,7 +66,7 @@ while True:
     for pid, _, cData, bus in p.can_recv():
 
         if bus < 3 and pid in CS.Update[bus]:
-            sendCAN = CS.Update[bus][pid](loopStart, pid, bus, cData)
+            sendCAN = CS.Update[bus][pid](loopStart, pid, bus, bytearray(cData))
 
             if sendCAN:
                 for pid, bus, cData in sendCAN:

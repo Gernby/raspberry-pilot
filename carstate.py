@@ -1,3 +1,7 @@
+import time
+import threading
+#from sshkeyboard import listen_keyboard
+
 class CarState():
     def __init__(self):
         self.moreBalls = 0
@@ -18,9 +22,12 @@ class CarState():
         self.autopilotReady = 1
         self.handsOnState = 0
         self.brakePressed = 0
+        self.chassisBusAvailable = 0
+        self.autoEngage = 0
         self.avgLaneCenter = 100.
         self.blinkersOn = False
         self.closeToCenter = False
+        self.logFile = None
         self.sendCAN = []
         self.motor = [32]
         self.throttleMode = [0,0,0,0,0,16]
@@ -131,7 +138,7 @@ class CarState():
             return sum(self.histClick[-10:]) > 1 or sum(self.histClick[-15:-10]) > 1 or sum(self.histClick[-20:-15]) > 1 or sum(self.histClick[-25:-20]) > 1
 
         def RightStalk(tstmp, pid, bus, cData):
-            if all((self.enabled, self.autopilotReady, not self.brakePressed, not self.blinkersOn, self.accelPedal < 100, cData[1] <= 15, 
+            if all(((self.enabled or self.autoEngage), self.autopilotReady, not self.brakePressed, not self.blinkersOn, self.accelPedal < 100, cData[1] <= 15, 
                     (tstmp > self.nextClickTime or self.closeToCenter), (self.lastAPStatus == 33 or abs(self.steerAngle) < 50), not EnoughClicksAlready())):
                 cData[0] = self.rightStalkCRC[cData[1]]
                 cData[1] = (cData[1] + 1) % 16 + 48
@@ -139,8 +146,11 @@ class CarState():
                 self.histClick.append(1)
                 self.nextClickTime = max(self.nextClickTime, tstmp + 0.5)
                 self.leftStalkStatus = 0
+                self.autoEngage = self.chassisBusAvailable
             else:  # keep track of the number of new stalk clicks (rising edge) to prevent rainbow road and multiple autosteer unavailable alerts
                 self.histClick.append(1 if cData[1] >> 4 == 3 and not self.lastStalk >> 4 == 3 else 0)
+                if cData[1] >> 4 == 1:
+                    self.autoEngage = 0
             self.lastStalk = cData[1]
             self.histClick.pop(0)
             return SendCAN(tstmp)
@@ -150,6 +160,7 @@ class CarState():
             #                 7 "REQD_STRUCK_OUT" 8 "SUSPENDED" ;9 "REQD_ESCALATED_CHIME_1" 10 "REQD_ESCALATED_CHIME_2" 15 "SNA" 
             self.handsOnState = (cData[5] >> 2) & 15
             self.autopilotReady = cData[0] & 15 in [2, 3, 5]
+            self.chassisBusAvailable = 1
             if self.lastAPStatus == 33 and self.handsOnState in [0, 1, 7, 8, 15]:
                 self.nextClickTime = max(self.nextClickTime, tstmp + 0.5)
             return SendCAN(tstmp)
@@ -169,6 +180,43 @@ class CarState():
             print("%0.4f" % tstmp, pid, bus, "{0:64b}".format(int.from_bytes(cData, byteorder='little', signed=False)), cData)
             return None
 
+        def Research(tstmp, pid, bus, cData):
+            if self.logFile is None:
+                self.monitorPIDs = [[],[]]
+                self.allPIDs = [[],[]]
+                self.baselineBits = [{},{}]
+                self.lastBytes = [{},{}]
+                self.allBitChanges = [{},{}]
+                self.logFile = open('/home/raspilot/raspilot/bitChanges-%0.0f.dat' % (tstmp//60), "a")
+
+                def monitor_keys():
+                    def press(key):
+                        print(f"'{key}' pressed")
+                        self.logFile.write("%0.0f  %s pressed" % (time.time(), str(key)))
+                    
+                    while True:
+                        listen_keyboard(on_press=press, sleep=0.1)
+                
+                self.t = threading.Thread(target=monitor_keys, )
+
+            if (len(self.monitorPIDs[bus]) == 0 or pid in self.monitorPIDs[bus]) and not pid in self.allPIDs[bus]:
+                self.allPIDs[bus].append(pid)
+                for b in range(len(cData)):
+                    self.allBitChanges[bus]["%s|%d" % (pid, b)] = 0
+                    self.lastBytes[bus]["%s|%d" % (pid, b)] = cData[b]
+
+            if pid in self.allPIDs[bus]:
+                for b in range(len(cData)):
+                    if "%s|%d" % (pid, b) not in self.lastBytes[bus]:
+                        self.lastBytes[bus]["%s|%d" % (pid, b)] = cData[b]
+                        self.allBitChanges[bus]["%s|%d" % (pid, b)] = 0
+                    newBitChanges = self.lastBytes[bus]["%s|%d" % (pid, b)] ^ cData[b]
+                    if self.allBitChanges[bus]["%s|%d" % (pid, b)] != self.allBitChanges[bus]["%s|%d" % (pid, b)] | newBitChanges:
+                        print(int(tstmp), pid, b, self.allBitChanges[bus]["%s|%d" % (pid, b)] ^ newBitChanges, self.allBitChanges[bus]["%s|%d" % (pid, b)] | newBitChanges)
+                        self.logFile.write("%0.0f %d %d %d %d\n" % (tstmp, pid, b, self.allBitChanges[bus]["%s|%d" % (pid, b)] ^ newBitChanges, self.allBitChanges[bus]["%s|%d" % (pid, b)] | newBitChanges))
+                        self.allBitChanges[bus]["%s|%d" % (pid, b)] = self.allBitChanges[bus]["%s|%d" % (pid, b)] | newBitChanges
+                    self.lastBytes[bus]["%s|%d" % (pid, b)] = cData[b]
+
         self.Update = [{  # Vehicle Bus
                             280:  DriveState,
                             297:  SteerAngle,
@@ -187,4 +235,5 @@ class CarState():
                             569:  VirtualLane,
                             #697:  DASSpeed,
                             921:  AutoPilotState,
-                       }]
+                       },
+                       Research]

@@ -4,18 +4,21 @@
 # * Temporary throttle override from Chill to Standard/Sport when throttle is pressed more than 78% (NOTE: The "CHILL" message on the screen will not change)
 # * Persistent throttle override from Chill to Standard/Sport when the right steering wheel scroll is swiped up and cruise control is not active (swipe down to end throttle override)
 # * Satisfies the "Apply steering torque" requirement while autosteer is enabled.  The driver camera still monitors driver attentiveness, which is important!
+# * For Dual-CAN mode: After first AP engagement and until AP is cancelled via right stalk (up-click), AP will auto-engage anytime AP is "Ready"
 #
-# This could run on any device that has a PandaCAN interface with the vehicle, but has only been tested using the Raspberry-Pilot tech stack (RPi4 + White Comma Panda with Raspberry-Pilot firmware)
-# The CAN interface used for development and testing was a White Comma Panda running the Raspberry-Pilot firmware and this harness: https://www.gpstrackingamerica.com/shop/hrn-ct20t11/
+# This could run on any device that has a PICAN interface with the vehicle, but has only been tested using the Raspberry-Pilot tech stack (RPi + PICAN2)
+# The CAN connect used for development and testing was through these harnesses: 
+#       Dual-CAN operation (full features):      https://evoffer.com/product/model-3-y-can-diagnostic-cable/
+#       Single-CAN operation (limited features): https://www.gpstrackingamerica.com/shop/hrn-ct20t11/
+#
 # If running on an RPi with Comma Panda, the RPi needs to be configured for USB OTG, which requires raspberry-pilot/phonelibs/usercfg.txt to be copied into /boot/firmware
 # The CPU utilization on an RPi4 is so low that the clock speed should be reduced for power savings, especially while stopped / idle.  I have mine set to 600 MHz.
 # 
 # TO-DO:
-# * Enhance script for a Pi with PiCAN2 Hat, since Comma Panda's are expensive, if available at all
 # * Find these CAN packets:
-#   * Whether AutoSteer is "ready" for engagement.  Previously documented CAN frames are no longer valid
 #   * Whether the current road has extra speed restictions (i.e. surface street vs highway)
 #   * What is the current cruise control max speed
+#
 import time
 import panda
 import setproctitle
@@ -34,7 +37,7 @@ loopStart = 0
 logging = False
 logData = []
 sendCAN = None
-debugInit = False
+research = False
 frameCount = [0, 0]
 
 if logging:
@@ -72,6 +75,9 @@ while True:
                 for pid, bus, cData in sendCAN:
                     p.can_send(pid, cData, bus)
                 sendCAN = None
+        elif research:
+            CS.Update[-1](loopStart, pid, bus, bytearray(cData))
+
 
         if logging and pid not in CS.ignorePIDs:
             logData.append([loopStart, bus, pid, int.from_bytes(cData, byteorder='little', signed=False)])

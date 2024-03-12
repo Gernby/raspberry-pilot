@@ -1,6 +1,11 @@
-import time
-import threading
-#from sshkeyboard import listen_keyboard
+MIN_REGEN_PERCENT = 10   # Must be increments of 5%
+MAX_REGEN_PERCENT = 100  # Must be increments of 5%
+MIN_REGEN_AFTER_SPEED = 70
+MAX_REGEN_BELOW_SPEED = 40
+
+REGEN_SLOPE = (MIN_REGEN_AFTER_SPEED - MAX_REGEN_BELOW_SPEED) / (0.2 * (MAX_REGEN_PERCENT - MIN_REGEN_PERCENT))
+MAX_ADJUST = (100 - MIN_REGEN_PERCENT) * 0.2
+MIN_ADJUST = (100 - MAX_REGEN_PERCENT) * 0.2
 
 class CarState():
     def __init__(self):
@@ -28,8 +33,9 @@ class CarState():
         self.blinkersOn = False
         self.closeToCenter = False
         self.logFile = None
+        self.accelerating = False
         self.sendCAN = []
-        self.motor = [32]
+        self.motor = [32,0,20]
         self.throttleMode = [0,0,0,0,0,16]
         self.histClick = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
         self.rightStalkCRC = [75,93,98,76,78,210,246,67,170,249,131,70,32,62,52,73]
@@ -60,6 +66,20 @@ class CarState():
                 self.throttleMode[0] = 16
             return SendCAN(tstmp)
 
+        def AdjustRegenBraking(tstmp, bus):
+            if self.lastAPStatus == 0 and not self.autoEngage and self.nextClickTime < tstmp:  # override Regen percent to be 100% at speed up to 30 MPH then steadily decrease to 0% as speed increases to 60+ MPH
+                regenAdjustment = int(min(MAX_ADJUST, max(MIN_ADJUST, ((self.speed - MAX_REGEN_BELOW_SPEED) / REGEN_SLOPE))))
+                self.motor[2] = (self.motor[2] - regenAdjustment) & 255
+                self.motor[6] = (self.motor[6] + 16) & 255
+                self.motor[7] = (self.motor[7] + 16 - regenAdjustment) & 255
+                self.sendCAN.append((tstmp, self.motorPID, bus, bytearray(self.motor)))
+            elif self.nextClickTime >= tstmp and self.motor[2] < 20:
+                self.motor[7] = (self.motor[7] + 16 + 20 - self.motor[2]) & 255
+                self.motor[6] = (self.motor[6] + 16) & 255
+                self.motor[2] = 20
+                self.sendCAN.append((tstmp, self.motorPID, bus, bytearray(self.motor)))                
+            return SendCAN(tstmp)
+
         def Throttle(tstmp, pid, bus, cData):
             self.throttlePID = pid
             self.throttleMode = cData  # get throttle mode
@@ -69,12 +89,16 @@ class CarState():
         def Motor(tstmp, pid, bus, cData):
             self.motorPID = pid
             self.motor = cData  # capture this throttle data in case throttle or up-swipe meets conditions for override soon
-            return BiggerBalls(tstmp, bus)
+            if self.moreBalls or self.tempBalls:
+                return BiggerBalls(tstmp, bus)
+            else:
+                return AdjustRegenBraking(tstmp, bus)
 
         def DriveState(tstmp, pid, bus, cData):
             self.parked = cData[2] & 2 > 0  # check gear state
             self.accelPedal = cData[4]  # get accelerator pedal position
             self.tempBalls = self.accelPedal > 200  # override to standard / sport if throttle is above 78%
+            if self.parked:  self.autoEngage = 0
             return BiggerBalls(tstmp, bus)
 
         def RightScroll(tstmp, pid, bus, cData):
@@ -88,6 +112,10 @@ class CarState():
             return BiggerBalls(tstmp, bus)
 
         def VehicleSpeed(tstmp, pid, bus, cData):
+            if cData[3] > self.speed and self.speed >= 10:
+                self.accelerating = True
+            elif cData[3] < self.speed:
+                self.accelerating = False
             self.speed = cData[3]
             return SendCAN(tstmp)
 
@@ -113,6 +141,7 @@ class CarState():
 
         def BrakePedal(tstmp, pid, bus, cData):
             self.brakePressed = cData[2] & 2
+            if self.brakePressed:  self.accelerating = False
             return SendCAN(tstmp)
 
         def VirtualLane(tstmp, pid, bus, cData):
@@ -138,7 +167,7 @@ class CarState():
             return sum(self.histClick[-10:]) > 1 or sum(self.histClick[-15:-10]) > 1 or sum(self.histClick[-20:-15]) > 1 or sum(self.histClick[-25:-20]) > 1
 
         def RightStalk(tstmp, pid, bus, cData):
-            if all(((self.enabled or self.autoEngage), self.autopilotReady, not self.brakePressed, not self.blinkersOn, self.accelPedal < 100, cData[1] <= 15, 
+            if all(((self.enabled or (self.autoEngage and self.accelerating)), self.autopilotReady, not self.brakePressed, not self.blinkersOn, self.accelPedal < 100, cData[1] <= 15, 
                     (tstmp > self.nextClickTime or self.closeToCenter), (self.lastAPStatus == 33 or abs(self.steerAngle) < 50), not EnoughClicksAlready())):
                 cData[0] = self.rightStalkCRC[cData[1]]
                 cData[1] = (cData[1] + 1) % 16 + 48
@@ -149,7 +178,10 @@ class CarState():
                 self.autoEngage = self.chassisBusAvailable
             else:  # keep track of the number of new stalk clicks (rising edge) to prevent rainbow road and multiple autosteer unavailable alerts
                 self.histClick.append(1 if cData[1] >> 4 == 3 and not self.lastStalk >> 4 == 3 else 0)
-                if cData[1] >> 4 == 1:
+                if (cData[1] >> 4) & 7 in [3,4] and self.motor[2] < 20:
+                    self.nextClickTime = tstmp + 0.5
+                    AdjustRegenBraking(tstmp, bus)
+                elif (cData[1] >> 4) & 7 in [1,2]:
                     self.autoEngage = 0
             self.lastStalk = cData[1]
             self.histClick.pop(0)
@@ -189,16 +221,6 @@ class CarState():
                 self.allBitChanges = [{},{}]
                 self.logFile = open('/home/raspilot/raspilot/bitChanges-%0.0f.dat' % (tstmp//60), "a")
 
-                def monitor_keys():
-                    def press(key):
-                        print(f"'{key}' pressed")
-                        self.logFile.write("%0.0f  %s pressed" % (time.time(), str(key)))
-                    
-                    while True:
-                        listen_keyboard(on_press=press, sleep=0.1)
-                
-                self.t = threading.Thread(target=monitor_keys, )
-
             if (len(self.monitorPIDs[bus]) == 0 or pid in self.monitorPIDs[bus]) and not pid in self.allPIDs[bus]:
                 self.allPIDs[bus].append(pid)
                 for b in range(len(cData)):
@@ -212,7 +234,7 @@ class CarState():
                         self.allBitChanges[bus]["%s|%d" % (pid, b)] = 0
                     newBitChanges = self.lastBytes[bus]["%s|%d" % (pid, b)] ^ cData[b]
                     if self.allBitChanges[bus]["%s|%d" % (pid, b)] != self.allBitChanges[bus]["%s|%d" % (pid, b)] | newBitChanges:
-                        print(int(tstmp), pid, b, self.allBitChanges[bus]["%s|%d" % (pid, b)] ^ newBitChanges, self.allBitChanges[bus]["%s|%d" % (pid, b)] | newBitChanges)
+                        print(int(tstmp), bus, pid, b, self.allBitChanges[bus]["%s|%d" % (pid, b)] ^ newBitChanges, self.allBitChanges[bus]["%s|%d" % (pid, b)] | newBitChanges)
                         self.logFile.write("%0.0f %d %d %d %d\n" % (tstmp, pid, b, self.allBitChanges[bus]["%s|%d" % (pid, b)] ^ newBitChanges, self.allBitChanges[bus]["%s|%d" % (pid, b)] | newBitChanges))
                         self.allBitChanges[bus]["%s|%d" % (pid, b)] = self.allBitChanges[bus]["%s|%d" % (pid, b)] | newBitChanges
                     self.lastBytes[bus]["%s|%d" % (pid, b)] = cData[b]
@@ -225,7 +247,6 @@ class CarState():
                             599:  VehicleSpeed,
                             659:  Throttle,
                             820:  Motor,
-                            #851: PrintBitsAndString,
                             925:  BrakePedal,
                             962:  RightScroll,
                             1001: DriverAssistState,
@@ -233,7 +254,6 @@ class CarState():
                        },
                        {  # Chassis Bus
                             569:  VirtualLane,
-                            #697:  DASSpeed,
                             921:  AutoPilotState,
                        },
                        Research]

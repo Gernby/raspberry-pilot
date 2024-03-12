@@ -3,8 +3,9 @@
 #   NOTE: This gives a "single-click" autosteer engagement, but the option for single/double click engagement MUST be set to double!
 # * Temporary throttle override from Chill to Standard/Sport when throttle is pressed more than 78% (NOTE: The "CHILL" message on the screen will not change)
 # * Persistent throttle override from Chill to Standard/Sport when the right steering wheel scroll is swiped up and cruise control is not active (swipe down to end throttle override)
+# * Dynamic Regen Braking Percentage in Chill mode, which makes driving at highway speeds more "Chill"
 # * Satisfies the "Apply steering torque" requirement while autosteer is enabled.  The driver camera still monitors driver attentiveness, which is important!
-# * For Dual-CAN mode: After first AP engagement (until AP is cancelled via right stalk up-click), AP will auto-engage anytime AP is "Ready"
+# * For Dual-CAN mode: After first AP engagement and until AP is cancelled via right stalk (up-click), AP will auto-engage anytime AP is "Ready"
 #
 # This could run on any device that has a PICAN interface with the vehicle, but has only been tested using the Raspberry-Pilot tech stack (RPi + PICAN2)
 # The CAN connect used for development and testing was through these harnesses: 
@@ -58,7 +59,8 @@ while True:
             for pid, _, cData in sendCAN:
                 bus.send(can.Message(arbitration_id=pid, data=[d for d in cData], is_extended_id=False, dlc=len(cData)))
             sendCAN = None
-    elif research:
+
+    if research:
         CS.Update[-1](msg.timestamp, msg.arbitration_id, int(msg.channel[-1]), bytearray(msg.data))
 
     if logging and msg.arbitration_id not in CS.ignorePIDs:

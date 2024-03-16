@@ -31,3 +31,4 @@ EOF
 
 # After reboot, wait 30 seconds for wifi to connect, then kick off the remaining install
 (crontab -l; echo "@reboot sleep 30; bash /home/raspilot/finish_install.sh";) | crontab -
+exit 0

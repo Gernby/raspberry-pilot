@@ -69,3 +69,10 @@ while True:
         if len(logData) > 250:
             IC.InsertData(CS, logData)
             logData = []
+
+    if CS.speed == 0 and len(bus.filters) > 1:
+        print("filter set to speed only")
+        bus.set_filters([{"can_id": 599, "can_mask": 599, "extended": False}])
+    elif CS.speed > 0 and len(bus.filters) == 1:
+        print("filter set to everything")
+        bus.set_filters(filterCAN)

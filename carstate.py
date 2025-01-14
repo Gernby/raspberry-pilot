@@ -1,11 +1,12 @@
-MIN_REGEN_PERCENT = 10   # Must be increments of 5%
+MIN_REGEN_PERCENT = 95   # Must be increments of 5%
 MAX_REGEN_PERCENT = 100  # Must be increments of 5%
-MIN_REGEN_AFTER_SPEED = 70
-MAX_REGEN_BELOW_SPEED = 40
+MIN_REGEN_AFTER_SPEED = 60
+MAX_REGEN_BELOW_SPEED = 50
 
 REGEN_SLOPE = (MIN_REGEN_AFTER_SPEED - MAX_REGEN_BELOW_SPEED) / (0.2 * (MAX_REGEN_PERCENT - MIN_REGEN_PERCENT))
 MAX_ADJUST = (100 - MIN_REGEN_PERCENT) * 0.2
 MIN_ADJUST = (100 - MAX_REGEN_PERCENT) * 0.2
+print(REGEN_SLOPE, MAX_ADJUST, MIN_ADJUST)
 
 class CarState():
     def __init__(self):
@@ -15,7 +16,6 @@ class CarState():
         self.autoSteer = 0
         self.nextClickTime = 0.
         self.speed = 0
-        self.leftStalkStatus = 0
         self.steerAngle = 0
         self.lastAPStatus = 0
         self.lastAutoSteerTime = 0
@@ -26,21 +26,34 @@ class CarState():
         self.lastStalk = 0
         self.autopilotReady = 1
         self.handsOnState = 0
+        self.handsOnLevel = 0
+        self.driverSteerTorque = 0
+        self.steerTorqueAdjust = 0
         self.brakePressed = 0
-        self.chassisBusAvailable = 0
         self.autoEngage = 0
         self.avgLaneCenter = 100.
+        self.fastAvgSpeed = 0.
+        self.avgSpeed = 0.
+        self.chassisBusAvailable = 0
+        self.FSD = False
         self.blinkersOn = False
         self.closeToCenter = False
         self.logFile = None
+        self.notDecelerating = False
         self.accelerating = False
+        self.conditionBattery = False
         self.sendCAN = []
+        self.stalkCondition = {}
+        self.allPIDs = [[],[]]
         self.motor = [32,0,20]
         self.throttleMode = [0,0,0,0,0,16]
         self.histClick = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
         self.rightStalkCRC = [75,93,98,76,78,210,246,67,170,249,131,70,32,62,52,73]
+        self.leftStalkCRC = {2: [208,18,235,235,187,116,102,7,102,218,16,2,43,151,246,163],
+                             6: [152,90,163,163,243,60,46,79,46,146,88,74,99,223,190,235]}
         self.ignorePIDs = [1000,1005,1060,1107,1132,1284,1316,1321,1359,1364,1448,1508,1524,1541,1542,1547,1550,1588,1651,1697,1698,1723,
                            2036,313,504,532,555,637,643,669,701,772,777,829,854,855,858,859,866,871,872,896,900,928,935,965,979,997]
+        self.recordPIDs = [264, 697, 744, 880, 905, 1160]
 
         def SendCAN(tstmp):
             data = []
@@ -67,7 +80,7 @@ class CarState():
             return SendCAN(tstmp)
 
         def AdjustRegenBraking(tstmp, bus):
-            if self.lastAPStatus == 0 and not self.autoEngage and self.nextClickTime < tstmp:  # override Regen percent to be 100% at speed up to 30 MPH then steadily decrease to 0% as speed increases to 60+ MPH
+            if self.lastAPStatus != 32 and (self.nextClickTime < tstmp or self.lastAPStatus == 33):  # override Regen percent to be 100% at speed up to 30 MPH then steadily decrease to 0% as speed increases to 60+ MPH
                 regenAdjustment = int(min(MAX_ADJUST, max(MIN_ADJUST, ((self.speed - MAX_REGEN_BELOW_SPEED) / REGEN_SLOPE))))
                 self.motor[2] = (self.motor[2] - regenAdjustment) & 255
                 self.motor[6] = (self.motor[6] + 16) & 255
@@ -77,7 +90,7 @@ class CarState():
                 self.motor[7] = (self.motor[7] + 16 + 20 - self.motor[2]) & 255
                 self.motor[6] = (self.motor[6] + 16) & 255
                 self.motor[2] = 20
-                self.sendCAN.append((tstmp, self.motorPID, bus, bytearray(self.motor)))                
+                self.sendCAN.append((tstmp, self.motorPID, bus, bytearray(self.motor)))
             return SendCAN(tstmp)
 
         def Throttle(tstmp, pid, bus, cData):
@@ -93,7 +106,7 @@ class CarState():
                 return BiggerBalls(tstmp, bus)
             else:
                 return AdjustRegenBraking(tstmp, bus)
-
+            
         def DriveState(tstmp, pid, bus, cData):
             self.parked = cData[2] & 2 > 0  # check gear state
             self.accelPedal = cData[4]  # get accelerator pedal position
@@ -105,13 +118,22 @@ class CarState():
             if cData[3] not in [0,85]:
                 if cData[3] <= 64 and cData[3] >= 44 and self.enabled:
                     self.nextClickTime = max(self.nextClickTime, tstmp + 4)  # ensure enough time for the cruise speed decrease to be applied
-                elif cData[3] < 20 and cData[3] > 1 and not self.enabled:
+                elif cData[3] < 20 and cData[3] > 1 and not self.enabled and not self.moreBalls:
                     self.moreBalls = True  # up swipe will lock standard / sport throttle override mode
-                elif cData[3] < 64 and cData[3] > 44 and not self.enabled:
+                elif cData[3] < 20 and cData[3] > 1 and not self.enabled and not self.conditionBattery:
+                    self.conditionBattery = True  # up swipe will lock standard / sport throttle override mode
+                elif cData[3] < 64 and cData[3] > 44 and not self.enabled and self.conditionBattery:
+                    self.conditionBattery = False  # down swipe will end throttle override mode
+                elif cData[3] < 64 and cData[3] > 44 and not self.enabled and self.moreBalls:
                     self.moreBalls = False  # down swipe will end throttle override mode
             return BiggerBalls(tstmp, bus)
 
         def VehicleSpeed(tstmp, pid, bus, cData):
+            self.avgSpeed += 0.1 * (cData[3] - self.avgSpeed)
+            if not self.brakePressed and (self.avgSpeed - cData[3]) < 0.01:
+                self.notDecelerating = True
+            else:
+                self.notDecelerating = False
             if cData[3] > self.speed and self.speed >= 10:
                 self.accelerating = True
             elif cData[3] < self.speed:
@@ -120,18 +142,26 @@ class CarState():
             return SendCAN(tstmp)
 
         def LeftStalk(tstmp, pid, bus, cData):
-            if cData[2] & 15 > self.leftStalkStatus:
-                self.blinkersOn = True
+            if cData[2] & 15 > 0:
                 self.closeToCenter = False
-                self.leftStalkStatus = cData[2] & 15  # Get left stalk status, and bump the status up for full click vs half click turn signal
                 self.nextClickTime = max(self.nextClickTime, tstmp + 1.) # Delay spoof if turn signal is on
+            if self.lastAPStatus == 33 and not self.blinkersOn and cData[2] & 15 in (2,6):
+                cData[0] = self.leftStalkCRC[cData[2]][cData[1]]
+                cData[1] = (cData[1] + 1) & 15
+                cData[2] = cData[2] + 2
+                cData[3] = 0
+                self.sendCAN.append((tstmp + 0.025, pid, bus, bytearray(cData)))
+                cData[0] = self.leftStalkCRC[cData[2] - 2][cData[1]]
+                cData[1] = (cData[1] + 1) & 15
+                self.sendCAN.append((tstmp + 0.075, pid, bus, bytearray(cData)))
             return SendCAN(tstmp)
 
         def TurnSignal(tstmp, pid, bus, cData):
-            if cData[5] > 0:
+            #PrintBitsAndBytes(tstmp, pid, bus, cData)
+            if cData[0] % 16 > 0:
                 self.closeToCenter = False
-                self.nextClickTime = max(self.nextClickTime, tstmp + (0.5 if self.leftStalkStatus in (4,8) else 4.)) # Delay spoof if turn signal is on
-            self.blinkersOn = cData[5] > 0
+                self.nextClickTime = max(self.nextClickTime, tstmp + 0.5)
+            self.blinkersOn = cData[0] % 16 > 0
             return SendCAN(tstmp)
 
         def SteerAngle(tstmp, pid, bus, cData):
@@ -141,14 +171,17 @@ class CarState():
 
         def BrakePedal(tstmp, pid, bus, cData):
             self.brakePressed = cData[2] & 2
-            if self.brakePressed:  self.accelerating = False
+            if self.brakePressed:
+                if self.FSD:  self.autoEngage = 0
+                self.accelerating = False
+                self.notDecelerating = False
             return SendCAN(tstmp)
 
         def VirtualLane(tstmp, pid, bus, cData):
             if self.lastAPStatus == 33:
-                self.avgLaneCenter += 0.01 * (cData[2] - self.avgLaneCenter)
+                self.avgLaneCenter += 0.05 * (cData[2] - self.avgLaneCenter)
             laneOffset = cData[2] - self.avgLaneCenter
-            self.closeToCenter = abs(laneOffset) < 10 and not self.blinkersOn and self.lastAPStatus == 32 and (tstmp - self.lastAutoSteerTime) > 2.
+            self.closeToCenter = abs(laneOffset) < 20 and not self.blinkersOn and ((tstmp - self.lastAutoSteerTime) > 2. or self.lastAPStatus == 33)
             return SendCAN(tstmp)
 
         def DriverAssistState(tstmp, pid, bus, cData):
@@ -166,20 +199,42 @@ class CarState():
         def EnoughClicksAlready():  # Prevent unintended triggering of the "Rainbow Road" Easter Egg
             return sum(self.histClick[-10:]) > 1 or sum(self.histClick[-15:-10]) > 1 or sum(self.histClick[-20:-15]) > 1 or sum(self.histClick[-25:-20]) > 1
 
+        def dualCANFSD(tstmp, cData):
+            return any((all((self.autoEngage, not self.brakePressed, self.autopilotReady, self.closeToCenter, self.notDecelerating, (tstmp - self.lastAutoSteerTime) > 2.)), self.lastAPStatus == 33))
+
+        def dualCANAP(tstmp, cData):
+            self.closeToCenter = True
+            return any((all((self.autoEngage, self.notDecelerating or self.accelerating, self.autopilotReady, self.closeToCenter, (tstmp - self.lastAutoSteerTime) > 2., abs(self.steerAngle) < 50)),
+                        all((self.enabled, self.accelPedal < 100, not self.brakePressed, self.autopilotReady, (self.lastAPStatus == 33 or abs(self.steerAngle) < 50)))))
+
+        def singleCANAP(tstmp, cData):
+            return all((self.enabled, self.accelPedal < 100, not self.brakePressed, (self.lastAPStatus == 33 or abs(self.steerAngle) < 50)))
+
+        def APMode(tstmp, pid, bus, cData):
+            if cData[0] == 0 and self.chassisBusAvailable:
+                if cData[6] & 1 == 0 and self.stalkCondition is not dualCANFSD:
+                    self.stalkCondition = dualCANFSD
+                    self.FSD = True
+                    print("FSD mode")
+                elif cData[6] & 1 == 1 and self.stalkCondition is not dualCANAP:
+                    self.stalkCondition = dualCANAP
+                    self.FSD = False
+                    print("AP mode")
+
         def RightStalk(tstmp, pid, bus, cData):
-            if all(((self.enabled or (self.autoEngage and self.accelerating)), self.autopilotReady, not self.brakePressed, not self.blinkersOn, self.accelPedal < 100, cData[1] <= 15, 
-                    (tstmp > self.nextClickTime or self.closeToCenter), (self.lastAPStatus == 33 or abs(self.steerAngle) < 50), not EnoughClicksAlready())):
+            #PrintBitsAndBytes(tstmp, pid, bus, cData)
+            #print(self.stalkCondition(tstmp, cData), not self.blinkersOn, cData[1] <= 15, tstmp > self.nextClickTime, not EnoughClicksAlready())
+            if all((self.stalkCondition(tstmp, cData), not self.blinkersOn, cData[1] <= 15, tstmp > self.nextClickTime, not EnoughClicksAlready())):
                 cData[0] = self.rightStalkCRC[cData[1]]
                 cData[1] = (cData[1] + 1) % 16 + 48
                 self.sendCAN.append((tstmp + 0.05, pid, bus, bytearray(cData)))  # It's time to spoof or reengage autosteer
                 self.histClick.append(1)
                 self.nextClickTime = max(self.nextClickTime, tstmp + 0.5)
-                self.leftStalkStatus = 0
                 self.autoEngage = self.chassisBusAvailable
             else:  # keep track of the number of new stalk clicks (rising edge) to prevent rainbow road and multiple autosteer unavailable alerts
                 self.histClick.append(1 if cData[1] >> 4 == 3 and not self.lastStalk >> 4 == 3 else 0)
                 if (cData[1] >> 4) & 7 in [3,4] and self.motor[2] < 20:
-                    self.nextClickTime = tstmp + 0.5
+                    self.nextClickTime = tstmp + 0.25
                     AdjustRegenBraking(tstmp, bus)
                 elif (cData[1] >> 4) & 7 in [1,2]:
                     self.autoEngage = 0
@@ -196,10 +251,7 @@ class CarState():
             if self.lastAPStatus == 33 and self.handsOnState in [0, 1, 7, 8, 15]:
                 self.nextClickTime = max(self.nextClickTime, tstmp + 0.5)
             return SendCAN(tstmp)
-
-        def DASSpeed(tstmp, pid, bus, cData):
-            self.cruiseSpeed = 0.0621 * (int.from_bytes(cData, byteorder='little', signed=False) & 4095)
-
+            
         def PrintBits(tstmp, pid, bus, cData):
             print(pid, bus, "{0:64b}".format(int.from_bytes(cData, byteorder='little', signed=False)))
             return None
@@ -212,14 +264,19 @@ class CarState():
             print("%0.4f" % tstmp, pid, bus, "{0:64b}".format(int.from_bytes(cData, byteorder='little', signed=False)), cData)
             return None
 
+        def PrintBitsAndBytes(tstmp, pid, bus, cData):
+            print("%0.4f" % tstmp, pid, bus, "{0:64b}".format(int.from_bytes(cData, byteorder='little', signed=False)), ["%3.0f" % d for d in cData])
+            return None
+
         def Research(tstmp, pid, bus, cData):
             if self.logFile is None:
-                self.monitorPIDs = [[],[]]
-                self.allPIDs = [[],[]]
-                self.baselineBits = [{},{}]
-                self.lastBytes = [{},{}]
-                self.allBitChanges = [{},{}]
+                self.monitorPIDs = [[],[],[]]
+                self.allPIDs = [[],[],[]]
+                self.baselineBits = [{},{},{}]
+                self.lastBytes = [{},{},{}]
+                self.allBitChanges = [{},{},{}]
                 self.logFile = open('/home/raspilot/raspilot/bitChanges-%0.0f.dat' % (tstmp//60), "a")
+                print(self.logFile)
 
             if (len(self.monitorPIDs[bus]) == 0 or pid in self.monitorPIDs[bus]) and not pid in self.allPIDs[bus]:
                 self.allPIDs[bus].append(pid)
@@ -239,6 +296,10 @@ class CarState():
                         self.allBitChanges[bus]["%s|%d" % (pid, b)] = self.allBitChanges[bus]["%s|%d" % (pid, b)] | newBitChanges
                     self.lastBytes[bus]["%s|%d" % (pid, b)] = cData[b]
 
+        self.dualCANFSD = dualCANFSD
+        self.dualCANAP = dualCANAP
+        self.singleCANAP = singleCANAP
+        
         self.Update = [{  # Vehicle Bus
                             280:  DriveState,
                             297:  SteerAngle,
@@ -250,10 +311,22 @@ class CarState():
                             925:  BrakePedal,
                             962:  RightScroll,
                             1001: DriverAssistState,
-                            1013: TurnSignal
+                            1013: TurnSignal,
+                            1021: APMode
                        },
                        {  # Chassis Bus
                             569:  VirtualLane,
                             921:  AutoPilotState,
                        },
                        Research]
+
+    def InitStalkCondition(self):
+        if self.FSD:
+            print("FSD Mode enabled")
+            self.stalkCondition = self.dualCANFSD
+        elif self.chassisBusAvailable:
+            print("Dual CAN AP Mode enabled")
+            self.stalkCondition = self.dualCANAP
+        else:
+            print("Single CAN AP Mode enabled")
+            self.stalkCondition = self.singleCANAP

@@ -31,7 +31,6 @@ CS = CarState()
 p = panda.Panda()
 p.set_can_speed_kbps(0,500)
 p.set_can_speed_kbps(1,500)
-p.set_can_speed_kbps(2,500)
 p.set_safety_mode(panda.Panda.SAFETY_ALLOUTPUT)
 
 loopStart = 0
@@ -40,24 +39,32 @@ logData = []
 sendCAN = None
 research = False
 frameCount = [0, 0]
+loopCount = 0
 
 if logging:
     from Influx_Client import Influx_Client
     IC = Influx_Client(p.get_serial()[0])
 
-while sum(frameCount) < 2000:
+while sum(frameCount) < 4000:
     for _, _, _, bus in p.can_recv():
         if bus < 2: frameCount[bus] += 1
 
 if frameCount[0] < frameCount[1]:
     CS.Update = [CS.Update[1], CS.Update[0]]
-print(frameCount)
+CS.chassisBusAvailable = frameCount[1] > 0
+print(frameCount, CS.chassisBusAvailable)
+
+CS.InitStalkCondition()
 
 while True:
+    loopCount += 1
     if CS.parked:  # reduce poll rate while parked
-        period = 0.09
+        period = 0.01
     else:
-        period = 0.009 if not logging else 0.001
+        period = 0.004 if not logging else 0.001
+
+    if CS.chassisBusAvailable and CS.stalkCondition == CS.singleCANAP:
+        CS.InitStalkCondition()
 
     sleepTime = loopStart + period - time.time()
 
@@ -69,20 +76,21 @@ while True:
 
     for pid, _, cData, bus in p.can_recv():
 
-        if bus < 3 and pid in CS.Update[bus]:
-            sendCAN = CS.Update[bus][pid](loopStart, pid, bus, bytearray(cData))
+        if bus < 3:
+            if pid in CS.Update[bus]:
+                sendCAN = CS.Update[bus][pid](loopStart, pid, bus, bytearray(cData))
 
-            if sendCAN:
-                for pid, bus, cData in sendCAN:
-                    p.can_send(pid, cData, bus)
-                sendCAN = None
+                if sendCAN:
+                    for pid, bus, cData in sendCAN:
+                        p.can_send(pid, cData, bus)
+                    sendCAN = None
 
-        if research:
-            CS.Update[-1](loopStart, pid, bus, bytearray(cData))
+            if research:
+                CS.Update[-1](loopStart, pid, bus, bytearray(cData))
 
-        if logging and pid not in CS.ignorePIDs:
-            logData.append([loopStart, bus, pid, int.from_bytes(cData, byteorder='little', signed=False)])
+            if logging and pid not in CS.ignorePIDs:
+                logData.append([loopStart, bus, pid, int.from_bytes(cData, byteorder='little', signed=False)])
 
-            if len(logData) > 250:
-                IC.InsertData(CS, logData)
-                logData = []
+                if len(logData) > 250:
+                    IC.InsertData(CS, logData)
+                    logData = []

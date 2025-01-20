@@ -49,6 +49,8 @@ if logging:
     from Influx_Client import Influx_Client
     IC = Influx_Client('PICAN')
 
+CS.InitStalkCondition()
+
 while True:
     msg = bus.recv()
 

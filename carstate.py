@@ -246,7 +246,7 @@ class CarState():
             # Hands On State: 0 "NOT_REQD" 1 "REQD_DETECTED" 2 "REQD_NOT_DETECTED" 3 "REQD_VISUAL" 4 "REQD_CHIME_1" 5 "REQD_CHIME_2" 6 "REQD_SLOWING" 
             #                 7 "REQD_STRUCK_OUT" 8 "SUSPENDED" ;9 "REQD_ESCALATED_CHIME_1" 10 "REQD_ESCALATED_CHIME_2" 15 "SNA" 
             self.handsOnState = (cData[5] >> 2) & 15
-            self.autopilotReady = cData[0] & 15 in [2, 3, 5]
+            self.autopilotReady = cData[0] & 15 in [2, 3, 4, 5]
             self.chassisBusAvailable = 1
             if self.lastAPStatus == 33 and self.handsOnState in [0, 1, 7, 8, 15]:
                 self.nextClickTime = max(self.nextClickTime, tstmp + 0.5)
